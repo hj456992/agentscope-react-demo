@@ -12,6 +12,7 @@ public record SupervisorSettings(
         @DefaultValue("60s") Duration timeout,
         @DefaultValue("16") int maxModelCalls,
         @DefaultValue("1024") int maxOutputTokens,
+        @DefaultValue("48000") int inputBytes,
         @DefaultValue("8") int maxConcurrentRequests,
         @DefaultValue("2") int maxConcurrentPerUser,
         @DefaultValue("10") int tasksPerUserMinute,
@@ -40,6 +41,7 @@ public record SupervisorSettings(
                 || preferenceRetention.isZero()
                 || maxModelCalls < 1
                 || maxOutputTokens < 1
+                || inputBytes < 1024
                 || maxConcurrentRequests < 1
                 || maxConcurrentPerUser < 1
                 || tasksPerUserMinute < 1

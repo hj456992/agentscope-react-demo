@@ -7,7 +7,13 @@ import io.agentscope.core.message.ToolResultBlock;
 import java.time.LocalDate;
 import java.util.*;
 
-/** 查询工具只负责取数。示例数据与 Agent 分开，方便替换数据来源和注入故障。 */
+/**
+ * 查询工具只负责取数。示例数据与 Agent 分开，方便替换数据来源和注入故障。
+ *
+ * <p>读工具统一返回 {@code Mono<ToolResultBlock>}：Agent 的调用链本身是响应式的，
+ * 工具若用阻塞签名会把整条链拖回同步模型。{@link #weather} / {@link #trains} 的 block()
+ * 只为兼容命令行与旧测试保留，Web 路径一律走 {@code *Async}。
+ */
 public final class TravelTools {
     public interface DataSource {
         /** 更换数据快照或规则时更新版本，使旧结果无法回放。 */
@@ -121,6 +127,16 @@ public final class TravelTools {
                 });
     }
 
+    /**
+     * 统一的读工具执行入口。
+     *
+     * <p>{@code Mono.defer} 保证权限、参数、日期这些校验只在真正订阅时执行一次（而不是建链时），
+     * 并且校验失败直接返回一个“失败的证据”而不是抛异常——工具错误要作为数据回传给模型，
+     * 让它有机会修正参数，而不是让整个任务失败。
+     *
+     * <p>{@code onErrorResume} 只把“普通失败”收敛成证据；取消/超时/预算类异常会原样上抛，
+     * 因为这些异常代表任务级终态，不能降级成一条普通查询失败。
+     */
     private reactor.core.publisher.Mono<ToolResultBlock> execute(
             String tool,
             Map<String, Object> params,

@@ -57,6 +57,10 @@ final class WebTestSupport implements AutoCloseable {
     }
 
     Mono<Reply> exchange(String method, String path, String body, String token, boolean async) {
+        return exchange(method, path, body, token, async ? "respond-async" : null);
+    }
+
+    Mono<Reply> exchange(String method, String path, String body, String token, String prefer) {
         return Mono.defer(
                 () -> {
                     var builder =
@@ -65,7 +69,7 @@ final class WebTestSupport implements AutoCloseable {
                                             path)
                                     .contentType(MediaType.APPLICATION_JSON);
                     if (token != null) builder.header("Authorization", "Bearer " + token);
-                    if (async) builder.header("Prefer", "respond-async");
+                    if (prefer != null) builder.header("Prefer", prefer);
                     var request = builder.body(body == null ? "" : body);
                     var response = new MockServerHttpResponse();
                     return handler.handle(request, response)

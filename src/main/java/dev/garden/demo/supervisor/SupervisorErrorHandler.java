@@ -33,7 +33,7 @@ public class SupervisorErrorHandler {
                                 statusError.getReason() == null
                                         ? "请求内容、任务版本或状态发生冲突。"
                                         : statusError.getReason());
-                case 413 -> response(413, "REQUEST_TOO_LARGE", "待处理指令合计超过 2000 字符，请等待当前补充处理后再提交。");
+                case 413 -> response(413, "REQUEST_TOO_LARGE", "请求内容过大，请缩短问题、历史或待处理指令后重试。");
                 case 429 -> response(429, "BUSY", "当前处理任务较多，请稍后重试。");
                 case 415 -> response(415, "UNSUPPORTED_MEDIA_TYPE", "请使用 application/json 提交请求。");
                 default -> response(status, "REQUEST_ERROR", "请求无法处理，请核对请求路径和方法。");

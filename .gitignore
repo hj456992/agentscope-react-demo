@@ -10,6 +10,7 @@ target/
 
 # 运行时数据（H2 本地库、日志）
 .runtime/
+data/
 *.log
 *.db
 *.db-*

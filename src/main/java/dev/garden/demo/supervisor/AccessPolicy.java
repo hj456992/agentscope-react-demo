@@ -7,7 +7,25 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
 
-/** 身份只由服务端令牌映射建立；模型和请求正文不能提供权限。 */
+/**
+ * 身份只由服务端令牌映射建立；模型和请求正文不能提供权限。
+ *
+ * <p>认证的“触发点”只有一个：{@link SupervisorAuthFilter}。所有请求进入 Controller 之前，
+ * 过滤器调用 {@link #authenticate(String)} 校验令牌，把 {@link Identity} 放进 exchange 属性；
+ * Controller 用 {@link CurrentIdentity} 声明参数、由解析器注入。也就是说：
+ *
+ * <ul>
+ *   <li><b>规则只有一份</b>：令牌匹配、常量时间比较、权限集合构造都在本类；
+ *   <li><b>触发只有一处</b>：新增接口默认受保护，不依赖开发者“记得写认证”；
+ *   <li><b>放行名单</b>：仅有静态演示页等明确列出的公开路径，见
+ *       {@link SupervisorAuthFilter} 中的 {@code PUBLIC_PATHS}；
+ *   <li><b>本类仍可单独使用</b>：命令行或 Service 层测试可以直接构造 {@link Identity}，
+ *       不必启动 Web 容器。
+ * </ul>
+ *
+ * <p>如果以后引入 Spring Security，本类可以作为自定义 {@code AuthenticationManager} 的
+ * 内核替换掉过滤器，规则本身不用改。
+ */
 public final class AccessPolicy {
     public record Identity(String tenantId, String userId, Set<String> permissions) {
         public Identity {

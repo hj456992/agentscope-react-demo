@@ -9,7 +9,13 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** 子 Agent 是模型可选的工具。每次调用独立条件，身份与预算只由服务端传入。 */
+/**
+ * 子 Agent 是模型可选的工具。每次调用独立条件，身份与预算只由服务端传入。
+ *
+ * <p>异步约定：{@code callAsync} 返回 {@code Mono<ToolResultBlock>}，由主循环顺序订阅；
+ * 子 Agent 内部仍是 AgentScope 的 ReAct 循环（会再调模型），但对父循环来说只是一次工具调用。
+ * 用 {@link RunContext#share} 去重：同一轮里重复请求相同条件的子任务只真正执行一次。
+ */
 final class ChildAgentDispatcher {
     private final RunContext context;
     private final TravelAgentFactory factory;
@@ -70,6 +76,8 @@ final class ChildAgentDispatcher {
                         }
                         context.control.checkpoint(key, null);
                     }
+                    // share(key)：同一条条件在并发/重复请求下只执行一次。
+                    // key 里带缓存版本，数据源换版后旧结果不会被错误复用。
                     return context.share(key, () -> invoke(name, label, key, conditions));
                 }).onErrorResume(ex -> {
                     context.rememberFailure(ex);
@@ -81,9 +89,18 @@ final class ChildAgentDispatcher {
         };
     }
 
+    /**
+     * 真正执行子 Agent：用 SubAgentTool 包一层，让它以一个普通工具的身份出现在父会话里。
+     *
+     * <p>返回的 Mono 在 map 里做三件事：检查任务是否已被取消、把子 Agent 的证据并入父上下文、
+     * 把结果写成工具文本。只有全部成功时才写成功检查点，供下次相同条件直接回放。
+     */
     private Mono<ToolResultBlock> invoke(String name, String label, String key, Decision conditions) {
         RunContext child = context.child(conditions);
         TravelAgentFactory childFactory = factory.forContext(child);
+        // 子 Agent 是懒创建的：这里传的是 Supplier，只有 SubAgentTool 真正执行时才调用
+        // childFactory.child(name) → TravelAgentFactory.build(...) → ReActAgent.builder()...build()。
+        // 也就是说，模型没选这个工具，就不会为它建 Agent、也不会调模型。
         SubAgentTool delegate = new SubAgentTool(() -> childFactory.child(name),
                 SubAgentConfig.builder().toolName(name).description(label + "助手").forwardEvents(false).build());
         String task = json(Map.of("runId", context.control.runId(), "revision", context.control.revision(),

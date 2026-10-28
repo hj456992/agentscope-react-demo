@@ -11,7 +11,7 @@ import java.util.regex.*;
 final class BusinessConditions {
     static final List<String> CITIES = List.of("杭州", "上海", "北京", "成都");
 
-    static String validate(Request request, Decision decision, LocalDate today) {
+    static String validate(ChatInput request, Decision decision, LocalDate today) {
         String problem = clarification(decision);
         if (!problem.isEmpty() || decision.intent() == Intent.UNKNOWN) return problem;
         if (decision.days() > 30) return "示例最多规划30天，请确认行程天数。";

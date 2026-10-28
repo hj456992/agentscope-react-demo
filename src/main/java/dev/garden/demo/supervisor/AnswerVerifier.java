@@ -8,7 +8,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 
-/** 业务适配：事实引用逐一核对，最终数值由证据渲染，模型建议不能覆盖事实。 */
+/**
+ * 业务适配：事实引用逐一核对，最终数值由证据渲染，模型建议不能覆盖事实。
+ *
+ * <p>这是一次“链上的额外模型调用”：主循环拿到答复后，这里再起一个 ReActAgent，
+ * 让它把答复拆成 claims 并与 evidence 逐条比对。返回类型是 {@code Mono<Result>}，
+ * 因此可以无缝接在主循环后面；核对失败不会中断任务，而是降级成“只呈现证据”。
+ * 由于它会真实消耗一次模型额度，所以同样走 {@link RunContext#budgeted} 的预算。
+ */
 final class AnswerVerifier {
     static final String PROMPT =
             """
@@ -29,12 +36,12 @@ final class AnswerVerifier {
         this.factory = factory;
     }
 
-    Mono<Result> finish(String ignoredModelAnswer) {
+    Mono<Result> finish(String modelAnswer) {
         context.boundary();
         Status status = context.outcome();
         if (status != Status.SUCCESS && status != Status.PARTIAL)
             return Mono.just(context.result(status, render()));
-        return verify(0)
+        return verify(0, modelAnswer)
                 .onErrorResume(
                         error -> {
                             context.rememberFailure(error);
@@ -46,7 +53,7 @@ final class AnswerVerifier {
                         });
     }
 
-    private Mono<Result> verify(int repair) {
+    private Mono<Result> verify(int repair, String modelAnswer) {
         context.boundary();
         String key = "answer-repair:" + RunContext.fingerprint(context.evidence());
         ReActAgent agent = factory.stage("answer", PROMPT);
@@ -57,16 +64,30 @@ final class AnswerVerifier {
                             Draft draft = message.getStructuredData(Draft.class);
                             if (valid(draft)) {
                                 context.event("事实引用校验通过");
-                                return Mono.just(context.result(context.outcome(), render()));
+                                // 校验通过才呈现模型措辞；事实行仍由证据渲染，二者共同构成答复。
+                                return Mono.just(context.result(context.outcome(), answer(modelAnswer)));
                             }
                             context.event("模型答案与证据不一致");
                             if (repair == 0 && context.control.checkpoint(key) == null) {
                                 context.control.checkpoint(key, "1");
-                                return verify(1);
+                                return verify(1, modelAnswer);
                             }
                             context.event("纠错后仍不一致，使用证据兜底");
                             return Mono.just(context.result(context.outcome(), render()));
                         });
+    }
+
+    /** 模型措辞只在引用核对通过后追加；没有模型答复或未通过时只返回证据渲染。 */
+    private String answer(String modelAnswer) {
+        String rendered = render();
+        if (modelAnswer == null || modelAnswer.isBlank()) return rendered;
+        // 模型常自己加一条示例数据声明；去掉它，避免与证据渲染的声明重复。
+        String cleaned = modelAnswer.strip().lines()
+                .filter(line -> !line.strip().startsWith("【示例数据"))
+                .reduce("", (a, b) -> a.isEmpty() ? b : a + "\n" + b)
+                .strip();
+        if (cleaned.isEmpty() || cleaned.equals(rendered.strip())) return rendered;
+        return rendered + "\n模型答复：" + cleaned;
     }
 
     private boolean valid(Draft draft) {

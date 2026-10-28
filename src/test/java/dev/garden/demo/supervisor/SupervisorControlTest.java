@@ -18,7 +18,7 @@ import java.util.function.*;
 
 class SupervisorControlTest {
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC);
-    final Request request = new Request("control", "杭州明天的天气", List.of());
+    final ChatInput request = new ChatInput("control", "杭州明天的天气", List.of());
 
     Model model(Supplier<ChatResponse> next) {
         return new Model() {
@@ -196,7 +196,7 @@ class SupervisorControlTest {
         for (int i = 0; i < 8; i++) turns.add(new Turn("第" + i + "轮补充", "无关回答".repeat(1000)));
         Map<String, Object> input =
                 ContextBuilder.conversationInput(
-                        new Request("x", "杭州明天的天气", turns), LocalDate.of(2026, 10, 28));
+                        new ChatInput("x", "杭州明天的天气", turns), LocalDate.of(2026, 10, 28));
         assertTrue(json(input).contains("只坐二等座"));
         assertTrue(ContextBuilder.estimate(input) <= 4000);
     }
@@ -206,7 +206,7 @@ class SupervisorControlTest {
         Result result =
                 Supervisor.offline(clock)
                         .run(
-                                new Request(
+                                new ChatInput(
                                         "large",
                                         "杭州明天的天气",
                                         List.of(new Turn("不能丢的条件".repeat(1000), ""))))
@@ -306,7 +306,7 @@ class SupervisorControlTest {
     void unsupportedSeatConstraintMustNotBeSilentlyIgnored() {
         Result result =
                 Supervisor.offline(clock)
-                        .run(new Request("seat", "明天从杭州到上海的火车票，只要一等座", List.of()))
+                        .run(new ChatInput("seat", "明天从杭州到上海的火车票，只要一等座", List.of()))
                         .block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
@@ -320,7 +320,7 @@ class SupervisorControlTest {
                     ? tool("itinerary_agent", Map.of("from", "杭州", "to", "上海", "date", "2026-10-29", "days", 1))
                     : tool("ask_user", Map.of("question", "请确认行程天数。")))
                 : new OfflineScenarioModel(role), TravelTools.demoData())
-                .run(new Request("days", "明天从杭州到上海玩3天", List.of())).block();
+                .run(new ChatInput("days", "明天从杭州到上海玩3天", List.of())).block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
     }

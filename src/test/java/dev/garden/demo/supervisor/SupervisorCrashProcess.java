@@ -58,7 +58,7 @@ public final class SupervisorCrashProcess {
                                 supervisor::run)) {
             tasks.submit(
                             AccessPolicy.Identity.local(),
-                            new Request("crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
+                            new ChatInput("crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
                             true)
                     .block();
             new java.util.concurrent.CountDownLatch(1)

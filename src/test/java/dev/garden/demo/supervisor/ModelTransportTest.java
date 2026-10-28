@@ -73,7 +73,7 @@ class ModelTransportTest {
                             .stream(false)
                             .build();
             RunContext context =
-                    new RunContext(new Request("transport", "test", List.of()), Limits.defaults());
+                    new RunContext(new ChatInput("transport", "test", List.of()), Limits.defaults());
             var response =
                     context.budgeted(model).stream(
                             List.of(Msg.builder().role(MsgRole.USER).textContent("test").build()),
@@ -124,7 +124,7 @@ class ModelTransportTest {
                     }
                 };
         RunContext context =
-                new RunContext(new Request("wrapped", "test", List.of()), Limits.defaults());
+                new RunContext(new ChatInput("wrapped", "test", List.of()), Limits.defaults());
         assertNotNull(
                 context.budgeted(model).stream(
                                 List.of(

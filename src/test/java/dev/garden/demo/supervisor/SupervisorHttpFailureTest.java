@@ -46,7 +46,7 @@ class SupervisorHttpFailureTest {
     }
 
     private String input(String question) {
-        return json(new Request(java.util.UUID.randomUUID().toString(), question, List.of()));
+        return json(new ChatInput(java.util.UUID.randomUUID().toString(), question, List.of()));
     }
 
     @Test

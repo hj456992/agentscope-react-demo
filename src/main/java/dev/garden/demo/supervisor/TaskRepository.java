@@ -14,7 +14,7 @@ import java.util.function.Function;
 public final class TaskRepository implements AutoCloseable {
     public static final class Task {
         public String runId, tenantId, userId, sessionId, requestId, requestHash;
-        public Request request;
+        public ChatInput request;
         public AccessPolicy.Identity identity;
         public String state = "RUNNING";
         public int revision = 1, consumedRevision = 1, generation = 1, calls;

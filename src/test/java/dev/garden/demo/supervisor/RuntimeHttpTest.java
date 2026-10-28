@@ -66,6 +66,31 @@ class RuntimeHttpTest {
     }
 
     @Test
+    void instructionEndpointTakesRunIdInBody() {
+        String body =
+                "{\"runId\":\"missing\",\"instructionId\":\"i-1\",\"expectedRevision\":1,"
+                        + "\"action\":\"CANCEL\",\"message\":\"\"}";
+        // 任务编号随 body 提交；未知任务走到业务层后返回 404。
+        assertEquals(
+                404,
+                call("POST", "/api/supervisor/instructions", body, "test-token", false).status());
+        // 旧路径已移除，不再有路由。
+        assertEquals(
+                404,
+                call(
+                                "POST",
+                                "/api/supervisor/runs/missing/instructions",
+                                body,
+                                "test-token",
+                                false)
+                        .status());
+        // 认证仍在过滤器统一处理。
+        assertEquals(
+                401,
+                call("POST", "/api/supervisor/instructions", body, null, false).status());
+    }
+
+    @Test
     void memoryWriteRequiresPermissionAndVersion() throws Exception {
         String body = "{\"value\":\"杭州\",\"expectedVersion\":0}";
         assertEquals(

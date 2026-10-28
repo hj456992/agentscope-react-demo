@@ -27,8 +27,8 @@ class SupervisorFailureTest {
         return new Supervisor(models, clock, limits, data);
     }
 
-    private Request request(String question) {
-        return new Request("甲", question, List.of());
+    private ChatInput request(String question) {
+        return new ChatInput("甲", question, List.of());
     }
 
     @Test

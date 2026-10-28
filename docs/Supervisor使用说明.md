@@ -1,36 +1,38 @@
 # Supervisor 全包实现说明
 
-2026-10-28。已按本次批准方案复核原有 16 个类，修改核心运行逻辑并补齐运行管理。具体测试结果见[实施记录](实施记录.md)，逐类处理和固定版本源码链接见[源码参考与适配边界](源码参考与适配边界.md)。
+2026-10-28，v3.3。主循环已改为统一模型—工具循环，取消查询改写、意图识别两个前置模型阶段；原 16 项保护能力保留。具体测试结果见[实施记录](实施记录.md)，逐类处理和固定版本源码链接见[源码参考与适配边界](源码参考与适配边界.md)。
 
 ## 先理解整体
 
-主流程仍然只有三步：**查询改写 → 意图识别 → 调用子 Agent**。天气和火车票分别查询；行程规划复用两个查询 Agent，并检索本地出行资料。Spring Boot 提供接口，任务管理器负责执行生命周期。
+只有一个主循环：**用户原话进入 Supervisor 模型 → 模型选择工具 → 工具结果回到同一会话 → 模型继续或给出答复**。天气、火车票、行程规划是模型可选的三个子 Agent 工具；问候、能力说明和无关请求通过 `answer_directly` 声明类别；缺条件通过 `ask_user` 结构化澄清。Spring Boot 提供接口，任务管理器负责执行生命周期。
 
 ```mermaid
 flowchart TD
-    U[用户请求] --> A[认证与任务受理]
-    A --> S[Supervisor]
+    U[用户原话] --> A[认证与任务受理]
+    A --> S[装配系统指令 会话历史 当前输入 工具定义]
     H[会话原文与有效偏好] --> S
-    S --> R[查询改写]
-    R --> I[意图和业务条件校验]
-    I -->|缺条件或有冲突| Q[询问用户]
-    I -->|天气| W[天气 Agent]
-    I -->|车票| T[火车票 Agent]
-    I -->|行程| P[规划 Agent]
+    S --> M[Supervisor 模型]
+    M -->|weather_agent| W[天气 Agent]
+    M -->|train_agent| T[火车票 Agent]
+    M -->|itinerary_agent| P[行程规划 Agent]
     P --> W
     P --> T
-    P --> K[资料检索]
-    W --> G[权限 参数 去重 有界执行]
-    T --> G
-    K --> G
-    G --> V[证据校验与确定性呈现]
-    V --> O[结果与实际执行状态]
+    M -->|ask_user| Q[结构化澄清]
+    M -->|answer_directly| D[能力说明 问候 无关请求]
+    M -->|文本且已有证据| V[证据核对与确定性呈现]
+    W --> H2[保存工具请求与结果 写回会话]
+    T --> H2
+    P --> H2
+    H2 --> M
     A <--> DB[(H2 任务 会话 检查点)]
-    G --> DB
+    H2 --> DB
+    V --> O[结果与实际执行状态]
+    N[执行中的新指令] --> Q2[待处理输入队列]
+    Q2 -->|下一模型边界| S
     O --> DB
 ```
 
-选择多 Agent 是为了限制各角色可用工具、复用查询能力、隔离局部上下文。简单天气问题直接交给天气 Agent，只有复合行程才协调多个角色。代价是模型调用更多；它不会天然比单 Agent 更聪明。
+选择多 Agent 是为了限制各角色可用工具、复用查询能力、隔离局部上下文。简单天气问题由模型直接选择天气 Agent；只有复合行程才协调多个角色。代价是模型调用更多；它不会天然比单 Agent 更聪明。
 
 ## 16 个问题，逐项对应
 
@@ -101,20 +103,22 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[当前问题 历史用户原文 有效偏好] --> B[保留原文条件 加入近期问答]
+    A[当前问题 历史用户原文 有效偏好 会话消息] --> B[保留原文条件与工具消息对]
     B --> C{完整模型输入在预算内}
-    C -->|否| D[裁剪旧回答 仍过长则明确返回错误]
-    C -->|是| E[模型与工具执行]
+    C -->|否| D[先裁剪早期回答 仍过长则明确返回错误]
+    C -->|是| E[主模型与工具执行]
     E --> F[真实工具证据与资料引用]
     F --> G[逐字段核对模型引用]
-    G -->|正确| H[从证据生成事实与来源]
-    G -->|错误| I[最多一次纠正]
-    I -->|仍错或无额度| J[只呈现已核对证据]
+    G -->|一致| H[证据行 + 模型措辞]
+    G -->|不一致或空| I[最多一次纠正]
+    I -->|仍不一致或无额度| J[只呈现已核对证据]
 ```
 
 本地知识资料有文档号、版本、原文位置和有效期；过期片段不返回。知识结论采用原文摘录；天气、金额、日期等采用实际工具字段。行程建议是明确标注的简单模板。这能保护所呈现的字段和引用，不能自动证明任意自由文本推理正确。
 
-历史“摘要”是可追溯的用户原文清单，并非模型生成的无损摘要。最近问答最多加入六轮。偏好与历史分开存储，删除后不会从应用生成的历史自动恢复。客户端 history 只是补充资料，不能覆盖服务端正式记录或提供身份授权。
+没有工具证据时，答复必须由 `answer_directly` 声明为能力说明、问候或无关请求；未声明的纯文本不会当作事实答复返回，避免出现“零证据但看起来成功”的编造事实。
+
+历史“摘要”是可追溯的用户原文清单，并非模型生成的无损摘要。最近问答最多加入六轮。主循环自身消息在超预算时先裁剪早期助手回答，工具请求与结果保持成对。偏好与历史分开存储，删除后不会从应用生成的历史自动恢复。客户端 history 只是补充资料，不能覆盖服务端正式记录或提供身份授权。
 
 ## 如何运行
 
@@ -128,6 +132,15 @@ bash run-supervisor-server.sh
 
 令牌只是本机演示认证配置，实际使用请替换。无认证映射时服务拒绝启动。默认监听 `127.0.0.1:8080`，数据库为项目 `data/supervisor`。不要让两个进程同时打开同一个文件库。
 
+启动后直接打开 <http://127.0.0.1:8080/> 使用自带的测试页面：左侧填服务地址与令牌（默认 `demo-token`）、选择预设问题或手写原话；中间显示状态、runId、revision、证据表与事件；右侧可提交执行中的新指令、按 runId 查询任务、维护长期偏好；底部是逐条请求日志（方法、路径、状态码、耗时、原始响应）。页面与接口同源，不需要额外构建或跨域配置。
+
+```bash
+mvn -q package
+export SUPERVISOR_AUTH_TOKENS='demo-token=demo-tenant:demo-user:query_weather,query_trains,search_knowledge,memory:write'
+bash run-supervisor-server.sh
+# 浏览器打开 http://127.0.0.1:8080/
+```
+
 发起任务，普通调用等结果，带 Prefer 则立即取得任务号：
 
 ```bash
@@ -140,7 +153,7 @@ curl 'http://127.0.0.1:8080/api/supervisor/chat'   -H 'Authorization: Bearer dem
 |---|---|
 | POST `/api/supervisor/chat` | 发起任务；requestId 相同内容重放、不同内容 409 |
 | GET `/api/supervisor/runs/{runId}` | 查询进度、结果、revision、modelCalls、deadline |
-| POST `/api/supervisor/runs/{runId}/instructions` | `{instructionId,expectedRevision,action,message}`；动作 SUPPLEMENT、REVISE、SWITCH、CANCEL、AUTO |
+| POST `/api/supervisor/instructions` | `{runId,instructionId,expectedRevision,action,message}`；动作 SUPPLEMENT、REVISE、SWITCH、CANCEL、AUTO |
 | GET `/api/supervisor/memories?limit=20` | 获取当前用户有效偏好；返回分页游标 |
 | PUT `/api/supervisor/memories/{key}` | `{value,expectedVersion,expiresAt}`；首次版本 0；键为 preferredDepartureCity 或 preferredSeat |
 | DELETE `/api/supervisor/memories/{key}?expectedVersion=1` | 按版本删除偏好 |

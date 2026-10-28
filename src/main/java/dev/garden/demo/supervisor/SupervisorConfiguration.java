@@ -44,7 +44,8 @@ public class SupervisorConfiguration {
     @Bean
     public SupervisorContracts.Limits supervisorLimits(SupervisorSettings settings) {
         return new SupervisorContracts.Limits(
-                settings.timeout(), settings.maxModelCalls(), settings.maxOutputTokens());
+                settings.timeout(), settings.maxModelCalls(), settings.maxOutputTokens(),
+                settings.inputBytes());
     }
 
     @Bean(destroyMethod = "close")
@@ -57,6 +58,13 @@ public class SupervisorConfiguration {
         return TravelTools.demoData();
     }
 
+    /**
+     * 模型工厂：按角色名返回模型实例，但每次调用都新建对象。
+     *
+     * <p>offline 模式返回脚本模型 {@link OfflineScenarioModel}，live 模式用兼容 OpenAI 协议的
+     * {@code OpenAIChatModel}。stream(false) 表示使用一次性响应而不是 SSE 增量——
+     * 主循环会把增量 collectList 成一条消息，两条路径行为一致；需要真正流式输出时再打开。
+     */
     @Bean
     public Function<String, Model> supervisorModels(
             SupervisorSettings settings, Environment environment, ModelHttpTransport transport) {
@@ -86,6 +94,12 @@ public class SupervisorConfiguration {
     @Bean
     public AccessPolicy accessPolicy(SupervisorSettings settings) {
         return new AccessPolicy(settings.authTokens());
+    }
+
+    @Bean
+    public SupervisorAuthFilter supervisorAuthFilter(AccessPolicy accessPolicy) {
+        // 认证统一在 WebFilter 里做：请求进 Controller 之前就完成校验，接口自身不再逐个调用。
+        return new SupervisorAuthFilter(accessPolicy);
     }
 
     @Bean(destroyMethod = "close")
@@ -128,6 +142,8 @@ public class SupervisorConfiguration {
     @Bean
     public DisposableBean modelTransportCleanup() {
         // 只在容器退出时释放全局传输，绝不能在每个 HTTP 请求结束时关闭。
+        // 连接池与线程是共享资源，提前关闭会让后续请求拿不到连接；
+        // 这里注册成 DisposableBean，由 Spring 在关闭阶段统一调用。
         return HttpTransportFactory::shutdown;
     }
 

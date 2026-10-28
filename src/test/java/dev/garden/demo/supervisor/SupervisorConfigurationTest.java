@@ -14,7 +14,7 @@ class SupervisorConfigurationTest {
     void configuredBudgetChangesActualRequestOutcome() {
         try (var web = new WebTestSupport(null, "--supervisor.max-model-calls=2")) {
             assertEquals(2, web.context.getBean(Limits.class).modelCalls());
-            var result = web.post(json(new Request("甲", "杭州明天的天气", List.of())));
+            var result = web.post(json(new ChatInput("甲", "杭州明天的天气", List.of())));
             assertEquals(200, result.status());
             assertTrue(result.body().contains("BUDGET_EXHAUSTED"));
         }
