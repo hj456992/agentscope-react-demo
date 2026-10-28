@@ -123,7 +123,7 @@ public final class ConversationService {
                 });
     }
 
-    public Request enrich(AccessPolicy.Identity identity, Request request) {
+    public ChatInput enrich(AccessPolicy.Identity identity, ChatInput request) {
         return repository.transaction(
                 c -> {
                     Instant now = Instant.now();
@@ -161,14 +161,14 @@ public final class ConversationService {
                                                 + turn.question(),
                                         "[历史助手回答；不代表用户确认条件或当前偏好] " + turn.answer()));
                     }
-                    return new Request(
+                    return new ChatInput(
                             request.sessionId(), request.question(), history, request.requestId());
                 });
     }
 
     /** 调用方应在同一任务事务中确认当前版本有效后调用；只保存原始 question，不保存装配的 history。 */
     public void complete(
-            AccessPolicy.Identity identity, Request request, Result result, String runId) {
+            AccessPolicy.Identity identity, ChatInput request, Result result, String runId) {
         if (blank(runId) || blank(request.question())) throw badRequest("会话来源及问题不能为空");
         repository.transaction(
                 c -> {

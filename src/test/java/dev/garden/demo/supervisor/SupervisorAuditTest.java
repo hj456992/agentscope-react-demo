@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class SupervisorAuditTest {
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC);
-    final Request request = new Request("audit", "杭州明天的天气", List.of());
+    final ChatInput request = new ChatInput("audit", "杭州明天的天气", List.of());
 
     @Test
     void correctEvidenceCannotBeReplacedByInventedWeather() {

@@ -31,7 +31,7 @@ public final class SupervisorDemo {
                             : Supervisor.offline(Clock.systemUTC());
             Result result =
                     supervisor
-                            .run(new Request(UUID.randomUUID().toString(), question, List.of()))
+                            .run(new ChatInput(UUID.randomUUID().toString(), question, List.of()))
                             .block();
             if (result == null) throw new IllegalStateException("没有返回结果");
             result.events().forEach(System.out::println);

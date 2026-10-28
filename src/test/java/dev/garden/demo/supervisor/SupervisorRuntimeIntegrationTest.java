@@ -96,7 +96,7 @@ class SupervisorRuntimeIntegrationTest {
             var started =
                     tasks.submit(
                                     AccessPolicy.Identity.local(),
-                                    new Request("steer", "杭州明天的天气", List.of(), "start"),
+                                    new ChatInput("steer", "杭州明天的天气", List.of(), "start"),
                                     true)
                             .block();
             assertTrue(entered.await(3, TimeUnit.SECONDS));
@@ -156,7 +156,7 @@ class SupervisorRuntimeIntegrationTest {
             var started =
                     tasks.submit(
                                     AccessPolicy.Identity.local(),
-                                    new Request("cancel", "杭州明天的天气", List.of(), "start"),
+                                    new ChatInput("cancel", "杭州明天的天气", List.of(), "start"),
                                     true)
                             .block();
             assertTrue(entered.await(3, TimeUnit.SECONDS));
@@ -222,7 +222,7 @@ class SupervisorRuntimeIntegrationTest {
                     }
                 };
         Supervisor supervisor = Supervisor.offline(CLOCK);
-        Request request = new Request("cached", "明天从杭州到上海玩一天，规划行程", List.of());
+        ChatInput request = new ChatInput("cached", "明天从杭州到上海玩一天，规划行程", List.of());
         Result first = supervisor.run(request, control).block();
         assertEquals(Status.SUCCESS, first.status());
         identity.set(new AccessPolicy.Identity("local", "cli", Set.of("query_weather")));

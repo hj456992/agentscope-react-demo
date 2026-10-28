@@ -501,14 +501,14 @@
     const runId = $("runId").value.trim();
     if (!runId) { toast("先发起任务或填写 runId", true); return; }
     const body = {
+      runId: runId,
       instructionId: "ins-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8),
       expectedRevision: Number($("expectedRevision").value || 1),
       action: $("action").value,
       message: $("instruction").value.trim()
     };
     if (body.action === "CANCEL" && !body.message) body.message = "";
-    const reply = await api("POST",
-      "/api/supervisor/runs/" + encodeURIComponent(runId) + "/instructions", body);
+    const reply = await api("POST", "/api/supervisor/instructions", body);
     if (reply.status === 202 || reply.status === 200) {
       toast((reply.data && reply.data.message) || "指令已处理");
       if (reply.data && reply.data.revision) $("expectedRevision").value = reply.data.revision;

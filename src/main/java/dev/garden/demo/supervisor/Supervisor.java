@@ -50,17 +50,28 @@ public final class Supervisor {
     public static Supervisor offline(Clock clock) {
         return new Supervisor(OfflineScenarioModel::new, clock, Limits.defaults(), TravelTools.demoData());
     }
-    public Mono<Result> run(Request request) { return Mono.defer(() -> run(request, RunControl.local(limits))); }
-    public Mono<Result> run(Request request, RunControl control) {
+    public Mono<Result> run(ChatInput request) { return Mono.defer(() -> run(request, RunControl.local(limits))); }
+    public Mono<Result> run(ChatInput request, RunControl control) {
         // Mono.defer：每次订阅才创建 RunContext，避免同一个 Mono 被复用成共享状态。
+        // 对 TaskService 来说，这就是 runner.apply(...) 拿到的那个 Mono：
+        // apply 时什么都不发生，真正被订阅时才进入这段代码。
         return Mono.defer(() -> {
+            // 一次任务的全部运行期状态：预算、证据、事件、子 Agent 记录等，都挂在这个对象上。
             RunContext context = new RunContext(request, limits, control);
             context.today = LocalDate.now(clock.withZone(ZoneId.of("Asia/Shanghai")));
+            // 输入不合法就不用进循环，直接给一个 FAILED 的 Result。
             if (blank(request.sessionId()) || blank(request.question()) || request.question().length() > 2000)
                 return Mono.just(context.result(Status.FAILED, "请提供会话编号和不超过2000字的问题。"));
+            // 再包一层 defer：会话历史和 Agent 工厂也属于“每次执行一份”的状态。
             return Mono.defer(() -> {
+                // conversation 管理消息历史（含工具请求/结果的配对）。
                 LoopConversation conversation = new LoopConversation(context);
+                // factory 负责按角色创建子 Agent，现在还只是准备好工厂，并没有建 Agent。
                 TravelAgentFactory factory = new TravelAgentFactory(context, models, data);
+                // models.apply("supervisor") 取主模型对象（也还没有发请求），
+                // context.budgeted(...) 再包一层，让每次模型调用都走预算检查。
+                // step(...) 返回的 Mono 就是“整个模型-工具循环跑完”后得到的 Result：
+                // 它内部会递归调用自己，直到模型给出最终答复、或需要询问用户、或发生异常。
                 return step(context, conversation, factory, context.budgeted(models.apply("supervisor")));
             })
                     // 超时作用在整条主循环链上：模型慢、工具慢、子 Agent 慢都算同一个任务的截止时间。

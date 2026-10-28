@@ -12,7 +12,7 @@ final class ContextBuilder {
         return json(value).getBytes(StandardCharsets.UTF_8).length;
     }
 
-    static Map<String, Object> conversationInput(Request request, java.time.LocalDate today) {
+    static Map<String, Object> conversationInput(ChatInput request, java.time.LocalDate today) {
         LinkedHashMap<String, Object> input = new LinkedHashMap<>();
         input.put("question", request.question());
         input.put("today", today.toString());

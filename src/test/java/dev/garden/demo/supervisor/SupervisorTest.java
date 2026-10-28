@@ -15,7 +15,7 @@ class SupervisorTest {
             Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneId.of("Asia/Shanghai"));
 
     private Result run(String question) {
-        return Supervisor.offline(clock).run(new Request("会话甲", question, List.of())).block();
+        return Supervisor.offline(clock).run(new ChatInput("会话甲", question, List.of())).block();
     }
 
     @Test
@@ -62,9 +62,9 @@ class SupervisorTest {
         Supervisor supervisor = Supervisor.offline(clock);
         Result first =
                 supervisor
-                        .run(new Request("会话甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
+                        .run(new ChatInput("会话甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
                         .block();
-        Result other = supervisor.run(new Request("会话乙", "那后天呢", List.of())).block();
+        Result other = supervisor.run(new ChatInput("会话乙", "那后天呢", List.of())).block();
         assertEquals(Status.SUCCESS, first.status());
         assertEquals("杭州", first.evidence().get(0).data().get("city"));
         assertEquals("2026-10-30", first.evidence().get(0).data().get("date"));
@@ -108,8 +108,8 @@ class SupervisorTest {
         Supervisor supervisor = Supervisor.offline(clock);
         var requests =
                 List.of(
-                        new Request("甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))),
-                        new Request("乙", "那后天呢", List.of(new Turn("上海明天的天气", "示例天气"))));
+                        new ChatInput("甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))),
+                        new ChatInput("乙", "那后天呢", List.of(new Turn("上海明天的天气", "示例天气"))));
         var results =
                 reactor.core.publisher.Flux.fromIterable(requests)
                         .flatMap(
@@ -135,7 +135,7 @@ class SupervisorTest {
     void currentCityOverridesHistoricalCity() {
         Result result =
                 Supervisor.offline(clock)
-                        .run(new Request("甲", "那上海后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
+                        .run(new ChatInput("甲", "那上海后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
                         .block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals("上海", result.evidence().get(0).data().get("city"));
@@ -147,7 +147,7 @@ class SupervisorTest {
         Result result =
                 Supervisor.offline(clock)
                         .run(
-                                new Request(
+                                new ChatInput(
                                         "甲",
                                         "那不要上海后天去北京呢",
                                         List.of(new Turn("明天从杭州到上海玩一天", "示例安排"))))

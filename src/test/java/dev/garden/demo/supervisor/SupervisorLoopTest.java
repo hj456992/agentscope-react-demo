@@ -24,7 +24,7 @@ class SupervisorLoopTest {
                 return tool("answer_directly", Map.of("kind", "CAPABILITY", "text", "我可以查询天气、火车票和规划行程。"));
             });
         }, CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", question, List.of())).block();
+        Result result = supervisor.run(new ChatInput("loop", question, List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(List.of("supervisor"), roles);
         assertTrue(result.agents().isEmpty());
@@ -36,7 +36,7 @@ class SupervisorLoopTest {
         String question = "你好，杭州明天的天气怎么样";
         Supervisor supervisor = new Supervisor(role -> textOnly("杭州明天晴，25℃。"), CLOCK,
                 Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("probe", question, List.of())).block();
+        Result result = supervisor.run(new ChatInput("probe", question, List.of())).block();
         assertEquals(Status.FAILED, result.status(), result.toString());
         assertTrue(result.evidence().isEmpty());
         assertFalse(result.answer().contains("25"));
@@ -46,7 +46,7 @@ class SupervisorLoopTest {
         Supervisor supervisor = new Supervisor(role -> model((messages, tools) ->
                 tool("answer_directly", Map.of("kind", "UNRELATED", "text", "请提出天气、火车票或行程规划问题。"))),
                 CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("unrelated", "帮我写一首诗", List.of())).block();
+        Result result = supervisor.run(new ChatInput("unrelated", "帮我写一首诗", List.of())).block();
         assertEquals(Status.UNKNOWN_INTENT, result.status(), result.toString());
         assertTrue(result.agents().isEmpty());
     }
@@ -76,13 +76,13 @@ class SupervisorLoopTest {
                     }
                     return text("已查到。");
                 }) : new OfflineScenarioModel(role), CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("clarify", "明天天气怎么样", List.of()), control).block();
+        Result result = supervisor.run(new ChatInput("clarify", "明天天气怎么样", List.of()), control).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals("杭州", result.evidence().get(0).data().get("city"));
     }
 
     @Test void longHistoryTrimsOldAnswersButKeepsToolPairing() {
-        RunContext context = new RunContext(new Request("trim", "杭州明天的天气", List.of()), Limits.defaults());
+        RunContext context = new RunContext(new ChatInput("trim", "杭州明天的天气", List.of()), Limits.defaults());
         LoopConversation conversation = new LoopConversation(context);
         conversation.messages.add(Msg.builder().role(MsgRole.ASSISTANT)
                 .content(List.of(ToolUseBlock.builder().id("call-1").name("weather_agent")
@@ -119,7 +119,7 @@ class SupervisorLoopTest {
         Supervisor supervisor = new Supervisor(role -> role.equals("supervisor")
                 ? textOnly("杭州明天晴。") : new OfflineScenarioModel(role),
                 CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("legacy", "杭州明天的天气", List.of()), control).block();
+        Result result = supervisor.run(new ChatInput("legacy", "杭州明天的天气", List.of()), control).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertFalse(result.evidence().isEmpty());
         assertTrue(result.answer().contains("18"));
@@ -127,7 +127,7 @@ class SupervisorLoopTest {
 
     @Test void verifiedModelWordingIsIncludedInTheAnswer() {
         Result result = Supervisor.offline(CLOCK)
-                .run(new Request("verified", "杭州明天的天气", List.of())).block();
+                .run(new ChatInput("verified", "杭州明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertTrue(result.answer().contains("模型答复："), result.answer());
         assertTrue(result.answer().contains("18"));
@@ -142,7 +142,7 @@ class SupervisorLoopTest {
         Supervisor supervisor = new Supervisor(role -> model((messages, tools) ->
                 tool("ask_user", Map.of("question", "请问要查询哪个城市的天气？"))),
                 CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", "明天天气怎么样", List.of())).block();
+        Result result = supervisor.run(new ChatInput("loop", "明天天气怎么样", List.of())).block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.answer().contains("城市"));
         assertTrue(result.agents().isEmpty());
@@ -158,7 +158,7 @@ class SupervisorLoopTest {
                             .anyMatch(r -> "call-1".equals(r.getId()) && "weather_agent".equals(r.getName())));
                     return text("天气已查到。");
                 }) : new OfflineScenarioModel(role), CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", "杭州明天的天气", List.of())).block();
+        Result result = supervisor.run(new ChatInput("loop", "杭州明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(2, mainCalls.get());
         assertTrue(result.answer().contains("18℃"));
@@ -173,7 +173,7 @@ class SupervisorLoopTest {
                     if (turn == 1) return tool("weather_agent", Map.of("city", "上海", "date", "2026-10-29"));
                     return text("两地天气已查到。");
                 }) : new OfflineScenarioModel(role), CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("two", "杭州和上海明天的天气", List.of())).block();
+        Result result = supervisor.run(new ChatInput("two", "杭州和上海明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals(2, result.evidence().size());
         assertTrue(result.answer().contains("18℃"));
@@ -193,7 +193,7 @@ class SupervisorLoopTest {
                     }
                     return text("完成");
                 }) : new OfflineScenarioModel(role), CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("feedback", "杭州明天的天气", List.of())).block();
+        Result result = supervisor.run(new ChatInput("feedback", "杭州明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals(List.of("天气查询"), result.agents());
     }
@@ -221,7 +221,7 @@ class SupervisorLoopTest {
                 return text("按新条件完成");
             });
         }, CLOCK, Limits.defaults(), TravelTools.demoData());
-        Result result = supervisor.run(new Request("input", "杭州明天的天气", List.of()), control).block();
+        Result result = supervisor.run(new ChatInput("input", "杭州明天的天气", List.of()), control).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertFalse(result.answer().contains("杭州"));
         assertTrue(result.answer().contains("上海 2026-10-30"));

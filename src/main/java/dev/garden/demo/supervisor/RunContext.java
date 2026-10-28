@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 
 /** 一轮的业务快照；持久预算和取消权属于 RunControl，所有子 Agent 共用。 */
 final class RunContext {
-    Request request;
+    ChatInput request;
     RunContext parent;
     java.time.LocalDate today;
     final Limits limits;
@@ -48,7 +48,7 @@ final class RunContext {
     void acceptInput(String text) {
         List<Turn> history = new ArrayList<>(request.history());
         history.add(new Turn(request.question(), "本轮此前的用户要求"));
-        request = new Request(request.sessionId(), text, history, request.requestId());
+        request = new ChatInput(request.sessionId(), text, history, request.requestId());
         query = text;
         // 历史消息仍给模型参考，但最终事实只保留仍满足新条件的证据。
         evidence.entrySet().removeIf(entry -> !stillRelevant(entry.getValue()));
@@ -69,11 +69,11 @@ final class RunContext {
         return BusinessConditions.validate(request, conditions, today).isEmpty();
     }
 
-    RunContext(Request request, Limits limits) {
+    RunContext(ChatInput request, Limits limits) {
         this(request, limits, RunControl.local(limits));
     }
 
-    RunContext(Request request, Limits limits, RunControl control) {
+    RunContext(ChatInput request, Limits limits, RunControl control) {
         this.request = request;
         this.limits = limits;
         this.control = control;

@@ -98,6 +98,9 @@ final class ChildAgentDispatcher {
     private Mono<ToolResultBlock> invoke(String name, String label, String key, Decision conditions) {
         RunContext child = context.child(conditions);
         TravelAgentFactory childFactory = factory.forContext(child);
+        // 子 Agent 是懒创建的：这里传的是 Supplier，只有 SubAgentTool 真正执行时才调用
+        // childFactory.child(name) → TravelAgentFactory.build(...) → ReActAgent.builder()...build()。
+        // 也就是说，模型没选这个工具，就不会为它建 Agent、也不会调模型。
         SubAgentTool delegate = new SubAgentTool(() -> childFactory.child(name),
                 SubAgentConfig.builder().toolName(name).description(label + "助手").forwardEvents(false).build());
         String task = json(Map.of("runId", context.control.runId(), "revision", context.control.revision(),

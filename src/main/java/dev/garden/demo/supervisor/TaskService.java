@@ -62,7 +62,15 @@ public final class TaskService implements AutoCloseable {
     private final ConversationService conversations;
     private final SupervisorSettings settings;
     private final AccessPolicy accessPolicy;
-    private final BiFunction<Request, RunControl, Mono<Result>> runner;
+    /**
+     * “怎么执行一轮任务”被抽成一个函数对象。
+     *
+     * <p>生产环境传入的是 {@code supervisor::run}，测试里可以换成假实现。
+     * {@code apply(request, control)} 等价于 {@code supervisor.run(request, control)}，
+     * 只是拿到一个描述执行的 Mono，本身不跑。这样 TaskService 只负责任务生命周期，
+     * 完全不依赖 Supervisor 的内部实现。
+     */
+    private final BiFunction<ChatInput, RunControl, Mono<Result>> runner;
     /**
      * 有界弹性调度器（boundedElastic）：专门跑阻塞的 JDBC 与任务链。
      *
@@ -70,6 +78,10 @@ public final class TaskService implements AutoCloseable {
      * 策略写死了，只暴露两个容量）：
      *
      * <ul>
+     *   <li><b>来源</b>：{@code Scheduler} 是 Project Reactor 的接口（{@code reactor.core.scheduler}），
+     *       不是 JDK 类，JDK 里没有这个接口。本项目由 Spring Boot 3.3.5 引入 Reactor 3.6.x。
+     *       容易混的是 JDK 自带的 {@code java.util.concurrent.ScheduledExecutorService}（Java 5 起），
+     *       本类下方 {@code recovery} 用的就是它，两者职责不同，不要混用。
      *   <li><b>参数含义</b>：第一个 12 是 {@code threadCap}——最多同时存在 12 个线程；
      *       第二个 256 是 {@code queuedTaskCap}——<b>每个线程的等待队列</b>最多排 256 个任务
      *       （按线程各算一份，不是全池共用 256）。传统池要自己配 corePoolSize、
@@ -115,6 +127,11 @@ public final class TaskService implements AutoCloseable {
             SupervisorSettings settings,
             Supervisor supervisor,
             AccessPolicy accessPolicy) {
+        // supervisor::run 是“方法引用”，不是“调用”。
+        // 它把 Supervisor 的两个参数的 run(ChatInput, RunControl) 方法，适配成
+        // BiFunction<ChatInput, RunControl, Mono<Result>> 这个函数对象：
+        // 现在只是把“怎么执行”记下来，还没有执行任何东西。
+        // 之后 TaskService 只依赖这个函数，不需要认识 Supervisor 类本身。
         this(repository, conversations, settings, supervisor::run, accessPolicy);
     }
 
@@ -122,7 +139,7 @@ public final class TaskService implements AutoCloseable {
             TaskRepository repository,
             ConversationService conversations,
             SupervisorSettings settings,
-            BiFunction<Request, RunControl, Mono<Result>> runner) {
+            BiFunction<ChatInput, RunControl, Mono<Result>> runner) {
         this(repository, conversations, settings, runner, null);
     }
 
@@ -130,7 +147,7 @@ public final class TaskService implements AutoCloseable {
             TaskRepository repository,
             ConversationService conversations,
             SupervisorSettings settings,
-            BiFunction<Request, RunControl, Mono<Result>> runner,
+            BiFunction<ChatInput, RunControl, Mono<Result>> runner,
             AccessPolicy accessPolicy) {
         this.repository = repository;
         this.conversations = conversations;
@@ -161,7 +178,7 @@ public final class TaskService implements AutoCloseable {
      * 因为里面有事务和同步锁；WebFlux 只负责把这个 Mono 订阅出去。
      * {@code async} 分支直接拿到当前视图返回，同步分支进入 {@link #await} 轮询等待。
      */
-    public Mono<View> submit(AccessPolicy.Identity identity, Request request, boolean async) {
+    public Mono<View> submit(AccessPolicy.Identity identity, ChatInput request, boolean async) {
         // 1) 把“校验 + 建任务 + 落库 + 启动执行”整段包成一个延迟计算。
         //    fromCallable 的 lambda 此刻并不会执行，只有返回的 Mono 被订阅时才真正跑。
         //    返回值类型是 Mono<TaskRepository.Task>（建好的那条任务记录）。
@@ -185,7 +202,7 @@ public final class TaskService implements AutoCloseable {
     }
 
     private synchronized TaskRepository.Task create(
-            AccessPolicy.Identity identity, Request request) {
+            AccessPolicy.Identity identity, ChatInput request) {
         validateRequest(request);
         String requestId =
                 blank(request.requestId()) ? UUID.randomUUID().toString() : request.requestId();
@@ -213,12 +230,16 @@ public final class TaskService implements AutoCloseable {
                             repository.currentSession(fresh);
                             return fresh;
                         });
+        // 真正的任务执行就在这里启动：start() 会自己 subscribe 一条 cycle() 执行链，
+        // 该链跑在 scheduler（supervisor-runtime 有界弹性池）上，生命周期跟随 owned，
+        // 不跟随本次 HTTP 请求。submit() 后面的 await() 只是轮询数据库等终态，
+        // 客户端断开只会停止等待，不会停止任务执行。
         if (task.state.equals("RUNNING") && !owned.containsKey(task.runId)) start(task);
         return task;
     }
 
     private TaskRepository.Task newTask(
-            AccessPolicy.Identity identity, Request request, String requestId, String hash) {
+            AccessPolicy.Identity identity, ChatInput request, String requestId, String hash) {
         var task = new TaskRepository.Task();
         task.runId = UUID.randomUUID().toString();
         task.identity = identity;
@@ -234,7 +255,7 @@ public final class TaskService implements AutoCloseable {
         task.request =
                 conversations.enrich(
                         identity,
-                        new Request(
+                        new ChatInput(
                                 request.sessionId(),
                                 request.question(),
                                 request.history(),
@@ -333,8 +354,8 @@ public final class TaskService implements AutoCloseable {
                                 if (repository.all().size() >= settings.maxStoredTasks())
                                     throw busy();
                                 reserveNewTask(identity);
-                                Request replacement =
-                                        new Request(
+                                ChatInput replacement =
+                                        new ChatInput(
                                                 task.sessionId,
                                                 input.message(),
                                                 List.of(),
@@ -403,20 +424,36 @@ public final class TaskService implements AutoCloseable {
      * 而是收敛成任务状态 FAILED/TIMEOUT 等，这样查询接口仍然能读到终态。
      */
     private void start(TaskRepository.Task task) {
+        // 服务已关闭，或者这个任务已经有执行链在跑了，就直接返回。
+        // 后者是防重复用的：比如恢复线程和指令线程可能同时想把同一个任务跑起来。
         if (closed || owned.containsKey(task.runId)) return;
+        // 先造一张“所有权凭证”：记录任务属于哪个身份，并准备一个可替换、可取消的订阅槽（Swap）。
         var ownership = new OwnedRun(task.identity);
+        // 先把凭证登记进 owned，再真正启动执行。
+        // 这样并发进来的 start() 一看到登记就已经退出了，同时这个任务也占住了并发名额。
         owned.put(task.runId, ownership);
+        // 创建本次执行的控制对象：预算、超时、取消、新输入这些检查都靠它，且都会落库。
         var control = new PersistentControl(task);
+        // 组装并订阅执行链。cycle 是“调一轮 Supervisor → 把结果写回数据库 → 视情况再来一轮”的循环；
+        // 这里执行 subscribe 的那一刻，任务才真正开始跑。
         Disposable execution =
                 cycle(task.runId, control)
+                        // 整条链切到 supervisor-runtime 有界弹性池执行，绝不占用 Netty 事件线程。
                         .subscribeOn(scheduler)
+                        // 收尾钩子：不管正常结束、报错还是被取消，都会走到这里。
                         .doFinally(
                                 signal -> {
+                                    // owned 是普通 HashMap，多线程会一起改，所以先加锁。
                                     synchronized (TaskService.this) {
+                                        // 只删自己这一份（remove(key, value)），
+                                        // 防止把后来者重新登记的同名任务凭证误删。
                                         owned.remove(task.runId, ownership);
                                     }
                                 })
+                        // 服务端自己订阅，所以 HTTP 断开不影响任务；
+                        // 正常结束不用回调（结果已写库），出错则交给 fail(...) 收敛成 FAILED/TIMEOUT 等终态。
                         .subscribe(ignored -> {}, error -> fail(task.runId, control, error));
+        // 把订阅句柄交给 Swap 保管：以后取消或切换时，通过它 dispose 即可，不用再找这个局部变量。
         ownership.subscription.update(execution);
     }
 
@@ -433,33 +470,75 @@ public final class TaskService implements AutoCloseable {
      * </ul>
      */
     private Mono<Void> cycle(String id, PersistentControl control) {
+        // Mono.defer 的含义：方法被调用时并不执行里面的代码，只有被订阅时才执行；
+        // 每一轮递归都会重新跑一遍，所以读到的永远是数据库里的最新状态。
         return Mono.defer(
                 () -> {
+                    // 从数据库重新读任务行（数据库是唯一真相）。
+                    // 指令接口可能刚刚改过 pending、revision、state，这里必须拿最新的，不能用启动时的旧值。
                     TaskRepository.Task task = repository.get(id);
+                    // 每轮开始先“验票”：任务被取消/替换、或已过截止时间，就在这里抛异常。
+                    // 异常会冒泡到 start() 里的 error 回调，由 fail(...) 收敛成 CANCELLED/TIMEOUT 等终态。
                     control.checkActive();
+                    // 真正干活：把当前请求交给 Supervisor 的模型-工具循环。
+                    // runner 在构造器里绑定为 Supervisor::run（见本类构造器），
+                    // 所以模型调用和 Agent 创建都不在本类里，调用链是：
+                    //   runner.apply(...)
+                    //     → Supervisor.run()
+                    //       → Supervisor.step()：models.apply("supervisor") 取主模型，
+                    //         model.stream(...) 发起真正的模型请求；
+                    //         registry(...) → TravelAgentFactory 把三个子 Agent 包装成工具，
+                    //         模型真的调用某个子 Agent 工具时，ChildAgentDispatcher.invoke(...)
+                    //         才通过 SubAgentTool 懒创建 ReActAgent。
+                    // 这里拿到的 result 就是这条链最终的产物。
+                    // apply(...) 本身只是一次普通的方法调用，等价于 supervisor.run(request, control)，
+                    // 它不会立刻执行；返回的 Mono 是“冷”的，描述“订阅后该怎么跑”，
+                    // 等下游订阅时（cycle 自身的 Mono 被执行时）才真正进入 Supervisor 的循环。
                     return runner.apply(task.request, control)
+                            // 执行没产出结果属于异常情况，转成错误信号，避免任务悄悄“成功”结束。
                             .switchIfEmpty(Mono.error(new IllegalStateException("执行没有返回结果")))
+                            // 超时用“剩余时间”而不是固定时长：进程重启续跑后不会重新计时。
+                            // 超时抛 TimeoutException，同样由 fail(...) 落成 TIMEOUT 终态。
                             .timeout(control.remaining())
+                            // 从这里开始，下游（下面的 flatMap 里有数据库事务）切到弹性线程池执行。
+                            // 因为 H2 是阻塞调用，绝不能留在 Netty 事件线程上。
                             .publishOn(scheduler)
+                            // 模型/工具循环结束时拿到 Result，在这里做“旧结果不能覆盖新条件”的校验。
                             .flatMap(
                                     result -> {
+                                        // 事务返回 true = 这条执行链可以收工；
+                                        // 返回 false = 结果已过期，要按最新条件再跑一轮。
                                         boolean finished =
                                                 repository.transaction(
                                                         c -> {
+                                                            // 事务内再读一次最新任务行，后面所有判断都以它为准。
                                                             var current = repository.get(id);
+                                                            // 两种情况说明这次执行已经不是“当前有效的那次”，
+                                                            // 结果直接丢弃、链到此结束：
+                                                            //   1) generation 变了 —— 任务被取消或替换；
+                                                            //   2) 状态不再是 RUNNING —— 例如 recovery 线程已把它标成 TIMEOUT。
                                                             if (current.generation
                                                                             != control.generation
                                                                     || !current.state.equals(
                                                                             "RUNNING")) return true;
+                                                            // revision 变了，说明执行期间用户又发了指令、
+                                                            // 而本次执行还没消费到它。当前结果是在旧条件下算出来的，
+                                                            // 不能落库，返回 false 让外层递归重跑。
                                                             if (current.revision
                                                                     != control.revision())
                                                                 return false;
+                                                            // 版本和条件都对得上：把结果和终态（COMPLETED/FAILED 等）写回任务行。
                                                             current.result = result;
                                                             current.state = result.status().name();
                                                             repository.save(current);
+                                                            // 同时把这轮用户输入和回答写进会话记忆，供后续对话使用。
                                                             saveConversation(current, result);
+                                                            // 结果已落库，正常收工。
                                                             return true;
                                                         });
+                                        // true：正常结束（或被更新的一次执行接管），整条链到此为止。
+                                        // false：用最新条件再跑一轮。注意这是响应式递归，每次 flatMap 回调里
+                                        // 才创建下一个 Mono，不会占着线程空转。
                                         return finished ? Mono.<Void>empty() : cycle(id, control);
                                     });
                 });
@@ -481,7 +560,7 @@ public final class TaskService implements AutoCloseable {
                             List.of());
             conversations.complete(
                     task.identity,
-                    new Request(
+                    new ChatInput(
                             task.sessionId, task.userInputs.get(index), List.of(), task.requestId),
                     turnResult,
                     task.runId + ":input:" + index);
@@ -664,7 +743,7 @@ public final class TaskService implements AutoCloseable {
                         task.consumedRevision = consumed;
                         var history = new ArrayList<>(task.request.history());
                         history.add(new Turn(task.request.question(), "当前任务此前的用户要求"));
-                        task.request = new Request(task.sessionId, text, history, task.requestId);
+                        task.request = new ChatInput(task.sessionId, text, history, task.requestId);
                         repository.save(task);
                         return text;
                     });
@@ -769,10 +848,10 @@ public final class TaskService implements AutoCloseable {
                 List.copyOf(task.events));
     }
 
-    private String requestHash(Request request) {
+    private String requestHash(ChatInput request) {
         return hash(
                 repository.encode(
-                        new Request(
+                        new ChatInput(
                                 request.sessionId(), request.question(), request.history(), null)));
     }
 
@@ -787,7 +866,7 @@ public final class TaskService implements AutoCloseable {
         }
     }
 
-    static void validateRequest(Request request) {
+    static void validateRequest(ChatInput request) {
         if (request == null || blank(request.sessionId()) || blank(request.question())) throw invalid();
         // 过大属于容量问题（413），字段无效才是 400。
         if (request.sessionId().length() > 200

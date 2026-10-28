@@ -33,7 +33,7 @@ class SupervisorHttpTest {
         var reply =
                 web.post(
                         json(
-                                new Request(
+                                new ChatInput(
                                         java.util.UUID.randomUUID().toString(),
                                         question,
                                         List.of())));
@@ -75,8 +75,8 @@ class SupervisorHttpTest {
 
     @Test
     void oversizedInputReturnsPayloadTooLarge() {
-        assertEquals(413, web.post(json(new Request("甲", "字".repeat(2001), List.of()))).status());
-        var reply = web.post(json(new Request("甲", "x".repeat(70_000), List.of())));
+        assertEquals(413, web.post(json(new ChatInput("甲", "字".repeat(2001), List.of()))).status());
+        var reply = web.post(json(new ChatInput("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, reply.status(), reply.body());
     }
 
@@ -86,7 +86,7 @@ class SupervisorHttpTest {
                 web.exchange(
                                 "POST",
                                 "/api/supervisor/chat",
-                                json(new Request("异步会话", "杭州明天的天气", List.of())),
+                                json(new ChatInput("异步会话", "杭州明天的天气", List.of())),
                                 "test-token",
                                 "respond-async; wait=30")
                         .block();
@@ -103,7 +103,7 @@ class SupervisorHttpTest {
                                 city -> {
                                     String input =
                                             json(
-                                                    new Request(
+                                                    new ChatInput(
                                                             city,
                                                             "那后天呢",
                                                             List.of(

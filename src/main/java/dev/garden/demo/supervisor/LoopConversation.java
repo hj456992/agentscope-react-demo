@@ -23,7 +23,7 @@ final class LoopConversation {
     /** 由 answer_directly 声明的非事实答复；纯文本答复为 false。 */
     boolean directAnswer;
 
-    public record Snapshot(int protocol, int revision, Request request, List<Msg> messages,
+    public record Snapshot(int protocol, int revision, ChatInput request, List<Msg> messages,
                            List<Evidence> evidence, List<String> agents, Decision decision,
                            Status replyStatus, String replyText, boolean directAnswer) {}
 
@@ -49,7 +49,7 @@ final class LoopConversation {
             replyStatus = snapshot.replyStatus();
             replyText = snapshot.replyText();
             directAnswer = snapshot.directAnswer();
-            Request latest = context.request;
+            ChatInput latest = context.request;
             context.request = snapshot.request();
             context.query = snapshot.request().question();
             if (snapshot.revision() < context.control.revision()) {

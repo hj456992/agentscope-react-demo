@@ -96,6 +96,12 @@ public class SupervisorConfiguration {
         return new AccessPolicy(settings.authTokens());
     }
 
+    @Bean
+    public SupervisorAuthFilter supervisorAuthFilter(AccessPolicy accessPolicy) {
+        // 认证统一在 WebFilter 里做：请求进 Controller 之前就完成校验，接口自身不再逐个调用。
+        return new SupervisorAuthFilter(accessPolicy);
+    }
+
     @Bean(destroyMethod = "close")
     public TaskRepository taskRepository(
             SupervisorSettings settings, com.fasterxml.jackson.databind.ObjectMapper mapper) {

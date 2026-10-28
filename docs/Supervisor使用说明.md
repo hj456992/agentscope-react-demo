@@ -153,7 +153,7 @@ curl 'http://127.0.0.1:8080/api/supervisor/chat'   -H 'Authorization: Bearer dem
 |---|---|
 | POST `/api/supervisor/chat` | 发起任务；requestId 相同内容重放、不同内容 409 |
 | GET `/api/supervisor/runs/{runId}` | 查询进度、结果、revision、modelCalls、deadline |
-| POST `/api/supervisor/runs/{runId}/instructions` | `{instructionId,expectedRevision,action,message}`；动作 SUPPLEMENT、REVISE、SWITCH、CANCEL、AUTO |
+| POST `/api/supervisor/instructions` | `{runId,instructionId,expectedRevision,action,message}`；动作 SUPPLEMENT、REVISE、SWITCH、CANCEL、AUTO |
 | GET `/api/supervisor/memories?limit=20` | 获取当前用户有效偏好；返回分页游标 |
 | PUT `/api/supervisor/memories/{key}` | `{value,expectedVersion,expiresAt}`；首次版本 0；键为 preferredDepartureCity 或 preferredSeat |
 | DELETE `/api/supervisor/memories/{key}?expectedVersion=1` | 按版本删除偏好 |

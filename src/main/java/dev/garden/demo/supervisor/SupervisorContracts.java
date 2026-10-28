@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-/** 本示例使用的数据。先看 Request、Result，再看每次工具调用的条件和实际证据。 */
+/** 本示例使用的数据。先看 ChatInput、Result，再看每次工具调用的条件和实际证据。 */
 public final class SupervisorContracts {
     private SupervisorContracts() {}
 
@@ -37,12 +37,12 @@ public final class SupervisorContracts {
     public record Turn(String question, String answer) {}
 
     /** HTTP 历史由服务端补充；调用方历史只作为待核实资料。 */
-    public record Request(String sessionId, String question, List<Turn> history, String requestId) {
-        public Request(String sessionId, String question, List<Turn> history) {
+    public record ChatInput(String sessionId, String question, List<Turn> history, String requestId) {
+        public ChatInput(String sessionId, String question, List<Turn> history) {
             this(sessionId, question, history, null);
         }
 
-        public Request {
+        public ChatInput {
             history = history == null ? List.of() : List.copyOf(history);
         }
     }

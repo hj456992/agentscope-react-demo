@@ -51,8 +51,8 @@ class TaskRuntimeTest {
         return new TaskRepository(url, new ObjectMapper());
     }
 
-    private Request request(String session, String id) {
-        return new Request(session, "杭州明天天气", List.of(), id);
+    private ChatInput request(String session, String id) {
+        return new ChatInput(session, "杭州明天天气", List.of(), id);
     }
 
     private Result success(String text) {
@@ -383,7 +383,7 @@ class TaskRuntimeTest {
                                 new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.just(evidence))) {
-            Request original = request("session", "request");
+            ChatInput original = request("session", "request");
             String id = service.submit(identity, original, false).block().runId();
             assertEquals(
                     403,
@@ -507,7 +507,7 @@ class TaskRuntimeTest {
             TaskService.View replay =
                     service.submit(
                                     identity,
-                                    new Request(
+                                    new ChatInput(
                                             "session",
                                             "上海后天天气",
                                             List.of(),

@@ -15,7 +15,7 @@ class KnowledgeTest {
         Result result =
                 Supervisor.offline(
                                 Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC))
-                        .run(new Request("knowledge", "明天从杭州到上海玩一天，规划行程", List.of()))
+                        .run(new ChatInput("knowledge", "明天从杭州到上海玩一天，规划行程", List.of()))
                         .block();
         assertTrue(
                 result.evidence().stream()
