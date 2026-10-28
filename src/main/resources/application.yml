@@ -1,0 +1,20 @@
+server:
+  address: 127.0.0.1
+  port: 8080
+spring:
+  application:
+    name: supervisor-demo
+  main:
+    web-application-type: reactive
+  codec:
+    max-in-memory-size: 64KB
+supervisor:
+  mode: ${SUPERVISOR_MODE:offline}
+  timeout: 60s
+  max-model-calls: 16
+  max-output-tokens: 1024
+  max-concurrent-requests: 8
+logging:
+  level:
+    # SDK 异常可能包含供应商原始响应，演示服务只通过统一错误返回暴露必要信息。
+    io.agentscope: "OFF"

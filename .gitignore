@@ -1,0 +1,20 @@
+# 构建产物
+target/
+*.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# 运行时数据（H2 本地库、日志）
+.runtime/
+*.log
+*.db
+*.db-*
+*.mv.db
+*.trace.db
+
+# 系统文件
+.DS_Store
