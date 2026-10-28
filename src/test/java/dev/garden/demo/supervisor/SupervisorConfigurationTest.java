@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,8 +22,8 @@ class SupervisorConfigurationTest {
     @Test
     void configuredBudgetChangesActualRequestOutcome() {
         try (var web = new WebTestSupport(null, "--supervisor.max-model-calls=2")) {
-            assertEquals(2, web.context.getBean(Limits.class).modelCalls());
-            var result = web.post(json(new Request("甲", "杭州明天的天气", List.of())));
+            assertEquals(2, web.context.getBean(LimitsDTO.class).modelCalls());
+            var result = web.post(json(new RequestDTO("甲", "杭州明天的天气", List.of())));
             assertEquals(200, result.status());
             assertTrue(result.body().contains("BUDGET_EXHAUSTED"));
         }

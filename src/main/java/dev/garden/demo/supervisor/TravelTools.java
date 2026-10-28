@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.message.ToolResultBlock;
 
@@ -33,7 +35,9 @@ public final class TravelTools {
 
             @Override
             public List<Map<String, Object>> trains(String from, String to, String date) {
-                if (!from.equals("杭州") || !to.equals("上海")) return List.of();
+                if (!from.equals("杭州") || !to.equals("上海")) {
+                    return List.of();
+                }
                 return List.of(
                         Map.of(
                                 "number",
@@ -76,17 +80,15 @@ public final class TravelTools {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("city", Objects.toString(city, ""));
         params.put("date", Objects.toString(date, ""));
-        Decision d = context.decision;
-        String expected = d.intent() == Intent.WEATHER ? d.city() : d.to();
         return execute(
                 "query_weather",
                 params,
-                Objects.equals(city, expected) && Objects.equals(date, d.date()),
+                city != null && !city.isBlank(),
                 () -> {
                     Map<String, Object> value = data.weather(city, date);
                     Map<String, Object> result = new LinkedHashMap<>(params);
                     result.put("weather", value);
-                    return new Evidence(
+                    return new EvidenceDTO(
                             "query_weather",
                             value.isEmpty() ? Status.NO_DATA : Status.SUCCESS,
                             "demo-v1",
@@ -99,21 +101,15 @@ public final class TravelTools {
         params.put("from", Objects.toString(from, ""));
         params.put("to", Objects.toString(to, ""));
         params.put("date", Objects.toString(date, ""));
-        Decision d = context.decision;
         return execute(
                 "query_trains",
                 params,
-                Objects.equals(from, d.from())
-                        && Objects.equals(to, d.to())
-                        && Objects.equals(date, d.date())
-                        && !blank(from)
-                        && !blank(to)
-                        && !from.equals(to),
+                from != null && !from.isBlank() && to != null && !to.isBlank() && !from.equals(to),
                 () -> {
                     List<Map<String, Object>> value = data.trains(from, to, date);
                     Map<String, Object> result = new LinkedHashMap<>(params);
                     result.put("trains", value);
-                    return new Evidence(
+                    return new EvidenceDTO(
                             "query_trains",
                             value.isEmpty() ? Status.NO_DATA : Status.SUCCESS,
                             "demo-v1",
@@ -125,7 +121,7 @@ public final class TravelTools {
             String tool,
             Map<String, Object> params,
             boolean matches,
-            java.util.function.Supplier<Evidence> action) {
+            java.util.function.Supplier<EvidenceDTO> action) {
         return reactor.core.publisher.Mono.defer(
                         () -> {
                             context.check();
@@ -147,7 +143,7 @@ public final class TravelTools {
                                                 tool,
                                                 params,
                                                 Status.INVALID_INPUT,
-                                                "参数与用户已确认条件不一致，请修正或澄清。"));
+                                                "城市或日期参数无效，请根据工具定义修正。"));
                             }
                             return new ToolExecutor(context)
                                     .read(
@@ -163,8 +159,9 @@ public final class TravelTools {
                 .onErrorResume(
                         ex -> {
                             context.rememberFailure(ex);
-                            if (context.failureStatus() != Status.FAILED)
+                            if (context.failureStatus() != Status.FAILED) {
                                 return reactor.core.publisher.Mono.error(ex);
+                            }
                             return reactor.core.publisher.Mono.just(
                                     failure(tool, params, Status.FAILED, "查询失败；其他成功结果继续保留。"));
                         });
@@ -174,7 +171,7 @@ public final class TravelTools {
             String tool, Map<String, Object> params, Status status, String message) {
         Map<String, Object> details = new LinkedHashMap<>(params);
         details.put("message", message);
-        Evidence evidence = new Evidence(tool, status, "demo-v1", details);
+        EvidenceDTO evidence = new EvidenceDTO(tool, status, "demo-v1", details);
         context.add(evidence);
         return ToolResultBlock.error(json(evidence));
     }

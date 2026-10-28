@@ -181,7 +181,9 @@ public class MultiAgentRunCoordinator {
                         .doFinally(
                                 signal -> {
                                     // 强制取消时可能没有正常结果，兜底生成一份，保证调用方能读到状态。
-                                    if (turn.result == null) turn.result = finish(turn);
+                                    if (turn.result == null) {
+                                        turn.result = finish(turn);
+                                    }
                                     turn.done.complete(null);
                                 });
         turn.subscription =
@@ -296,13 +298,17 @@ public class MultiAgentRunCoordinator {
 
     public TurnView view(String turnId) {
         Turn turn = turns.get(turnId);
-        if (turn == null) throw new IllegalArgumentException("未找到 turn：" + turnId);
+        if (turn == null) {
+            throw new IllegalArgumentException("未找到 turn：" + turnId);
+        }
         return view(turn);
     }
 
     public Optional<TurnResult> await(String turnId, Duration timeout) {
         Turn turn = turns.get(turnId);
-        if (turn == null) return Optional.empty();
+        if (turn == null) {
+            return Optional.empty();
+        }
         try {
             turn.done.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception ignored) {
@@ -619,7 +625,9 @@ public class MultiAgentRunCoordinator {
      */
     static Duration retryDelay(Throwable error, int attempt) {
         Optional<Duration> advice = serverRetryDelay(error);
-        if (advice.isPresent()) return advice.get();
+        if (advice.isPresent()) {
+            return advice.get();
+        }
         long base = Math.min(2_000L, 200L << Math.min(attempt - 1, 4));
         return Duration.ofMillis(base + ThreadLocalRandom.current().nextInt(50));
     }
@@ -638,9 +646,13 @@ public class MultiAgentRunCoordinator {
             long failed = turn.outcomes().stream().filter(o -> o.state() == ChildState.FAILED).count();
             long succeeded =
                     turn.outcomes().stream().filter(o -> o.state() == ChildState.SUCCEEDED).count();
-            if (failed == 0) state = TurnState.SUCCESS;
-            else if (succeeded == 0) state = TurnState.FAILED;
-            else state = TurnState.PARTIAL;
+            if (failed == 0) {
+                state = TurnState.SUCCESS;
+            } else if (succeeded == 0) {
+                state = TurnState.FAILED;
+            } else {
+                state = TurnState.PARTIAL;
+            }
         }
         turn.state = state;
         turn.event("turn 结束：" + state);
@@ -650,11 +662,16 @@ public class MultiAgentRunCoordinator {
     private TurnResult finishWithError(Turn turn, Throwable error) {
         Throwable root = Exceptions.unwrap(error);
         TurnState state;
-        if (root instanceof TurnCancelled) state = TurnState.CANCELLED;
-        else if (root instanceof TurnDeadline || root instanceof TimeoutException)
+        if (root instanceof TurnCancelled) {
+            state = TurnState.CANCELLED;
+        } else if (root instanceof TurnDeadline || root instanceof TimeoutException) {
             state = TurnState.TIMEOUT;
-        else state = TurnState.FAILED;
-        if (turn.state == TurnState.CANCELLED) state = TurnState.CANCELLED;
+        } else {
+            state = TurnState.FAILED;
+        }
+        if (turn.state == TurnState.CANCELLED) {
+            state = TurnState.CANCELLED;
+        }
         turn.state = state;
         turn.event("turn 结束：" + state + " / " + summarize(root));
         return build(turn, state);
@@ -905,12 +922,18 @@ public class MultiAgentRunCoordinator {
         }
 
         void checkActive() {
-            if (state == TurnState.CANCELLED) throw new TurnCancelled();
-            if (Instant.now().isAfter(deadline)) throw new TurnDeadline();
+            if (state == TurnState.CANCELLED) {
+                throw new TurnCancelled();
+            }
+            if (Instant.now().isAfter(deadline)) {
+                throw new TurnDeadline();
+            }
         }
 
         void acquireModelCall() {
-            if (modelCalls.incrementAndGet() > maxModelCalls) throw new BudgetExhausted();
+            if (modelCalls.incrementAndGet() > maxModelCalls) {
+                throw new BudgetExhausted();
+            }
         }
 
         Duration remaining() {
@@ -979,11 +1002,21 @@ public class MultiAgentRunCoordinator {
 
     private static String classify(Throwable error) {
         Throwable root = Exceptions.unwrap(error);
-        if (root instanceof RetryExhausted) return "RETRY_EXHAUSTED";
-        if (root instanceof BudgetExhausted) return "BUDGET_EXHAUSTED";
-        if (root instanceof TurnCancelled) return "CANCELLED";
-        if (root instanceof TurnDeadline) return "TIMEOUT";
-        if (root instanceof SteeredSignal) return "STEERED";
+        if (root instanceof RetryExhausted) {
+            return "RETRY_EXHAUSTED";
+        }
+        if (root instanceof BudgetExhausted) {
+            return "BUDGET_EXHAUSTED";
+        }
+        if (root instanceof TurnCancelled) {
+            return "CANCELLED";
+        }
+        if (root instanceof TurnDeadline) {
+            return "TIMEOUT";
+        }
+        if (root instanceof SteeredSignal) {
+            return "STEERED";
+        }
         return retryable(root) ? "RETRYABLE" : "NON_RETRYABLE";
     }
 
@@ -1146,7 +1179,9 @@ public class MultiAgentRunCoordinator {
         private static String lastText(List<Msg> messages) {
             for (int i = messages.size() - 1; i >= 0; i--) {
                 String text = messages.get(i).getTextContent();
-                if (text != null && !text.isBlank()) return text;
+                if (text != null && !text.isBlank()) {
+                    return text;
+                }
             }
             return "";
         }

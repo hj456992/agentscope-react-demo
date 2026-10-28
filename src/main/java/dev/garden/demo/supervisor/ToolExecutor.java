@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import reactor.core.publisher.Mono;
 
@@ -37,19 +39,20 @@ final class ToolExecutor {
         this.context = context;
     }
 
-    Mono<Evidence> read(String tool, Map<String, Object> params, Supplier<Evidence> action) {
+    Mono<EvidenceDTO> read(String tool, Map<String, Object> params, Supplier<EvidenceDTO> action) {
         return Mono.defer(
                 () -> {
                     context.check();
-                    if (!context.control.identity().allows(tool))
+                    if (!context.control.identity().allows(tool)) {
                         return Mono.error(new SecurityException("无工具权限"));
+                    }
                     String key =
                             "read:" + tool + ":" + RunContext.fingerprint(new TreeMap<>(params));
                     String stored = context.control.checkpoint(key);
                     if (stored != null) {
-                        Evidence result =
+                        EvidenceDTO result =
                                 io.agentscope.core.util.JsonUtils.getJsonCodec()
-                                        .fromJson(stored, Evidence.class);
+                                        .fromJson(stored, EvidenceDTO.class);
                         context.add(result);
                         context.event("复用已完成工具：" + tool);
                         return Mono.just(result);
@@ -63,15 +66,16 @@ final class ToolExecutor {
                                                         context.check();
                                                         if (result.status() == Status.SUCCESS
                                                                 || result.status()
-                                                                        == Status.NO_DATA)
+                                                                        == Status.NO_DATA) {
                                                             context.control.checkpoint(
                                                                     key, json(result));
+                                                        }
                                                         context.add(result);
                                                     }));
                 });
     }
 
-    private Mono<Evidence> attempt(String key, Supplier<Evidence> action) {
+    private Mono<EvidenceDTO> attempt(String key, Supplier<EvidenceDTO> action) {
         return Mono.defer(
                 () -> {
                     context.check();
@@ -84,12 +88,16 @@ final class ToolExecutor {
                             .timeout(timeout)
                             .onErrorResume(
                                     ex -> {
-                                        if (!retryable(ex) || attempt >= 3) return Mono.error(ex);
+                                        if (!retryable(ex) || attempt >= 3) {
+                                            return Mono.error(ex);
+                                        }
                                         Duration delay = retryDelay(ex, attempt);
                                         if (context.control
                                                         .remaining()
                                                         .compareTo(delay.plusMillis(1))
-                                                <= 0) return Mono.error(ex);
+                                                <= 0) {
+                                            return Mono.error(ex);
+                                        }
                                         context.event("只重试失败工具，第" + (attempt + 1) + "次");
                                         return Mono.delay(delay).then(attempt(key, action));
                                     });
@@ -98,8 +106,9 @@ final class ToolExecutor {
 
     static Duration retryDelay(Throwable error, int attempt) {
         for (Throwable cause = error; cause != null; cause = cause.getCause())
-            if (cause instanceof TemporaryFailure failure && failure.retryAfter != null)
+            if (cause instanceof TemporaryFailure failure && failure.retryAfter != null) {
                 return failure.retryAfter;
+            }
         return Duration.ofMillis(
                 Math.min(2000, 200L << (attempt - 1)) + ThreadLocalRandom.current().nextInt(50));
     }
@@ -109,20 +118,30 @@ final class ToolExecutor {
             if (error
                             instanceof
                             io.agentscope.extensions.model.openai.exception.OpenAIException provider
-                    && "insufficient_quota".equals(provider.getErrorCode())) return false;
+                    && "insufficient_quota".equals(provider.getErrorCode())) {
+                return false;
+            }
             if (error instanceof io.agentscope.core.model.ModelHttpException http
-                    && http.getStatusCode() != null) return http.isRetryableHttpStatus();
+                    && http.getStatusCode() != null) {
+                return http.isRetryableHttpStatus();
+            }
             if (error instanceof io.agentscope.core.model.transport.HttpTransportException transport
-                    && transport.getStatusCode() != null) return transport.isRetryable();
+                    && transport.getStatusCode() != null) {
+                return transport.isRetryable();
+            }
             if (error instanceof TemporaryFailure
                     || error instanceof ConnectException
                     || error instanceof SocketTimeoutException
-                    || error instanceof java.util.concurrent.TimeoutException) return true;
+                    || error instanceof java.util.concurrent.TimeoutException) {
+                return true;
+            }
             if (error instanceof SecurityException
                     || error instanceof IllegalArgumentException
                     || error instanceof RunControl.BudgetExceeded
                     || error instanceof RunControl.Cancelled
-                    || error instanceof RunControl.ContextLimit) return false;
+                    || error instanceof RunControl.ContextLimit) {
+                return false;
+            }
         }
         return false;
     }

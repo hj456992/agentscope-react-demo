@@ -1,10 +1,17 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
@@ -40,11 +47,13 @@ class SupervisorRuntimeIntegrationTest {
                 "test=local:cli:query_weather,query_trains,search_knowledge,memory:write");
     }
 
-    static TaskService.View done(TaskService service, String id) throws Exception {
+    static RunRes done(TaskService service, String id) throws Exception {
         long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
         while (System.nanoTime() < end) {
-            var view = service.get(AccessPolicy.Identity.local(), id).block();
-            if (!view.state().equals("RUNNING")) return view;
+            var view = service.get(IdentityDTO.local(), id).block();
+            if (!view.state().equals("RUNNING")) {
+                return view;
+            }
             Thread.sleep(10);
         }
         throw new AssertionError("实际 SDK 任务未结束");
@@ -83,52 +92,55 @@ class SupervisorRuntimeIntegrationTest {
                             };
                         },
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        try (var repository = new TaskRepository(url, new ObjectMapper());
+        try (var repository = new TestRepository(url);
                 var tasks =
-                        new TaskService(
+                        TestServices.taskService(
                                 repository,
-                                new ConversationService(repository),
                                 settings(url),
                                 supervisor::run)) {
             var started =
                     tasks.submit(
-                                    AccessPolicy.Identity.local(),
-                                    new Request("steer", "杭州明天的天气", List.of(), "start"),
+                                    IdentityDTO.local(),
+                                    new RequestDTO("steer", "杭州明天的天气", List.of(), "start"),
                                     true)
                             .block();
             assertTrue(entered.await(3, TimeUnit.SECONDS));
             int calls =
-                    tasks.get(AccessPolicy.Identity.local(), started.runId()).block().modelCalls();
+                    tasks.get(IdentityDTO.local(), started.runId()).block().modelCalls();
             var instruction =
                     tasks.instruct(
-                                    AccessPolicy.Identity.local(),
-                                    started.runId(),
-                                    new TaskService.Instruction(
-                                            "change", 1, TaskService.Action.REVISE, "上海后天的天气"))
+                                    IdentityDTO.local(),
+                                    new InstructionParam(
+                                            started.runId(),
+                                            "change",
+                                            1,
+                                            Action.REVISE,
+                                            "上海后天的天气"))
                             .block();
             assertEquals(started.runId(), instruction.runId());
             release.tryEmitValue(true);
             var result = done(tasks, started.runId());
             assertEquals("SUCCESS", result.state(), result.result().toString());
             assertEquals(2, result.revision());
-            assertEquals("上海", result.result().evidence().get(0).data().get("city"));
-            assertEquals("2026-10-30", result.result().evidence().get(0).data().get("date"));
+            assertTrue(result.result().evidence().stream().anyMatch(e -> "上海".equals(e.data().get("city"))
+                    && "2026-10-30".equals(e.data().get("date"))), "保留旧结果并加入新查询结果");
             assertFalse(result.result().answer().contains("杭州"));
             assertTrue(result.modelCalls() > calls);
         }
     }
 
     @Test
-    void cancelReachesActualNestedAgentModel() throws Exception {
+    void parentCancellationKeepsAcceptedChildAndServiceCloseStopsIt() throws Exception {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
         CountDownLatch entered = new CountDownLatch(1), cancelled = new CountDownLatch(1);
         Supervisor supervisor =
                 new Supervisor(
                         role -> {
-                            if (!role.equals("weather_agent"))
+                            if (!role.equals("weather_agent")) {
                                 return new OfflineScenarioModel(role);
+                            }
                             return new Model() {
                                 public String getModelName() {
                                     return "pending-child";
@@ -143,37 +155,38 @@ class SupervisorRuntimeIntegrationTest {
                             };
                         },
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        try (var repository = new TaskRepository(url, new ObjectMapper());
+        try (var repository = new TestRepository(url);
                 var tasks =
-                        new TaskService(
+                        TestServices.taskService(
                                 repository,
-                                new ConversationService(repository),
                                 settings(url),
                                 supervisor::run)) {
             var started =
                     tasks.submit(
-                                    AccessPolicy.Identity.local(),
-                                    new Request("cancel", "杭州明天的天气", List.of(), "start"),
+                                    IdentityDTO.local(),
+                                    new RequestDTO("cancel", "杭州明天的天气", List.of(), "start"),
                                     true)
                             .block();
             assertTrue(entered.await(3, TimeUnit.SECONDS));
             tasks.instruct(
-                            AccessPolicy.Identity.local(),
-                            started.runId(),
-                            new TaskService.Instruction("stop", 1, TaskService.Action.CANCEL, null))
+                            IdentityDTO.local(),
+                            new InstructionParam(
+                                    started.runId(), "stop", 1, Action.CANCEL, null))
                     .block();
-            assertTrue(cancelled.await(3, TimeUnit.SECONDS));
+            assertFalse(cancelled.await(100, TimeUnit.MILLISECONDS), "父回合取消不撤回已受理子会话");
             assertEquals("CANCELLED", done(tasks, started.runId()).state());
+            tasks.close();
+            assertTrue(cancelled.await(3, TimeUnit.SECONDS), "关闭服务才关闭所有会话");
         }
     }
 
     @Test
     void cachedItineraryCannotLeakAfterPermissionsChange() {
-        AtomicReference<AccessPolicy.Identity> identity =
-                new AtomicReference<>(AccessPolicy.Identity.local());
-        RunControl original = RunControl.local(Limits.defaults());
+        AtomicReference<IdentityDTO> identity =
+                new AtomicReference<>(IdentityDTO.local());
+        RunControl original = RunControl.local(LimitsDTO.defaults());
         RunControl control =
                 new RunControl() {
                     public String runId() {
@@ -184,7 +197,7 @@ class SupervisorRuntimeIntegrationTest {
                         return original.revision();
                     }
 
-                    public AccessPolicy.Identity identity() {
+                    public IdentityDTO identity() {
                         return identity.get();
                     }
 
@@ -220,12 +233,16 @@ class SupervisorRuntimeIntegrationTest {
                         return original.modelCalls();
                     }
                 };
-        Supervisor supervisor = Supervisor.offline(CLOCK);
-        Request request = new Request("cached", "明天从杭州到上海玩一天，规划行程", List.of());
-        Result first = supervisor.run(request, control).block();
+        AtomicInteger turns = new AtomicInteger();
+        Supervisor supervisor = new Supervisor(role -> CoreSourceParityTest.model((messages, tools) ->
+                turns.getAndIncrement() == 0
+                    ? CoreSourceParityTest.tool("query_trains", Map.of("from", "杭州", "to", "上海", "date", "2026-10-29"))
+                    : CoreSourceParityTest.text("已查询 G-DEMO 车次。")), CLOCK, LimitsDTO.defaults(), TravelTools.demoData());
+        RequestDTO request = new RequestDTO("cached", "明天从杭州到上海的火车票", List.of());
+        ResultDTO first = supervisor.run(request, control).block();
         assertEquals(Status.SUCCESS, first.status());
-        identity.set(new AccessPolicy.Identity("local", "cli", Set.of("query_weather")));
-        Result next = supervisor.run(request, control).block();
+        identity.set(new IdentityDTO("local", "cli", Set.of("query_weather")));
+        ResultDTO next = supervisor.run(request, control).block();
         assertFalse(next.answer().contains("G-DEMO"));
         assertFalse(next.answer().contains("travel-guide"));
         assertTrue(next.evidence().stream().allMatch(e -> e.tool().equals("query_weather")));

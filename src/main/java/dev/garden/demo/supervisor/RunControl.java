@@ -1,19 +1,49 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
-/** 跨父子 Agent 共用的可信运行边界，业务日期时钟不能改变实际截止时间。 */
+/**
+ * 单 Agent 回合的可信运行边界。父子共享树用量，但拥有独立代际和取消状态。
+ * 业务日期时钟不能改变实际截止时间；协作消息始终携带来源，不能提升为用户授权。
+ */
 public interface RunControl {
+    /** 角色只选择提示词和工具能力，不改变模型循环。 */
+    default String agentRole() { return "supervisor"; }
+    default String agentPath() { return "/root"; }
+    default String turnId() { return runId() + ":" + revision(); }
+    /** CLI 内存运行树绑定同一个主子执行函数；持久执行器由服务构造器装配。 */
+    default void bindRunner(java.util.function.BiFunction<RequestDTO, RunControl, reactor.core.publisher.Mono<ResultDTO>> runner) {}
+    /** 返回已接受的子会话；后续父轮次取消不会撤销它。 */
+    default reactor.core.publisher.Mono<AgentSnapshotDTO> spawnAgent(String taskName, String message,
+            String agentRole, String forkTurns, Map<String, String> inheritedCheckpoints) {
+        return reactor.core.publisher.Mono.error(new UnsupportedOperationException("Agent lifecycle unavailable"));
+    }
+    /** triggerTurn=false 只入邮箱；true 在目标闲置时开启新回合。 */
+    default reactor.core.publisher.Mono<Void> sendMessage(String target, String message, boolean triggerTurn) {
+        return reactor.core.publisher.Mono.error(new UnsupportedOperationException("Agent lifecycle unavailable"));
+    }
+    default reactor.core.publisher.Mono<AgentSnapshotDTO> interruptAgent(String target) {
+        return reactor.core.publisher.Mono.error(new UnsupportedOperationException("Agent lifecycle unavailable"));
+    }
+    default List<AgentSnapshotDTO> listAgents(String pathPrefix) { return List.of(); }
+    default reactor.core.publisher.Mono<AgentWaitDTO> waitAgent(long timeoutMs) {
+        return reactor.core.publisher.Mono.just(new AgentWaitDTO("Wait timed out.", true));
+    }
+    default List<AgentMessageDTO> drainMailbox() { return List.of(); }
+    /** 保留每一条真实用户输入边界；兼容旧控制实现时只包装其单条输出。 */
+    default List<String> drainInputs() {
+        String input = drainInput();
+        return input == null ? List.of() : List.of(input);
+    }
+
     String runId();
 
     int revision();
 
-    AccessPolicy.Identity identity();
+    IdentityDTO identity();
 
     void checkActive();
 
@@ -25,7 +55,9 @@ public interface RunControl {
         synchronized (this) {
             String saved = checkpoint(stepKey);
             int attempts = saved == null ? 0 : Integer.parseInt(saved);
-            if (attempts >= maxAttempts) throw new BudgetExceeded("模型步骤尝试预算已耗尽");
+            if (attempts >= maxAttempts) {
+                throw new BudgetExceeded("模型步骤尝试预算已耗尽");
+            }
             reserveModel(estimatedTokens);
             checkpoint(stepKey, Integer.toString(attempts + 1));
         }
@@ -65,61 +97,7 @@ public interface RunControl {
         }
     }
 
-    static RunControl local(Limits limits) {
-        return new RunControl() {
-            private final String id = UUID.randomUUID().toString();
-            private final long started = System.nanoTime();
-            private final AtomicInteger calls = new AtomicInteger();
-            private final Map<String, String> values = new ConcurrentHashMap<>();
-
-            public String runId() {
-                return id;
-            }
-
-            public int revision() {
-                return 1;
-            }
-
-            public AccessPolicy.Identity identity() {
-                return AccessPolicy.Identity.local();
-            }
-
-            public void checkActive() {
-                if (remaining().isZero()) throw new DeadlineExceeded();
-            }
-
-            public Duration remaining() {
-                return Duration.ofNanos(
-                        Math.max(0, limits.timeout().toNanos() - (System.nanoTime() - started)));
-            }
-
-            public synchronized void reserveModel(int tokens) {
-                checkActive();
-                if (tokens < 0) throw new IllegalArgumentException("Token 预留不能为负");
-                if (calls.get() >= limits.modelCalls()) throw new BudgetExceeded("模型调用预算已耗尽");
-                calls.incrementAndGet();
-            }
-
-            public String checkpoint(String key) {
-                return values.get(key);
-            }
-
-            public void checkpoint(String key, String value) {
-                checkActive();
-                if (value == null) values.remove(key);
-                else values.put(key, value);
-            }
-
-            public String drainInput() {
-                checkActive();
-                return null;
-            }
-
-            public void event(String event) {}
-
-            public int modelCalls() {
-                return calls.get();
-            }
-        };
+    static RunControl local(LimitsDTO limits) {
+        return LocalAgentControl.root(limits);
     }
 }

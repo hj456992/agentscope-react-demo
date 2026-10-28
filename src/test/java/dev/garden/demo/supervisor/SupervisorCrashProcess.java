@@ -1,8 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -35,7 +42,9 @@ public final class SupervisorCrashProcess {
 
             public List<Map<String, Object>> trains(String from, String to, String date) {
                 record("train");
-                if (crash) Runtime.getRuntime().halt(24);
+                if (crash) {
+                    Runtime.getRuntime().halt(24);
+                }
                 return TravelTools.demoData().trains(from, to, date);
             }
         };
@@ -47,18 +56,17 @@ public final class SupervisorCrashProcess {
                 new Supervisor(
                         OfflineScenarioModel::new,
                         SupervisorRuntimeIntegrationTest.CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         source(Path.of(args[1]), true));
-        try (var repository = new TaskRepository(url, new ObjectMapper());
+        try (var repository = new TestRepository(url);
                 var tasks =
-                        new TaskService(
+                        TestServices.taskService(
                                 repository,
-                                new ConversationService(repository),
                                 SupervisorRuntimeIntegrationTest.settings(url),
                                 supervisor::run)) {
             tasks.submit(
-                            AccessPolicy.Identity.local(),
-                            new Request("crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
+                            IdentityDTO.local(),
+                            new RequestDTO("crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
                             true)
                     .block();
             new java.util.concurrent.CountDownLatch(1)

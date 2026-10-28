@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class SupervisorAuditTest {
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC);
-    final Request request = new Request("audit", "杭州明天的天气", List.of());
+    final RequestDTO request = new RequestDTO("audit", "杭州明天的天气", List.of());
 
     @Test
     void correctEvidenceCannotBeReplacedByInventedWeather() {
@@ -59,9 +68,9 @@ class SupervisorAuditTest {
                             };
                         },
                         clock,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(request).block();
+        ResultDTO result = supervisor.run(request).block();
         assertEquals(Status.SUCCESS, result.status());
         assertFalse(result.answer().contains("99"), result.answer());
         assertTrue(result.answer().contains("18"));
@@ -73,9 +82,10 @@ class SupervisorAuditTest {
         TravelTools.DataSource source =
                 new TravelTools.DataSource() {
                     public Map<String, Object> weather(String city, String date) {
-                        if (calls.incrementAndGet() == 1)
+                        if (calls.incrementAndGet() == 1) {
                             throw new java.io.UncheckedIOException(
                                     new java.net.ConnectException("temporary"));
+                        }
                         return TravelTools.demoData().weather(city, date);
                     }
 
@@ -83,8 +93,8 @@ class SupervisorAuditTest {
                         return List.of();
                     }
                 };
-        Result result =
-                new Supervisor(OfflineScenarioModel::new, clock, Limits.defaults(), source)
+        ResultDTO result =
+                new Supervisor(OfflineScenarioModel::new, clock, LimitsDTO.defaults(), source)
                         .run(request)
                         .block();
         assertEquals(Status.SUCCESS, result.status());
@@ -94,8 +104,10 @@ class SupervisorAuditTest {
 
     @Test
     void correctedToolAttemptReplacesOldFailureOutcome() {
-        RunContext context = new RunContext(request, Limits.defaults());
-        context.decision = new Decision(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
+        RunContext context =
+                new RunContext(
+                        request, LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
+        context.decision = new DecisionDTO(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
         TravelTools tools = new TravelTools(context, TravelTools.demoData());
         tools.weather("上海", "2026-10-29");
         tools.weather("杭州", "2026-10-29");

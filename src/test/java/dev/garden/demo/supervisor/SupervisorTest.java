@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,13 +23,13 @@ class SupervisorTest {
     private final Clock clock =
             Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneId.of("Asia/Shanghai"));
 
-    private Result run(String question) {
-        return Supervisor.offline(clock).run(new Request("会话甲", question, List.of())).block();
+    private ResultDTO run(String question) {
+        return Supervisor.offline(clock).run(new RequestDTO("会话甲", question, List.of())).block();
     }
 
     @Test
     void weatherUsesActualToolResult() {
-        Result result = run("杭州明天的天气");
+        ResultDTO result = run("杭州明天的天气");
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(List.of("天气查询"), result.agents());
         assertEquals("杭州", result.evidence().get(0).data().get("city"));
@@ -31,7 +40,7 @@ class SupervisorTest {
 
     @Test
     void trainsUseTheRequestedRoute() {
-        Result result = run("明天从杭州到上海的火车票");
+        ResultDTO result = run("明天从杭州到上海的火车票");
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(List.of("火车票查询"), result.agents());
         assertEquals("杭州", result.evidence().get(0).data().get("from"));
@@ -41,7 +50,7 @@ class SupervisorTest {
 
     @Test
     void itineraryActuallyDelegatesToBothAgents() {
-        Result result = run("明天从杭州到上海玩一天，看看天气和火车票，规划行程");
+        ResultDTO result = run("明天从杭州到上海玩一天，看看天气和火车票，规划行程");
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(List.of("行程规划", "天气查询", "火车票查询"), result.agents());
         assertEquals(3, result.evidence().size());
@@ -51,7 +60,7 @@ class SupervisorTest {
 
     @Test
     void missingCityDoesNotExecuteTools() {
-        Result result = run("明天天气怎么样");
+        ResultDTO result = run("明天天气怎么样");
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
         assertTrue(result.agents().isEmpty());
@@ -60,11 +69,11 @@ class SupervisorTest {
     @Test
     void followupUsesOnlyItsOwnHistory() {
         Supervisor supervisor = Supervisor.offline(clock);
-        Result first =
+        ResultDTO first =
                 supervisor
-                        .run(new Request("会话甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
+                        .run(new RequestDTO("会话甲", "那后天呢", List.of(new TurnDTO("杭州明天的天气", "示例天气"))))
                         .block();
-        Result other = supervisor.run(new Request("会话乙", "那后天呢", List.of())).block();
+        ResultDTO other = supervisor.run(new RequestDTO("会话乙", "那后天呢", List.of())).block();
         assertEquals(Status.SUCCESS, first.status());
         assertEquals("杭州", first.evidence().get(0).data().get("city"));
         assertEquals("2026-10-30", first.evidence().get(0).data().get("date"));
@@ -73,14 +82,14 @@ class SupervisorTest {
 
     @Test
     void unknownIntentDoesNotChooseAnAgent() {
-        Result result = run("帮我写一首诗");
+        ResultDTO result = run("帮我写一首诗");
         assertEquals(Status.UNKNOWN_INTENT, result.status());
         assertTrue(result.agents().isEmpty());
     }
 
     @Test
     void absentFixtureIsNotReportedAsRealWorldUnavailability() {
-        Result result = run("成都明天的天气");
+        ResultDTO result = run("成都明天的天气");
         assertEquals(Status.NO_DATA, result.status());
         assertTrue(result.answer().contains("示例"));
         assertFalse(result.evidence().isEmpty());
@@ -88,17 +97,17 @@ class SupervisorTest {
 
     @Test
     void blankInputFailsBeforeModelCalls() {
-        Result result = run("  ");
+        ResultDTO result = run("  ");
         assertEquals(Status.FAILED, result.status());
         assertTrue(result.agents().isEmpty());
     }
 
     @Test
     void missingDepartureAndInvalidDateAskForClarification() {
-        Result missing = run("明天到上海的火车票");
+        ResultDTO missing = run("明天到上海的火车票");
         assertEquals(Status.NEEDS_INPUT, missing.status());
         assertTrue(missing.answer().contains("出发城市"));
-        Result result = run("杭州2026-02-30的天气");
+        ResultDTO result = run("杭州2026-02-30的天气");
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
     }
@@ -108,8 +117,8 @@ class SupervisorTest {
         Supervisor supervisor = Supervisor.offline(clock);
         var requests =
                 List.of(
-                        new Request("甲", "那后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))),
-                        new Request("乙", "那后天呢", List.of(new Turn("上海明天的天气", "示例天气"))));
+                        new RequestDTO("甲", "那后天呢", List.of(new TurnDTO("杭州明天的天气", "示例天气"))),
+                        new RequestDTO("乙", "那后天呢", List.of(new TurnDTO("上海明天的天气", "示例天气"))));
         var results =
                 reactor.core.publisher.Flux.fromIterable(requests)
                         .flatMap(
@@ -133,9 +142,9 @@ class SupervisorTest {
 
     @Test
     void currentCityOverridesHistoricalCity() {
-        Result result =
+        ResultDTO result =
                 Supervisor.offline(clock)
-                        .run(new Request("甲", "那上海后天呢", List.of(new Turn("杭州明天的天气", "示例天气"))))
+                        .run(new RequestDTO("甲", "那上海后天呢", List.of(new TurnDTO("杭州明天的天气", "示例天气"))))
                         .block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals("上海", result.evidence().get(0).data().get("city"));
@@ -144,13 +153,13 @@ class SupervisorTest {
 
     @Test
     void unsupportedOfflineCorrectionAsksInsteadOfDiscardingConstraints() {
-        Result result =
+        ResultDTO result =
                 Supervisor.offline(clock)
                         .run(
-                                new Request(
+                                new RequestDTO(
                                         "甲",
                                         "那不要上海后天去北京呢",
-                                        List.of(new Turn("明天从杭州到上海玩一天", "示例安排"))))
+                                        List.of(new TurnDTO("明天从杭州到上海玩一天", "示例安排"))))
                         .block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
@@ -158,7 +167,7 @@ class SupervisorTest {
 
     @Test
     void multiDayItineraryPreservesDuration() {
-        Result result = run("明天从杭州到上海玩3天，看看天气和火车票，规划行程");
+        ResultDTO result = run("明天从杭州到上海玩3天，看看天气和火车票，规划行程");
         assertEquals(Status.SUCCESS, result.status());
         assertTrue(result.answer().contains("第3天"));
         assertTrue(result.answer().contains("仅查询了出发日"));
@@ -166,7 +175,7 @@ class SupervisorTest {
 
     @Test
     void trainFixtureContainsDurationSeatAndPrice() {
-        Result result = run("明天从杭州到上海的火车票");
+        ResultDTO result = run("明天从杭州到上海的火车票");
         assertEquals(Status.SUCCESS, result.status());
         assertTrue(result.answer().contains("60分钟"));
         assertTrue(result.answer().contains("二等座"));

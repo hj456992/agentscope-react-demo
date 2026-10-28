@@ -33,6 +33,16 @@
   <dependencies>
     <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.2.224</version></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-jdbc</artifactId><version>6.1.14</version></dependency>
+    <dependency><groupId>org.springframework</groupId><artifactId>spring-tx</artifactId><version>6.1.14</version></dependency>
+    <dependency><groupId>org.mybatis</groupId><artifactId>mybatis</artifactId><version>3.5.14</version></dependency>
+    <dependency><groupId>org.mybatis</groupId><artifactId>mybatis-spring</artifactId><version>3.0.3</version></dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><version>5.1.0</version>
+      <!-- 与 Spring Boot 3 的 slf4j 2.x 保持一致，排除 Hikari 携带的旧版 API。 -->
+      <exclusions>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>

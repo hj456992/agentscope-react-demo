@@ -47,7 +47,9 @@ final class WebTestSupport implements AutoCloseable {
         SpringApplicationBuilder builder =
                 new SpringApplicationBuilder(SupervisorApplication.class)
                         .contextFactory(type -> new GenericReactiveWebApplicationContext());
-        if (additionalConfiguration != null) builder.sources(additionalConfiguration);
+        if (additionalConfiguration != null) {
+            builder.sources(additionalConfiguration);
+        }
         context = builder.run(args);
         handler = WebHttpHandlerBuilder.applicationContext(context).build();
     }
@@ -64,8 +66,12 @@ final class WebTestSupport implements AutoCloseable {
                                             org.springframework.http.HttpMethod.valueOf(method),
                                             path)
                                     .contentType(MediaType.APPLICATION_JSON);
-                    if (token != null) builder.header("Authorization", "Bearer " + token);
-                    if (async) builder.header("Prefer", "respond-async");
+                    if (token != null) {
+                        builder.header("Authorization", "Bearer " + token);
+                    }
+                    if (async) {
+                        builder.header("Prefer", "respond-async");
+                    }
                     var request = builder.body(body == null ? "" : body);
                     var response = new MockServerHttpResponse();
                     return handler.handle(request, response)

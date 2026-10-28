@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,9 +49,9 @@ class SupervisorLoopTest {
                                     });
                         },
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", question, List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("loop", question, List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(List.of("supervisor"), roles);
         assertTrue(result.agents().isEmpty());
@@ -60,9 +69,9 @@ class SupervisorLoopTest {
                                                         "ask_user",
                                                         Map.of("question", "请问要查询哪个城市的天气？"))),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", "明天天气怎么样", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("loop", "明天天气怎么样", List.of())).block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.answer().contains("城市"));
         assertTrue(result.agents().isEmpty());
@@ -81,10 +90,10 @@ class SupervisorLoopTest {
                                                                 "question",
                                                                 "杭州明天晴天35℃，票价500元，还需要车票吗？"))),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result =
-                supervisor.run(new Request("clarify-facts", "杭州明天天气怎么样", List.of())).block();
+        ResultDTO result =
+                supervisor.run(new RequestDTO("clarify-facts", "杭州明天天气怎么样", List.of())).block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertFalse(result.answer().contains("35"), result.answer());
         assertFalse(result.answer().contains("500"), result.answer());
@@ -101,7 +110,7 @@ class SupervisorLoopTest {
                                 role.equals("supervisor")
                                         ? model(
                                                 (messages, tools) -> {
-                                                    if (mainCalls.getAndIncrement() == 0)
+                                                    if (mainCalls.getAndIncrement() == 0) {
                                                         return tool(
                                                                 "weather_agent",
                                                                 Map.of(
@@ -109,6 +118,7 @@ class SupervisorLoopTest {
                                                                         "杭州",
                                                                         "date",
                                                                         "2026-10-29"));
+                                                    }
                                                     assertTrue(
                                                             messages.stream()
                                                                     .flatMap(
@@ -132,9 +142,9 @@ class SupervisorLoopTest {
                                                 })
                                         : new OfflineScenarioModel(role),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("loop", "杭州明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("loop", "杭州明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(2, mainCalls.get());
         assertTrue(result.answer().contains("18℃"));
@@ -150,7 +160,7 @@ class SupervisorLoopTest {
                                         ? model(
                                                 (messages, tools) -> {
                                                     int turn = turns.getAndIncrement();
-                                                    if (turn == 0)
+                                                    if (turn == 0) {
                                                         return tool(
                                                                 "weather_agent",
                                                                 Map.of(
@@ -158,7 +168,8 @@ class SupervisorLoopTest {
                                                                         "杭州",
                                                                         "date",
                                                                         "2026-10-29"));
-                                                    if (turn == 1)
+                                                    }
+                                                    if (turn == 1) {
                                                         return tool(
                                                                 "weather_agent",
                                                                 Map.of(
@@ -166,13 +177,14 @@ class SupervisorLoopTest {
                                                                         "上海",
                                                                         "date",
                                                                         "2026-10-29"));
+                                                    }
                                                     return text("两地天气已查到。");
                                                 })
                                         : new OfflineScenarioModel(role),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("two", "杭州和上海明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("two", "杭州和上海明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals(2, result.evidence().size());
         assertTrue(result.answer().contains("18℃"));
@@ -189,8 +201,9 @@ class SupervisorLoopTest {
                                         ? model(
                                                 (messages, tools) -> {
                                                     int turn = turns.getAndIncrement();
-                                                    if (turn == 0)
+                                                    if (turn == 0) {
                                                         return tool("unknown_agent", Map.of());
+                                                    }
                                                     if (turn == 1) {
                                                         assertTrue(
                                                                 messages.stream()
@@ -220,16 +233,16 @@ class SupervisorLoopTest {
                                                 })
                                         : new OfflineScenarioModel(role),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("feedback", "杭州明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("feedback", "杭州明天的天气", List.of())).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals(List.of("天气查询"), result.agents());
     }
 
     @Test
     void changedInputIsAppendedToSameMainHistoryAfterChildFinishes() {
-        RunControl base = RunControl.local(Limits.defaults());
+        RunControl base = RunControl.local(LimitsDTO.defaults());
         java.util.concurrent.atomic.AtomicReference<String> pending =
                 new java.util.concurrent.atomic.AtomicReference<>();
         AtomicInteger revision = new AtomicInteger(1);
@@ -237,7 +250,9 @@ class SupervisorLoopTest {
                 new DelegatingControl(base) {
                     public String drainInput() {
                         String input = pending.getAndSet(null);
-                        if (input != null) revision.incrementAndGet();
+                        if (input != null) {
+                            revision.incrementAndGet();
+                        }
                         return input;
                     }
 
@@ -249,7 +264,9 @@ class SupervisorLoopTest {
         Supervisor supervisor =
                 new Supervisor(
                         role -> {
-                            if (!role.equals("supervisor")) return new OfflineScenarioModel(role);
+                            if (!role.equals("supervisor")) {
+                                return new OfflineScenarioModel(role);
+                            }
                             return model(
                                     (messages, tools) -> {
                                         int turn = mainTurns.getAndIncrement();
@@ -295,9 +312,9 @@ class SupervisorLoopTest {
                                     });
                         },
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("input", "杭州明天的天气", List.of()), control).block();
+        ResultDTO result = supervisor.run(new RequestDTO("input", "杭州明天的天气", List.of()), control).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertFalse(result.answer().contains("杭州"));
         assertTrue(result.answer().contains("上海 2026-10-30"));
@@ -330,9 +347,9 @@ class SupervisorLoopTest {
                                                                 .build())
                                         : new OfflineScenarioModel(role),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         new SupervisorControlTest().counting(reads));
-        Result result = supervisor.run(new Request("mixed", "杭州明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("mixed", "杭州明天的天气", List.of())).block();
         assertNotEquals(Status.SUCCESS, result.status());
         assertEquals(0, reads.get(), "询问用户时不能同时执行尚未确认的查询");
     }
@@ -360,16 +377,16 @@ class SupervisorLoopTest {
                                                                 .build())
                                         : new OfflineScenarioModel(role),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         new SupervisorControlTest().counting(reads));
-        Result result = supervisor.run(new Request("ids", "杭州和上海明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("ids", "杭州和上海明天的天气", List.of())).block();
         assertEquals(0, reads.get(), "无法配对的请求不能先执行一半");
         assertEquals(Status.FAILED, result.status());
     }
 
     @Test
     void oldCompletedReadCanBeUsedWithoutOldRewriteAndIntentStages() {
-        RunControl control = RunControl.local(Limits.defaults());
+        RunControl control = RunControl.local(LimitsDTO.defaults());
         control.reserveModel(100);
         control.reserveModel(100);
         control.checkpoint("rewrite:legacy", "旧改写检查点");
@@ -385,7 +402,7 @@ class SupervisorLoopTest {
         control.checkpoint(
                 key,
                 json(
-                        new Evidence(
+                        new EvidenceDTO(
                                 "query_weather",
                                 Status.SUCCESS,
                                 "demo-v1",
@@ -405,10 +422,10 @@ class SupervisorLoopTest {
                             return new OfflineScenarioModel(role);
                         },
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         new SupervisorControlTest().counting(reads));
-        Result result =
-                supervisor.run(new Request("upgrade", "杭州明天的天气", List.of()), control).block();
+        ResultDTO result =
+                supervisor.run(new RequestDTO("upgrade", "杭州明天的天气", List.of()), control).block();
         assertEquals(Status.SUCCESS, result.status(), result.toString());
         assertEquals(0, reads.get());
         assertEquals(7, control.modelCalls(), "两次旧预算加五次新模型尝试，不能清零旧预算");
@@ -424,9 +441,9 @@ class SupervisorLoopTest {
                     new Supervisor(
                             role -> model((messages, tools) -> text("杭州明天晴天35℃")),
                             CLOCK,
-                            Limits.defaults(),
+                            LimitsDTO.defaults(),
                             TravelTools.demoData());
-            Result result = supervisor.run(new Request("no-evidence", question, List.of())).block();
+            ResultDTO result = supervisor.run(new RequestDTO("no-evidence", question, List.of())).block();
             assertNotEquals(Status.SUCCESS, result.status(), question);
             assertFalse(result.answer().contains("35"), result.toString());
         }
@@ -438,9 +455,9 @@ class SupervisorLoopTest {
                 new Supervisor(
                         role -> model((messages, tools) -> text("我能查询天气，杭州明天35℃")),
                         CLOCK,
-                        Limits.defaults(),
+                        LimitsDTO.defaults(),
                         TravelTools.demoData());
-        Result result = supervisor.run(new Request("capability", "你能做什么", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("capability", "你能做什么", List.of())).block();
         assertEquals(Status.SUCCESS, result.status());
         assertFalse(result.answer().contains("35"));
     }
@@ -449,14 +466,14 @@ class SupervisorLoopTest {
     void anotherCitySuccessCannotClearFailedCity() {
         AtomicInteger turns = new AtomicInteger();
         Supervisor supervisor = cityFailureSupervisor(turns, true);
-        Result result = supervisor.run(new Request("failure", "杭州和上海明天的天气", List.of())).block();
+        ResultDTO result = supervisor.run(new RequestDTO("failure", "杭州和上海明天的天气", List.of())).block();
         assertEquals(Status.PARTIAL, result.status(), result.toString());
         assertTrue(result.answer().contains("18℃"));
     }
 
     @Test
     void failedCitySurvivesConversationRestore() {
-        RunControl base = RunControl.local(Limits.defaults());
+        RunControl base = RunControl.local(LimitsDTO.defaults());
         java.util.concurrent.atomic.AtomicBoolean crash =
                 new java.util.concurrent.atomic.AtomicBoolean(true);
         RunControl control =
@@ -466,27 +483,28 @@ class SupervisorLoopTest {
                         if (key.equals("loop:v3.3")
                                 && value != null
                                 && (value.contains("助手执行失败") || value.contains("助手失败"))
-                                && crash.compareAndSet(true, false))
+                                && crash.compareAndSet(true, false)) {
                             throw new IllegalStateException("模拟已保存子调用错误后退出");
+                        }
                     }
                 };
         AtomicInteger turns = new AtomicInteger();
         Supervisor supervisor = cityFailureSupervisor(turns, false);
-        Request request = new Request("restore", "杭州和上海明天的天气", List.of());
+        RequestDTO request = new RequestDTO("restore", "杭州和上海明天的天气", List.of());
         supervisor.run(request, control).block();
         assertFalse(crash.get(), "必须到达目标检查点");
-        Result recovered = supervisor.run(request, control).block();
+        ResultDTO recovered = supervisor.run(request, control).block();
         assertEquals(Status.PARTIAL, recovered.status(), recovered.toString());
     }
 
     private Supervisor cityFailureSupervisor(AtomicInteger turns, boolean failFirst) {
         return new Supervisor(
                 role -> {
-                    if (role.equals("supervisor"))
+                    if (role.equals("supervisor")) {
                         return model(
                                 (messages, tools) -> {
                                     int turn = turns.getAndIncrement();
-                                    if (turn < 2)
+                                    if (turn < 2) {
                                         return tool(
                                                 "weather_agent",
                                                 Map.of(
@@ -494,8 +512,10 @@ class SupervisorLoopTest {
                                                         (turn == 0) == failFirst ? "上海" : "杭州",
                                                         "date",
                                                         "2026-10-29"));
+                                    }
                                     return text("完成");
                                 });
+                    }
                     Model delegate = new OfflineScenarioModel(role);
                     return new Model() {
                         public String getModelName() {
@@ -512,20 +532,21 @@ class SupervisorLoopTest {
                                             .findFirst()
                                             .orElseThrow()
                                             .getTextContent();
-                            if (role.equals("weather_agent") && input.contains("\"city\":\"上海\""))
+                            if (role.equals("weather_agent") && input.contains("\"city\":\"上海\"")) {
                                 return Flux.error(new IllegalStateException("上海查询子模型失败"));
+                            }
                             return delegate.stream(messages, tools, options);
                         }
                     };
                 },
                 CLOCK,
-                Limits.defaults(),
+                LimitsDTO.defaults(),
                 TravelTools.demoData());
     }
 
     @Test
     void savedFinalTextDoesNotNeedAnotherModelAttemptAfterRestart() {
-        Limits limit = new Limits(Duration.ofSeconds(10), 1, 1024);
+        LimitsDTO limit = new LimitsDTO(Duration.ofSeconds(10), 1, 1024);
         RunControl base = RunControl.local(limit);
         java.util.concurrent.atomic.AtomicBoolean crash =
                 new java.util.concurrent.atomic.AtomicBoolean(true);
@@ -536,8 +557,9 @@ class SupervisorLoopTest {
                         if (key.equals("loop:v3.3")
                                 && value != null
                                 && value.contains("已完成能力说明")
-                                && crash.compareAndSet(true, false))
+                                && crash.compareAndSet(true, false)) {
                             throw new IllegalStateException("模拟最终文本保存后退出");
+                        }
                     }
                 };
         AtomicInteger sends = new AtomicInteger();
@@ -552,10 +574,10 @@ class SupervisorLoopTest {
                         CLOCK,
                         limit,
                         TravelTools.demoData());
-        Request request = new Request("final", "你能做什么", List.of());
+        RequestDTO request = new RequestDTO("final", "你能做什么", List.of());
         supervisor.run(request, control).block();
         assertFalse(crash.get());
-        Result recovered = supervisor.run(request, control).block();
+        ResultDTO recovered = supervisor.run(request, control).block();
         assertEquals(Status.SUCCESS, recovered.status(), recovered.toString());
         assertEquals(1, sends.get());
         assertEquals(1, base.modelCalls());
@@ -565,7 +587,7 @@ class SupervisorLoopTest {
     void optionalOldAnswersAreTrimmedBeforeCompleteInputBudgetIsExceeded() {
         for (int size = 150; size <= 450; size += 25) {
             String oldAnswer = "旧答复".repeat(size);
-            List<Turn> history = List.of(new Turn("杭州明天的天气", oldAnswer));
+            List<TurnDTO> history = List.of(new TurnDTO("杭州明天的天气", oldAnswer));
             Supervisor supervisor =
                     new Supervisor(
                             role ->
@@ -582,9 +604,9 @@ class SupervisorLoopTest {
                                                 return text("可查询天气和车票");
                                             }),
                             CLOCK,
-                            Limits.defaults(),
+                            LimitsDTO.defaults(),
                             TravelTools.demoData());
-            Result result = supervisor.run(new Request("history", "你能做什么", history)).block();
+            ResultDTO result = supervisor.run(new RequestDTO("history", "你能做什么", history)).block();
             assertEquals(Status.SUCCESS, result.status(), "旧答复长度：" + size + " / " + result);
         }
     }
@@ -604,7 +626,7 @@ class SupervisorLoopTest {
             return base.revision();
         }
 
-        public AccessPolicy.Identity identity() {
+        public IdentityDTO identity() {
             return base.identity();
         }
 

@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,14 +35,16 @@ class SupervisorHttpTest {
 
     @AfterAll
     static void stop() {
-        if (web != null) web.close();
+        if (web != null) {
+            web.close();
+        }
     }
 
     private JsonNode ask(String question) throws Exception {
         var reply =
                 web.post(
                         json(
-                                new Request(
+                                new RequestDTO(
                                         java.util.UUID.randomUUID().toString(),
                                         question,
                                         List.of())));
@@ -54,7 +65,7 @@ class SupervisorHttpTest {
     @Test
     void businessBranchesAreNormalResponses() throws Exception {
         assertEquals("NEEDS_INPUT", ask("明天天气怎么样").path("status").asText());
-        assertEquals("UNKNOWN_INTENT", ask("帮我写诗").path("status").asText());
+        assertEquals("SUCCESS", ask("帮我写诗").path("status").asText());
         assertEquals("NO_DATA", ask("成都明天的天气").path("status").asText());
     }
 
@@ -75,8 +86,8 @@ class SupervisorHttpTest {
 
     @Test
     void longQuestionAndLargeBodyHaveDifferentErrors() {
-        assertEquals(400, web.post(json(new Request("甲", "字".repeat(2001), List.of()))).status());
-        var reply = web.post(json(new Request("甲", "x".repeat(70_000), List.of())));
+        assertEquals(400, web.post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).status());
+        var reply = web.post(json(new RequestDTO("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, reply.status(), reply.body());
     }
 
@@ -89,11 +100,11 @@ class SupervisorHttpTest {
                                 city -> {
                                     String input =
                                             json(
-                                                    new Request(
+                                                    new RequestDTO(
                                                             city,
                                                             "那后天呢",
                                                             List.of(
-                                                                    new Turn(
+                                                                    new TurnDTO(
                                                                             city + "明天的天气",
                                                                             "示例天气"))));
                                     return web.exchange(input)

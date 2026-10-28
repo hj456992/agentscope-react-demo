@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.garden.demo.supervisor.repo.mapper.SideEffectMapper">
+
+    <update id="createTable">
+        CREATE TABLE IF NOT EXISTS side_effect_operations (
+          tenant_id VARCHAR(256) NOT NULL, user_id VARCHAR(256) NOT NULL,
+          tool_name VARCHAR(256) NOT NULL, operation_id VARCHAR(256) NOT NULL,
+          downstream_id VARCHAR(64) NOT NULL UNIQUE, params_hash VARCHAR(64) NOT NULL,
+          params_json CLOB NOT NULL, operation_status VARCHAR(16) NOT NULL,
+          response_text CLOB, submit_count INT NOT NULL, lookup_count INT NOT NULL,
+          next_lookup BIGINT NOT NULL, retry_allowed BOOLEAN NOT NULL,
+          PRIMARY KEY (tenant_id, user_id, tool_name, operation_id))
+    </update>
+
+    <!-- 上次进程遗留的 RUNNING 只能查询，不把它当首次操作重放。 -->
+    <update id="markRunningUnknown">
+        UPDATE side_effect_operations SET operation_status='UNKNOWN'
+        WHERE operation_status='RUNNING'
+    </update>
+
+    <select id="find" resultType="dev.garden.demo.supervisor.pojo.dataobject.SideEffectDO">
+        SELECT tenant_id,user_id,tool_name,operation_id,downstream_id,params_hash,
+               params_json,operation_status,response_text,submit_count,lookup_count,
+               next_lookup,retry_allowed
+        FROM side_effect_operations
+        WHERE tenant_id=#{tenantId} AND user_id=#{userId}
+          AND tool_name=#{toolName} AND operation_id=#{operationId}
+    </select>
+
+    <insert id="insert" parameterType="dev.garden.demo.supervisor.pojo.dataobject.SideEffectDO">
+        INSERT INTO side_effect_operations
+          (tenant_id,user_id,tool_name,operation_id,downstream_id,params_hash,params_json,
+           operation_status,response_text,submit_count,lookup_count,next_lookup,retry_allowed)
+        VALUES(#{tenantId},#{userId},#{toolName},#{operationId},#{downstreamId},#{paramsHash},
+               #{paramsJson},'RUNNING',NULL,1,0,0,FALSE)
+    </insert>
+
+    <update id="claimRetry">
+        UPDATE side_effect_operations SET operation_status='RUNNING',
+          submit_count=submit_count+1,retry_allowed=FALSE
+        WHERE downstream_id=#{downstreamId}
+    </update>
+
+    <update id="saveOutcome">
+        UPDATE side_effect_operations SET operation_status=#{operationStatus},
+          response_text=#{responseText},retry_allowed=#{retryAllowed}
+        WHERE downstream_id=#{downstreamId}
+          AND operation_status IN ('RUNNING','UNKNOWN')
+    </update>
+
+    <update id="bumpLookup">
+        UPDATE side_effect_operations SET lookup_count=lookup_count+1,next_lookup=#{nextLookup}
+        WHERE downstream_id=#{downstreamId}
+    </update>
+
+    <select id="findPending" resultType="dev.garden.demo.supervisor.pojo.dataobject.SideEffectKeyDO">
+        SELECT tenant_id,user_id,tool_name,operation_id FROM side_effect_operations
+        WHERE operation_status='UNKNOWN' AND lookup_count &lt; #{maxLookups}
+          AND next_lookup &lt;= #{now}
+          AND tool_name IN
+          <foreach collection="tools" item="tool" open="(" separator="," close=")">
+              #{tool}
+          </foreach>
+        ORDER BY next_lookup,downstream_id LIMIT #{limit}
+    </select>
+</mapper>

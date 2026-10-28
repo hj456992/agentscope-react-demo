@@ -99,7 +99,7 @@ class RuntimeHttpTest {
                 204,
                 call(
                                 "DELETE",
-                                "/api/supervisor/memories/preferredDepartureCity?expectedVersion=1",
+                                "/api/supervisor/memories/preferredDepartureCity/1",
                                 null,
                                 "test-token",
                                 false)
@@ -108,5 +108,30 @@ class RuntimeHttpTest {
                 call("GET", "/api/supervisor/memories", null, "test-token", false)
                         .body()
                         .contains("杭州"));
+    }
+
+    @Test
+    void memoryPaginationUsesCursorPath() throws Exception {
+        call(
+                "PUT",
+                "/api/supervisor/memories/preferredDepartureCity",
+                "{\"value\":\"杭州\",\"expectedVersion\":0}",
+                "test-token",
+                false);
+        call(
+                "PUT",
+                "/api/supervisor/memories/preferredSeat",
+                "{\"value\":\"二等座\",\"expectedVersion\":0}",
+                "test-token",
+                false);
+        var page = call("GET", "/api/supervisor/memories", null, "test-token", false);
+        assertEquals(200, page.status());
+        assertEquals(2, json.readTree(page.body()).path("items").size());
+        assertTrue(json.readTree(page.body()).path("nextCursor").isNull());
+        // 游标通过路径传入；非法游标在服务层被拒绝。
+        assertEquals(
+                400,
+                call("GET", "/api/supervisor/memories/not-a-cursor", null, "test-token", false)
+                        .status());
     }
 }

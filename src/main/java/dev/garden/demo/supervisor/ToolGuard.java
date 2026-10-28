@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.agent.*;
 import io.agentscope.core.event.AgentEvent;
@@ -33,15 +35,17 @@ final class ToolGuard implements MiddlewareBase {
                     context.check();
                     context.check();
                     for (var call : input.toolCalls()) {
-                        if (call.getName().equals("generate_response") && role.equals("answer"))
+                        if (call.getName().equals("generate_response") && role.equals("answer")) {
                             continue;
+                        }
                         AgentTool tool = toolkit.getTool(call.getName());
-                        if (tool == null)
+                        if (tool == null) {
                             context.correction(role, "TOOL_NOT_FOUND: " + call.getName());
-                        else if (ToolValidator.validateInput(
+                        } else if (ToolValidator.validateInput(
                                         json(call.getInput()), tool.getParameters())
-                                != null)
+                                != null) {
                             context.correction(role, "INVALID_SCHEMA: " + call.getName());
+                        }
                     }
                     return next.apply(input);
                 });

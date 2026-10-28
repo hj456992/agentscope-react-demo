@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.tool.*;
@@ -26,7 +28,9 @@ final class KnowledgeService {
 
     KnowledgeService() {
         try (InputStream stream = getClass().getResourceAsStream("/supervisor/travel-guide.md")) {
-            if (stream == null) throw new IllegalStateException("缺少示例资料");
+            if (stream == null) {
+                throw new IllegalStateException("缺少示例资料");
+            }
             document = parse(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -43,7 +47,9 @@ final class KnowledgeService {
                 break;
             }
             String[] field = lines[i].split(":", 2);
-            if (field.length == 2) meta.put(field[0].strip(), field[1].strip());
+            if (field.length == 2) {
+                meta.put(field[0].strip(), field[1].strip());
+            }
         }
         int start = boundary;
         while (start < lines.length && (lines[start].startsWith("#") || lines[start].isBlank()))
@@ -62,11 +68,12 @@ final class KnowledgeService {
         return RunContext.fingerprint(document);
     }
 
-    Evidence search(String query, LocalDate today) {
+    EvidenceDTO search(String query, LocalDate today) {
         if (!document.expires().isAfter(today)
-                || document.keywords().stream().noneMatch(query::contains))
-            return new Evidence("search_knowledge", Status.NO_DATA, "local-markdown", Map.of());
-        return new Evidence(
+                || document.keywords().stream().noneMatch(query::contains)) {
+            return new EvidenceDTO("search_knowledge", Status.NO_DATA, "local-markdown", Map.of());
+        }
+        return new EvidenceDTO(
                 "search_knowledge",
                 Status.SUCCESS,
                 "classpath:/supervisor/travel-guide.md",
@@ -109,15 +116,16 @@ final class KnowledgeService {
                 return Mono.defer(
                         () -> {
                             context.check();
-                            if (!context.control.identity().allows(getName()))
+                            if (!context.control.identity().allows(getName())) {
                                 return Mono.just(ToolResultBlock.error("PERMISSION_DENIED"));
+                            }
                             if (ToolValidator.validateInput(json(param.getInput()), getParameters())
                                     != null) {
                                 context.correction("knowledge", "INVALID_SCHEMA");
                                 return Mono.just(ToolResultBlock.error("INVALID_SCHEMA"));
                             }
                             // 资料查询约束来自父任务，不采用模型任意扩大后的查询文本。
-                            Evidence found =
+                            EvidenceDTO found =
                                     search(
                                             context.query,
                                             LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")));

@@ -1,10 +1,17 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,7 +28,7 @@ import java.util.concurrent.atomic.*;
 
 class TaskRuntimeTest {
     @TempDir Path directory;
-    private final AccessPolicy.Identity identity = AccessPolicy.Identity.local();
+    private final IdentityDTO identity = IdentityDTO.local();
 
     private SupervisorSettings settings(String url, int calls) {
         return settings(url, calls, 1000);
@@ -46,25 +53,27 @@ class TaskRuntimeTest {
                 "test=t:u:query_weather");
     }
 
-    private TaskRepository repo(String url) {
-        return new TaskRepository(url, new ObjectMapper());
+    private TestRepository repo(String url) {
+        return new TestRepository(url);
     }
 
-    private Request request(String session, String id) {
-        return new Request(session, "杭州明天天气", List.of(), id);
+    private RequestDTO request(String session, String id) {
+        return new RequestDTO(session, "杭州明天天气", List.of(), id);
     }
 
-    private Result success(String text) {
-        return new Result(
+    private ResultDTO success(String text) {
+        return new ResultDTO(
                 Status.SUCCESS, text, text, Intent.WEATHER, text, List.of(), List.of(), List.of());
     }
 
-    private TaskService.View waitDone(TaskService service, String id) throws Exception {
+    private RunRes waitDone(TaskService service, String id) throws Exception {
         long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-        TaskService.View view;
+        RunRes view;
         do {
             view = service.get(identity, id).block();
-            if (!view.state().equals("RUNNING")) return view;
+            if (!view.state().equals("RUNNING")) {
+                return view;
+            }
             Thread.sleep(10);
         } while (System.nanoTime() < end);
         throw new AssertionError("任务未结束");
@@ -73,16 +82,15 @@ class TaskRuntimeTest {
     @Test
     void queuedSteeringKeepsSubscriptionAndBudgetAndFencesOldCompletion() throws Exception {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
-        var first = Sinks.<Result>one();
+        var first = Sinks.<ResultDTO>one();
         var entered = new CountDownLatch(1);
         var cancelled = new AtomicBoolean();
         var captured = new AtomicReference<RunControl>();
         var invocations = new AtomicInteger();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) ->
                                         Mono.defer(
@@ -101,14 +109,18 @@ class TaskRuntimeTest {
             var started = service.submit(identity, request("session", "request"), true).block();
             assertTrue(entered.await(2, TimeUnit.SECONDS));
             var change =
-                    new TaskService.Instruction(
-                            "instruction", 1, TaskService.Action.REVISE, "上海后天天气");
-            var reply = service.instruct(identity, started.runId(), change).block();
+                    new InstructionParam(
+                            started.runId(),
+                            "instruction",
+                            1,
+                            Action.REVISE,
+                            "上海后天天气");
+            var reply = service.instruct(identity, change).block();
             assertEquals(started.runId(), reply.runId());
             assertEquals(2, reply.revision());
             assertEquals(1, captured.get().revision());
             assertFalse(cancelled.get());
-            assertEquals(reply, service.instruct(identity, started.runId(), change).block());
+            assertEquals(reply, service.instruct(identity, change).block());
             first.tryEmitValue(success("杭州旧答案"));
             var done = waitDone(service, started.runId());
             assertEquals("上海后天天气", done.result().answer());
@@ -125,12 +137,11 @@ class TaskRuntimeTest {
         var cancelled = new CountDownLatch(1);
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) ->
-                                        Mono.<Result>never()
+                                        Mono.<ResultDTO>never()
                                                 .doOnSubscribe(x -> entered.countDown())
                                                 .doOnCancel(cancelled::countDown))) {
             var waiting =
@@ -149,9 +160,8 @@ class TaskRuntimeTest {
             assertEquals(409, conflict.getStatusCode().value());
             service.instruct(
                             identity,
-                            task.runId,
-                            new TaskService.Instruction(
-                                    "cancel", 1, TaskService.Action.CANCEL, null))
+                            new InstructionParam(
+                                    task.runId, "cancel", 1, Action.CANCEL, null))
                     .block();
             assertTrue(cancelled.await(1, TimeUnit.SECONDS));
             assertEquals("CANCELLED", service.get(identity, task.runId).block().state());
@@ -166,9 +176,8 @@ class TaskRuntimeTest {
         var entered = new CountDownLatch(1);
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 2),
                                 (request, control) ->
                                         Mono.defer(
@@ -187,9 +196,8 @@ class TaskRuntimeTest {
         var proof = new AtomicReference<String>();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 2),
                                 (request, control) ->
                                         Mono.defer(
@@ -218,8 +226,9 @@ class TaskRuntimeTest {
             assertThrows(
                     RunControl.BudgetExceeded.class,
                     () ->
-                            repo.transaction(
-                                    c -> {
+                            TestDatabase.inTransaction(
+                                    repo,
+                                    () -> {
                                         repo.reserve("global", 1, 10, 2, 100);
                                         throw new RunControl.BudgetExceeded("later check");
                                     }));
@@ -238,16 +247,15 @@ class TaskRuntimeTest {
         var captured = new AtomicReference<RunControl>();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) ->
                                         Mono.defer(
                                                 () -> {
                                                     captured.set(control);
-                                                    Result progress =
-                                                            new Result(
+                                                    ResultDTO progress =
+                                                            new ResultDTO(
                                                                     Status.PARTIAL,
                                                                     request.question(),
                                                                     request.question(),
@@ -255,7 +263,7 @@ class TaskRuntimeTest {
                                                                     "天气已完成",
                                                                     List.of("weather"),
                                                                     List.of(
-                                                                            new Evidence(
+                                                                            new EvidenceDTO(
                                                                                     "query_weather",
                                                                                     Status.SUCCESS,
                                                                                     "fixture",
@@ -274,9 +282,8 @@ class TaskRuntimeTest {
                     1, service.get(identity, started.runId()).block().result().evidence().size());
             service.instruct(
                             identity,
-                            started.runId(),
-                            new TaskService.Instruction(
-                                    "cancel", 1, TaskService.Action.CANCEL, null))
+                            new InstructionParam(
+                                    started.runId(), "cancel", 1, Action.CANCEL, null))
                     .block();
             assertEquals(
                     1, service.get(identity, started.runId()).block().result().evidence().size());
@@ -290,9 +297,8 @@ class TaskRuntimeTest {
         var captured = new AtomicReference<RunControl>();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 2),
                                 (request, control) -> {
                                     captured.set(control);
@@ -324,9 +330,8 @@ class TaskRuntimeTest {
         String runId;
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> {
                                     entered.countDown();
@@ -336,12 +341,11 @@ class TaskRuntimeTest {
             assertTrue(entered.await(2, TimeUnit.SECONDS));
         }
         AccessPolicy changed = new AccessPolicy("new-token=local:cli:query_trains");
-        var actual = new AtomicReference<AccessPolicy.Identity>();
+        var actual = new AtomicReference<IdentityDTO>();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> {
                                     actual.set(control.identity());
@@ -357,8 +361,8 @@ class TaskRuntimeTest {
     @Test
     void revokedToolPermissionBlocksCompletedResultAndRequestReplay() {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
-        Result evidence =
-                new Result(
+        ResultDTO evidence =
+                new ResultDTO(
                         Status.SUCCESS,
                         "query",
                         "query",
@@ -366,23 +370,22 @@ class TaskRuntimeTest {
                         "weather-secret",
                         List.of(),
                         List.of(
-                                new Evidence(
+                                new EvidenceDTO(
                                         "query_weather",
                                         Status.SUCCESS,
                                         "source",
                                         Map.of("city", "杭州"))),
                         List.of());
         var restricted =
-                new AccessPolicy.Identity(
+                new IdentityDTO(
                         identity.tenantId(), identity.userId(), Set.of("query_trains"));
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.just(evidence))) {
-            Request original = request("session", "request");
+            RequestDTO original = request("session", "request");
             String id = service.submit(identity, original, false).block().runId();
             assertEquals(
                     403,
@@ -413,9 +416,8 @@ class TaskRuntimeTest {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.empty())) {
             String id =
@@ -427,8 +429,8 @@ class TaskRuntimeTest {
     @Test
     void currentSessionFenceDoesNotDependOnWallClockOrdering() {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
-        Result needsInput =
-                new Result(
+        ResultDTO needsInput =
+                new ResultDTO(
                         Status.NEEDS_INPUT,
                         "query",
                         "query",
@@ -439,9 +441,8 @@ class TaskRuntimeTest {
                         List.of());
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.just(needsInput))) {
             String first =
@@ -460,11 +461,11 @@ class TaskRuntimeTest {
                                     () ->
                                             service.instruct(
                                                             identity,
-                                                            first,
-                                                            new TaskService.Instruction(
+                                                            new InstructionParam(
+                                                                    first,
                                                                     "late",
                                                                     1,
-                                                                    TaskService.Action.SUPPLEMENT,
+                                                                    Action.SUPPLEMENT,
                                                                     "上海后天天气"))
                                                     .block())
                             .getStatusCode()
@@ -475,8 +476,8 @@ class TaskRuntimeTest {
     @Test
     void switchedTaskRequestIdReplaysThroughTheChatContract() {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
-        Result needsInput =
-                new Result(
+        ResultDTO needsInput =
+                new ResultDTO(
                         Status.NEEDS_INPUT,
                         "query",
                         "query",
@@ -487,9 +488,8 @@ class TaskRuntimeTest {
                         List.of());
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.just(needsInput))) {
             String first =
@@ -497,16 +497,15 @@ class TaskRuntimeTest {
             String next =
                     service.instruct(
                                     identity,
-                                    first,
-                                    new TaskService.Instruction(
-                                            "switch", 1, TaskService.Action.SWITCH, "上海后天天气"))
+                                    new InstructionParam(
+                                            first, "switch", 1, Action.SWITCH, "上海后天天气"))
                             .block()
                             .runId();
-            TaskService.View replacement = service.get(identity, next).block();
-            TaskService.View replay =
+            RunRes replacement = service.get(identity, next).block();
+            RunRes replay =
                     service.submit(
                                     identity,
-                                    new Request(
+                                    new RequestDTO(
                                             "session",
                                             "上海后天天气",
                                             List.of(),
@@ -523,17 +522,15 @@ class TaskRuntimeTest {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.never())) {
             String id = service.submit(identity, request("session", "first"), true).block().runId();
             service.instruct(
                             identity,
-                            id,
-                            new TaskService.Instruction(
-                                    "one", 1, TaskService.Action.SUPPLEMENT, "甲".repeat(1200)))
+                            new InstructionParam(
+                                    id, "one", 1, Action.SUPPLEMENT, "甲".repeat(1200)))
                     .block();
             ResponseStatusException rejected =
                     assertThrows(
@@ -541,11 +538,11 @@ class TaskRuntimeTest {
                             () ->
                                     service.instruct(
                                                     identity,
-                                                    id,
-                                                    new TaskService.Instruction(
+                                                    new InstructionParam(
+                                                            id,
                                                             "two",
                                                             2,
-                                                            TaskService.Action.SUPPLEMENT,
+                                                            Action.SUPPLEMENT,
                                                             "乙".repeat(1200)))
                                             .block());
             assertEquals(413, rejected.getStatusCode().value());
@@ -557,8 +554,8 @@ class TaskRuntimeTest {
     @Test
     void switchCannotBypassPersistentTaskCapacity() {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
-        Result needsInput =
-                new Result(
+        ResultDTO needsInput =
+                new ResultDTO(
                         Status.NEEDS_INPUT,
                         "query",
                         "query",
@@ -569,9 +566,8 @@ class TaskRuntimeTest {
                         List.of());
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3, 1),
                                 (request, control) -> Mono.just(needsInput))) {
             String first =
@@ -583,11 +579,11 @@ class TaskRuntimeTest {
                                     () ->
                                             service.instruct(
                                                             identity,
-                                                            first,
-                                                            new TaskService.Instruction(
+                                                            new InstructionParam(
+                                                                    first,
                                                                     "switch",
                                                                     1,
-                                                                    TaskService.Action.SWITCH,
+                                                                    Action.SWITCH,
                                                                     "上海后天天气"))
                                                     .block())
                             .getStatusCode()
@@ -602,18 +598,16 @@ class TaskRuntimeTest {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
         try (var repo = repo(url);
                 var service =
-                        new TaskService(
+                        TestServices.taskService(
                                 repo,
-                                new ConversationService(repo),
                                 settings(url, 3),
                                 (request, control) -> Mono.never())) {
             var started = service.submit(identity, request("session", "request"), true).block();
             var reply =
                     service.instruct(
                                     identity,
-                                    started.runId(),
-                                    new TaskService.Instruction(
-                                            "auto", 1, TaskService.Action.AUTO, "换一下"))
+                                    new InstructionParam(
+                                            started.runId(), "auto", 1, Action.AUTO, "换一下"))
                             .block();
             assertEquals(1, reply.revision());
             assertEquals(0, service.get(identity, started.runId()).block().modelCalls());
@@ -622,9 +616,12 @@ class TaskRuntimeTest {
                     () ->
                             service.instruct(
                                             identity,
-                                            started.runId(),
-                                            new TaskService.Instruction(
-                                                    "stale", 2, TaskService.Action.CANCEL, null))
+                                            new InstructionParam(
+                                                    started.runId(),
+                                                    "stale",
+                                                    2,
+                                                    Action.CANCEL,
+                                                    null))
                                     .block());
             assertEquals("RUNNING", service.get(identity, started.runId()).block().state());
         }

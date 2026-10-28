@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,12 +32,12 @@ class SupervisorFailureTest {
     private final String itinerary = "明天从杭州到上海玩一天，看看天气和火车票，规划行程";
 
     private Supervisor supervisor(
-            Function<String, Model> models, Limits limits, TravelTools.DataSource data) {
+            Function<String, Model> models, LimitsDTO limits, TravelTools.DataSource data) {
         return new Supervisor(models, clock, limits, data);
     }
 
-    private Request request(String question) {
-        return new Request("甲", question, List.of());
+    private RequestDTO request(String question) {
+        return new RequestDTO("甲", question, List.of());
     }
 
     @Test
@@ -45,14 +54,14 @@ class SupervisorFailureTest {
                         return TravelTools.demoData().trains(from, to, date);
                     }
                 };
-        Result result =
-                supervisor(OfflineScenarioModel::new, Limits.defaults(), data)
+        ResultDTO result =
+                supervisor(OfflineScenarioModel::new, LimitsDTO.defaults(), data)
                         .run(request(itinerary))
                         .block();
         assertEquals(Status.PARTIAL, result.status());
         assertEquals(
                 List.of(Status.FAILED, Status.SUCCESS, Status.SUCCESS),
-                result.evidence().stream().map(Evidence::status).toList());
+                result.evidence().stream().map(EvidenceDTO::status).toList());
         assertTrue(result.answer().contains("G-DEMO"));
         assertTrue(result.answer().contains("失败"));
     }
@@ -65,8 +74,8 @@ class SupervisorFailureTest {
                                 ? fixedModel(
                                         () -> Flux.error(new IllegalStateException("模拟子 Agent 故障")))
                                 : new OfflineScenarioModel(role);
-        Result result =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+        ResultDTO result =
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .block();
         assertEquals(Status.FAILED, result.status());
@@ -82,8 +91,8 @@ class SupervisorFailureTest {
                                 ? fixedModel(
                                         () -> Flux.error(new IllegalStateException("模拟子 Agent 故障")))
                                 : new OfflineScenarioModel(role);
-        Result result =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+        ResultDTO result =
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request(itinerary))
                         .block();
         assertEquals(Status.PARTIAL, result.status());
@@ -116,8 +125,8 @@ class SupervisorFailureTest {
                                                                                 .build()))
                                                         .finishReason("tool_calls")
                                                         .build()));
-        Result result =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+        ResultDTO result =
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .block();
         assertEquals(Status.BUDGET_EXHAUSTED, result.status());
@@ -130,8 +139,8 @@ class SupervisorFailureTest {
         AtomicInteger remoteCalls = new AtomicInteger();
         Function<String, Model> models =
                 role -> counting(new OfflineScenarioModel(role), remoteCalls);
-        Limits limits = new Limits(Duration.ofSeconds(5), 3, 1024);
-        Result result =
+        LimitsDTO limits = new LimitsDTO(Duration.ofSeconds(5), 3, 1024);
+        ResultDTO result =
                 supervisor(models, limits, TravelTools.demoData()).run(request(itinerary)).block();
         assertEquals(Status.BUDGET_EXHAUSTED, result.status());
         assertEquals(3, remoteCalls.get(), "超过额度后不能再向模型发请求");
@@ -148,10 +157,10 @@ class SupervisorFailureTest {
                                                 Flux.<ChatResponse>never()
                                                         .doOnCancel(cancelled::countDown))
                                 : new OfflineScenarioModel(role);
-        Result result =
+        ResultDTO result =
                 supervisor(
                                 models,
-                                new Limits(Duration.ofMillis(500), 16, 1024),
+                                new LimitsDTO(Duration.ofMillis(500), 16, 1024),
                                 TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .block(Duration.ofSeconds(5));
@@ -175,7 +184,7 @@ class SupervisorFailureTest {
                                         })
                                 : new OfflineScenarioModel(role);
         var subscription =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .subscribe(result -> responses.incrementAndGet());
         try {
@@ -190,8 +199,12 @@ class SupervisorFailureTest {
 
     @Test
     void changedToolParametersNeverReachDataSource() {
-        RunContext context = new RunContext(request("杭州明天的天气"), Limits.defaults());
-        context.decision = new Decision(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
+        RunContext context =
+                new RunContext(
+                        request("杭州明天的天气"),
+                        LimitsDTO.defaults(),
+                        RunControl.local(LimitsDTO.defaults()));
+        context.decision = new DecisionDTO(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
         ToolResultBlock result =
                 new TravelTools(context, TravelTools.demoData()).weather("上海", "2026-10-29");
         assertEquals(ToolResultState.ERROR, result.getState());
@@ -219,8 +232,8 @@ class SupervisorFailureTest {
                                                                 .finishReason("stop")
                                                                 .build()))
                                 : new OfflineScenarioModel(role);
-        Result result =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+        ResultDTO result =
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .block();
         assertEquals(Status.FAILED, result.status());
@@ -253,8 +266,8 @@ class SupervisorFailureTest {
                         }
                     };
                 };
-        Result result =
-                supervisor(models, Limits.defaults(), TravelTools.demoData())
+        ResultDTO result =
+                supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request(itinerary))
                         .block();
         assertEquals(Status.SUCCESS, result.status());

@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.transport.HttpTransportFactory;
@@ -26,14 +28,16 @@ public final class SupervisorDemo {
                             ? new Supervisor(
                                     role -> liveModel(transport),
                                     Clock.systemUTC(),
-                                    Limits.defaults(),
+                                    LimitsDTO.defaults(),
                                     TravelTools.demoData())
                             : Supervisor.offline(Clock.systemUTC());
-            Result result =
+            ResultDTO result =
                     supervisor
-                            .run(new Request(UUID.randomUUID().toString(), question, List.of()))
+                            .run(new RequestDTO(UUID.randomUUID().toString(), question, List.of()))
                             .block();
-            if (result == null) throw new IllegalStateException("没有返回结果");
+            if (result == null) {
+                throw new IllegalStateException("没有返回结果");
+            }
             result.events().forEach(System.out::println);
             System.out.println("执行状态：" + result.status());
             System.out.println("回答：\n" + result.answer());
@@ -55,7 +59,9 @@ public final class SupervisorDemo {
 
     private static String env(String name) {
         String value = System.getenv(name);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("请配置环境变量 " + name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("请配置环境变量 " + name);
+        }
         return value;
     }
 }

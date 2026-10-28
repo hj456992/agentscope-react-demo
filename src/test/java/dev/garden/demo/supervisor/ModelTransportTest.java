@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,7 +63,9 @@ class ModelTransportTest {
                                     ? "{\"id\":\"test\",\"model\":\"local\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}"
                                     : "{\"error\":{\"message\":\"test"
                                           + " failure\",\"code\":\"test_error\",\"type\":\"test\"}}";
-                    if (quota) body = "{\"error\":{\"code\":\"insufficient_quota\"}}";
+                    if (quota) {
+                        body = "{\"error\":{\"code\":\"insufficient_quota\"}}";
+                    }
                     exchange.getResponseHeaders().add("Content-Type", "application/json");
                     exchange.getResponseHeaders().add("Retry-After", "1");
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
@@ -73,7 +84,10 @@ class ModelTransportTest {
                             .stream(false)
                             .build();
             RunContext context =
-                    new RunContext(new Request("transport", "test", List.of()), Limits.defaults());
+                    new RunContext(
+                            new RequestDTO("transport", "test", List.of()),
+                            LimitsDTO.defaults(),
+                            RunControl.local(LimitsDTO.defaults()));
             var response =
                     context.budgeted(model).stream(
                             List.of(Msg.builder().role(MsgRole.USER).textContent("test").build()),
@@ -86,9 +100,10 @@ class ModelTransportTest {
             if (succeeds) {
                 assertNotNull(response.blockLast(Duration.ofSeconds(5)));
                 assertTrue(System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(900));
-            } else
+            } else {
                 assertThrows(
                         RuntimeException.class, () -> response.blockLast(Duration.ofSeconds(5)));
+            }
             assertEquals(succeeds ? 2 : 1, requests.get());
             assertEquals(requests.get(), context.control.modelCalls());
         } finally {
@@ -107,7 +122,7 @@ class ModelTransportTest {
 
                     public reactor.core.publisher.Flux<ChatResponse> stream(
                             List<Msg> m, List<ToolSchema> t, GenerateOptions o) {
-                        if (calls.incrementAndGet() == 1)
+                        if (calls.incrementAndGet() == 1) {
                             return reactor.core.publisher.Flux.error(
                                     new io.agentscope.extensions.model.openai.exception
                                             .OpenAIException(
@@ -116,6 +131,7 @@ class ModelTransportTest {
                                                     .HttpTransportException(
                                                     "connect",
                                                     new java.net.ConnectException("temporary"))));
+                        }
                         return reactor.core.publisher.Flux.just(
                                 ChatResponse.builder()
                                         .content(List.of(TextBlock.builder().text("ok").build()))
@@ -124,7 +140,10 @@ class ModelTransportTest {
                     }
                 };
         RunContext context =
-                new RunContext(new Request("wrapped", "test", List.of()), Limits.defaults());
+                new RunContext(
+                        new RequestDTO("wrapped", "test", List.of()),
+                        LimitsDTO.defaults(),
+                        RunControl.local(LimitsDTO.defaults()));
         assertNotNull(
                 context.budgeted(model).stream(
                                 List.of(
@@ -163,7 +182,9 @@ class ModelTransportTest {
                         new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8)
                                 .strip());
             } finally {
-                if (process.isAlive()) process.destroyForcibly();
+                if (process.isAlive()) {
+                    process.destroyForcibly();
+                }
             }
         }
     }

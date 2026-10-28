@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,7 +44,9 @@ class SupervisorHttpFailureTest {
 
     @AfterAll
     static void stop() {
-        if (web != null) web.close();
+        if (web != null) {
+            web.close();
+        }
     }
 
     @BeforeEach
@@ -46,7 +57,7 @@ class SupervisorHttpFailureTest {
     }
 
     private String input(String question) {
-        return json(new Request(java.util.UUID.randomUUID().toString(), question, List.of()));
+        return json(new RequestDTO(java.util.UUID.randomUUID().toString(), question, List.of()));
     }
 
     @Test
@@ -84,7 +95,9 @@ class SupervisorHttpFailureTest {
             WebTestSupport.Reply after;
             do {
                 after = web.post(input("上海明天天气"));
-                if (after.status() != 429) break;
+                if (after.status() != 429) {
+                    break;
+                }
                 Thread.sleep(10);
             } while (System.nanoTime() < deadline);
             assertEquals(200, after.status(), after.body());
@@ -109,8 +122,9 @@ class SupervisorHttpFailureTest {
         @Primary
         Function<String, Model> faultModels() {
             return role -> {
-                if (breakFactory.getAndSet(false))
+                if (breakFactory.getAndSet(false)) {
                     throw new IllegalStateException("PRIVATE_PROVIDER_DETAILS");
+                }
                 Model normal = new OfflineScenarioModel(role);
                 return new Model() {
                     @Override

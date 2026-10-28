@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,7 +54,9 @@ class SupervisorSocketIT {
 
     @AfterAll
     static void stop() {
-        if (app != null) app.close();
+        if (app != null) {
+            app.close();
+        }
     }
 
     private HttpResponse<String> post(String body) throws Exception {
@@ -63,7 +74,7 @@ class SupervisorSocketIT {
         HttpResponse<String> response =
                 post(
                         json(
-                                new Request(
+                                new RequestDTO(
                                         java.util.UUID.randomUUID().toString(),
                                         question,
                                         List.of())));
@@ -104,8 +115,8 @@ class SupervisorSocketIT {
 
     @Test
     void longQuestionAndLargeBodyHaveDifferentErrors() throws Exception {
-        assertEquals(400, post(json(new Request("甲", "字".repeat(2001), List.of()))).statusCode());
-        HttpResponse<String> response = post(json(new Request("甲", "x".repeat(70_000), List.of())));
+        assertEquals(400, post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).statusCode());
+        HttpResponse<String> response = post(json(new RequestDTO("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, response.statusCode(), response.body());
     }
 
@@ -120,11 +131,11 @@ class SupervisorSocketIT {
                                 city -> {
                                     String body =
                                             json(
-                                                    new Request(
+                                                    new RequestDTO(
                                                             city,
                                                             "那后天呢",
                                                             List.of(
-                                                                    new Turn(
+                                                                    new TurnDTO(
                                                                             city + "明天的天气",
                                                                             "示例天气"))));
                                     return client.sendAsync(

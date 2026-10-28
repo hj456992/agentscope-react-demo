@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,10 +21,10 @@ import java.util.*;
 class KnowledgeTest {
     @Test
     void itineraryMustRetrieveVersionedSourceInsteadOfInventingPolicy() {
-        Result result =
+        ResultDTO result =
                 Supervisor.offline(
                                 Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC))
-                        .run(new Request("knowledge", "明天从杭州到上海玩一天，规划行程", List.of()))
+                        .run(new RequestDTO("knowledge", "明天从杭州到上海玩一天，规划行程", List.of()))
                         .block();
         assertTrue(
                 result.evidence().stream()

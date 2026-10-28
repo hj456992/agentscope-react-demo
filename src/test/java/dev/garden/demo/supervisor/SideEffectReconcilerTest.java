@@ -1,5 +1,14 @@
 package dev.garden.demo.supervisor;
 
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +30,7 @@ class SideEffectReconcilerTest {
     @Test
     void startupReconcilesUnknownWriteWithoutAnActiveTaskAndNeverSubmitsAgain() throws Exception {
         var clock = new SideEffectLedgerTest.MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new SideEffectLedgerTest.DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
@@ -32,19 +41,19 @@ class SideEffectReconcilerTest {
             downstream.lookupStarted = new CountDownLatch(1);
             downstream.lookupRelease = new CountDownLatch(1);
             try (var reconciler =
-                    new SideEffectReconciler(ledger, Map.of("write_example", downstream))) {
+                    new SideEffectReconciler(ledger.ledger(), Map.of("write_example", downstream))) {
                 assertTrue(downstream.lookupStarted.await(5, TimeUnit.SECONDS));
                 assertEquals(
-                        SideEffectLedger.Status.UNKNOWN,
+                        SideEffectStatus.UNKNOWN,
                         ledger.read(SideEffectLedgerTest.ALICE, "write_example", "detached")
                                 .status());
                 downstream.lookupRelease.countDown();
                 long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
                 while (ledger.read(SideEffectLedgerTest.ALICE, "write_example", "detached").status()
-                                != SideEffectLedger.Status.SUCCESS
+                                != SideEffectStatus.SUCCESS
                         && System.nanoTime() < deadline) Thread.sleep(10);
                 assertEquals(
-                        SideEffectLedger.Status.SUCCESS,
+                        SideEffectStatus.SUCCESS,
                         ledger.read(SideEffectLedgerTest.ALICE, "write_example", "detached")
                                 .status());
                 assertEquals(1, downstream.effectCount());
@@ -58,7 +67,7 @@ class SideEffectReconcilerTest {
     @Test
     void closeDoesNotSpawnReplacementWorkersWhenLookupIgnoresInterruption() throws Exception {
         var clock = new SideEffectLedgerTest.MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new SideEffectLedgerTest.DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
@@ -75,13 +84,13 @@ class SideEffectReconcilerTest {
                             return true;
                         }
 
-                        public SideEffectLedger.Outcome submit(
+                        public SideEffectOutcomeDTO submit(
                                 String id, Map<String, Object> parameters) {
                             fail("reconciliation must never submit");
                             return null;
                         }
 
-                        public SideEffectLedger.Outcome lookup(String id) throws Exception {
+                        public SideEffectOutcomeDTO lookup(String id) throws Exception {
                             lookups.incrementAndGet();
                             entered.countDown();
                             while (true) {
@@ -99,7 +108,7 @@ class SideEffectReconcilerTest {
                         }
                     };
             var reconciler =
-                    new SideEffectReconciler(ledger, Map.of("write_example", ignoresInterrupt));
+                    new SideEffectReconciler(ledger.ledger(), Map.of("write_example", ignoresInterrupt));
             try {
                 assertTrue(entered.await(5, TimeUnit.SECONDS));
                 assertTimeout(Duration.ofSeconds(1), reconciler::close);
@@ -118,19 +127,19 @@ class SideEffectReconcilerTest {
     @Test
     void emptyAdapterRegistryDoesNotQueryOrReplayUnknownWrites() throws Exception {
         var clock = new SideEffectLedgerTest.MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new SideEffectLedgerTest.DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
             ledger.execute(
                     SideEffectLedgerTest.ALICE, "write_example", "detached", Map.of(), downstream);
             clock.advance();
-            try (var reconciler = new SideEffectReconciler(ledger, Map.of())) {
+            try (var reconciler = new SideEffectReconciler(ledger.ledger(), Map.of())) {
                 Thread.sleep(50);
                 assertEquals(1, downstream.lookupCalls.get());
                 assertEquals(1, downstream.submitCalls.get());
                 assertEquals(
-                        SideEffectLedger.Status.UNKNOWN,
+                        SideEffectStatus.UNKNOWN,
                         ledger.read(SideEffectLedgerTest.ALICE, "write_example", "detached")
                                 .status());
             }

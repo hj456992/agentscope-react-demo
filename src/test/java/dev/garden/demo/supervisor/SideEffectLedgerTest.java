@@ -1,5 +1,14 @@
 package dev.garden.demo.supervisor;
 
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
@@ -14,10 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class SideEffectLedgerTest {
     @TempDir Path directory;
-    static final AccessPolicy.Identity ALICE = identity("tenant", "alice", true);
+    static final IdentityDTO ALICE = identity("tenant", "alice", true);
 
-    static AccessPolicy.Identity identity(String tenant, String user, boolean allowed) {
-        return new AccessPolicy.Identity(
+    static IdentityDTO identity(String tenant, String user, boolean allowed) {
+        return new IdentityDTO(
                 tenant, user, allowed ? Set.of("write_example") : Set.of());
     }
 
@@ -27,7 +36,7 @@ class SideEffectLedgerTest {
 
     @Test
     void concurrentDuplicateCallsCommitOneActualEffectAndCanonicalOrderMatches() throws Exception {
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             var started = new CountDownLatch(1);
             var release = new CountDownLatch(1);
@@ -49,7 +58,7 @@ class SideEffectLedgerTest {
                                                         Map.of("b", 2, "a", 1)),
                                                 downstream));
                 assertTrue(started.await(5, TimeUnit.SECONDS));
-                var duplicates = new ArrayList<Future<SideEffectLedger.Result>>();
+                var duplicates = new ArrayList<Future<SideEffectResultDTO>>();
                 for (int i = 0; i < 20; i++)
                     duplicates.add(
                             pool.submit(
@@ -66,11 +75,11 @@ class SideEffectLedgerTest {
                                                     downstream)));
                 for (var duplicate : duplicates)
                     assertEquals(
-                            SideEffectLedger.Status.RUNNING,
+                            SideEffectStatus.RUNNING,
                             duplicate.get(5, TimeUnit.SECONDS).status());
                 release.countDown();
                 assertEquals(
-                        SideEffectLedger.Status.SUCCESS, first.get(5, TimeUnit.SECONDS).status());
+                        SideEffectStatus.SUCCESS, first.get(5, TimeUnit.SECONDS).status());
                 assertEquals(
                         "receipt",
                         ledger.execute(
@@ -91,11 +100,11 @@ class SideEffectLedgerTest {
 
     @Test
     void responseLostAfterExternalCommitIsResolvedWithoutResubmitting() throws Exception {
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             assertEquals(
-                    SideEffectLedger.Status.SUCCESS,
+                    SideEffectStatus.SUCCESS,
                     ledger.execute(ALICE, "write_example", "lost", Map.of("amount", 8), downstream)
                             .status());
             assertEquals(1, downstream.effectCount());
@@ -107,12 +116,12 @@ class SideEffectLedgerTest {
     void uncertainWritesNeverResubmitAndReconciliationHasPersistentAttemptAndRateBounds()
             throws Exception {
         var clock = new MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
             assertEquals(
-                    SideEffectLedger.Status.UNKNOWN,
+                    SideEffectStatus.UNKNOWN,
                     ledger.execute(
                                     ALICE,
                                     "write_example",
@@ -135,7 +144,7 @@ class SideEffectLedgerTest {
 
     @Test
     void conflictingParametersAndRevokedPermissionCannotReplayOrWrite() throws Exception {
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             ledger.execute(ALICE, "write_example", "id", Map.of("amount", 8), downstream);
             assertThrows(
@@ -162,14 +171,14 @@ class SideEffectLedgerTest {
     @Test
     void sameOperationIdIsIsolatedByTenantAndUserAndSurvivesReopen() throws Exception {
         try (var downstream = new DurableDownstream(url("external"))) {
-            try (var ledger = new SideEffectLedger(url("ledger"))) {
+            try (var ledger = new TestLedger(url("ledger"))) {
                 for (var who :
                         List.of(
                                 ALICE,
                                 identity("tenant", "bob", true),
                                 identity("other", "alice", true))) {
                     assertEquals(
-                            SideEffectLedger.Status.SUCCESS,
+                            SideEffectStatus.SUCCESS,
                             ledger.execute(
                                             who,
                                             "write_example",
@@ -179,9 +188,9 @@ class SideEffectLedgerTest {
                                     .status());
                 }
             }
-            try (var ledger = new SideEffectLedger(url("ledger"))) {
+            try (var ledger = new TestLedger(url("ledger"))) {
                 assertEquals(
-                        SideEffectLedger.Status.SUCCESS,
+                        SideEffectStatus.SUCCESS,
                         ledger.execute(
                                         ALICE,
                                         "write_example",
@@ -215,16 +224,16 @@ class SideEffectLedgerTest {
                         .start();
         assertTrue(child.waitFor(20, TimeUnit.SECONDS));
         assertEquals(23, child.exitValue(), java.nio.file.Files.readString(crashLog));
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             assertEquals(
                     1, downstream.effectCount(), "external commit must survive the process halt");
             assertEquals(
-                    SideEffectLedger.Status.UNKNOWN,
+                    SideEffectStatus.UNKNOWN,
                     ledger.read(ALICE, "write_example", "crash").status());
             assertEquals(1, ledger.reconcile(Map.of("write_example", downstream), 1));
             assertEquals(
-                    SideEffectLedger.Status.SUCCESS,
+                    SideEffectStatus.SUCCESS,
                     ledger.read(ALICE, "write_example", "crash").status());
             assertEquals(1, downstream.effectCount());
             assertEquals(0, downstream.submitCalls.get());
@@ -235,11 +244,11 @@ class SideEffectLedgerTest {
     void onlyAuthoritativeNotExecutedAllowsBoundedRetryAndScheduledChecksNeverSubmit()
             throws Exception {
         var clock = new MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.rejectBeforeExecution = true;
             assertEquals(
-                    SideEffectLedger.Status.UNKNOWN,
+                    SideEffectStatus.UNKNOWN,
                     ledger.execute(ALICE, "write_example", "retry", Map.of("amount", 8), downstream)
                             .status());
             clock.advance();
@@ -256,7 +265,7 @@ class SideEffectLedgerTest {
 
     @Test
     void failedBusinessOutcomeIsTerminalAndUnsafeAdapterCannotSubmit() throws Exception {
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.idempotent = false;
             assertThrows(
@@ -266,7 +275,7 @@ class SideEffectLedgerTest {
             downstream.idempotent = true;
             downstream.businessRejected = true;
             assertEquals(
-                    SideEffectLedger.Status.FAILED,
+                    SideEffectStatus.FAILED,
                     ledger.execute(ALICE, "write_example", "rejected", Map.of(), downstream)
                             .status());
             ledger.execute(ALICE, "write_example", "rejected", Map.of(), downstream);
@@ -278,7 +287,7 @@ class SideEffectLedgerTest {
     @Test
     void reconciliationAcrossConcurrentCallersNeverExceedsOneExternalLookup() throws Exception {
         var clock = new MutableClock();
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
@@ -301,7 +310,7 @@ class SideEffectLedgerTest {
                                         ledger.execute(
                                                 ALICE, "write_example", "b", Map.of(), downstream));
                 assertEquals(
-                        SideEffectLedger.Status.UNKNOWN, second.get(1, TimeUnit.SECONDS).status());
+                        SideEffectStatus.UNKNOWN, second.get(1, TimeUnit.SECONDS).status());
                 downstream.lookupRelease.countDown();
                 first.get(5, TimeUnit.SECONDS);
                 assertEquals(1, downstream.maximumActiveLookups.get());
@@ -315,12 +324,12 @@ class SideEffectLedgerTest {
     @Test
     void interruptedSubmitPersistsUnknownBeforeRestoringInterruptionAndCanReconcileLater()
             throws Exception {
-        try (var ledger = new SideEffectLedger(url("ledger"));
+        try (var ledger = new TestLedger(url("ledger"));
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.interruptAfterCommit = true;
             try {
                 assertEquals(
-                        SideEffectLedger.Status.UNKNOWN,
+                        SideEffectStatus.UNKNOWN,
                         ledger.execute(ALICE, "write_example", "interrupted", Map.of(), downstream)
                                 .status());
                 assertTrue(
@@ -329,7 +338,7 @@ class SideEffectLedgerTest {
                 assertEquals(0, downstream.lookupCalls.get());
                 assertEquals(1, ledger.reconcile(Map.of("write_example", downstream), 10));
                 assertEquals(
-                        SideEffectLedger.Status.SUCCESS,
+                        SideEffectStatus.SUCCESS,
                         ledger.read(ALICE, "write_example", "interrupted").status());
                 assertEquals(1, downstream.effectCount());
             } finally {
@@ -344,7 +353,7 @@ class SideEffectLedgerTest {
         try (var downstream = new DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
-            try (var ledger = new SideEffectLedger(url("ledger"), clock)) {
+            try (var ledger = new TestLedger(url("ledger"), clock)) {
                 ledger.execute(ALICE, "write_example", "one", Map.of(), downstream);
                 ledger.execute(ALICE, "write_example", "two", Map.of(), downstream);
                 clock.advance();
@@ -352,7 +361,7 @@ class SideEffectLedgerTest {
                 assertEquals(1, ledger.reconcile(Map.of("write_example", downstream), 1));
                 assertEquals(before + 1, downstream.lookupCalls.get());
             }
-            try (var ledger = new SideEffectLedger(url("ledger"), clock)) {
+            try (var ledger = new TestLedger(url("ledger"), clock)) {
                 for (int i = 0; i < 20; i++) {
                     clock.advance();
                     ledger.reconcile(Map.of("write_example", downstream), 2);
@@ -368,9 +377,9 @@ class SideEffectLedgerTest {
     void unavailableAdaptersCannotStarveLaterRegisteredOperations() throws Exception {
         var clock = new MutableClock();
         var identity =
-                new AccessPolicy.Identity(
+                new IdentityDTO(
                         "tenant", "alice", Set.of("removed_tool", "write_example"));
-        try (var ledger = new SideEffectLedger(url("ledger"), clock);
+        try (var ledger = new TestLedger(url("ledger"), clock);
                 var downstream = new DurableDownstream(url("external"))) {
             downstream.loseResponse = true;
             downstream.lookupUnknown = true;
@@ -384,11 +393,11 @@ class SideEffectLedgerTest {
             assertEquals(1, ledger.reconcile(Map.of("write_example", downstream), 20));
             assertEquals(before + 1, downstream.lookupCalls.get());
             assertEquals(
-                    SideEffectLedger.Status.SUCCESS,
+                    SideEffectStatus.SUCCESS,
                     ledger.read(identity, "write_example", "registered-later").status());
             for (int i = 0; i < 21; i++)
                 assertEquals(
-                        SideEffectLedger.Status.UNKNOWN,
+                        SideEffectStatus.UNKNOWN,
                         ledger.read(identity, "removed_tool", "unavailable-" + i).status());
             assertEquals(22, downstream.effectCount());
             assertEquals(22, downstream.submitCalls.get());
@@ -444,17 +453,21 @@ class SideEffectLedgerTest {
             return idempotent;
         }
 
-        public SideEffectLedger.Outcome submit(String operationId, Map<String, Object> parameters)
+        public SideEffectOutcomeDTO submit(String operationId, Map<String, Object> parameters)
                 throws Exception {
             submitCalls.incrementAndGet();
-            if (rejectBeforeExecution) throw new java.io.IOException("no write accepted");
-            if (businessRejected)
-                return new SideEffectLedger.Outcome(
-                        SideEffectLedger.OutcomeStatus.FAILED, "rejected");
+            if (rejectBeforeExecution) {
+                throw new java.io.IOException("no write accepted");
+            }
+            if (businessRejected) {
+                return new SideEffectOutcomeDTO(
+                        SideEffectOutcomeStatus.FAILED, "rejected");
+            }
             if (started != null) {
                 started.countDown();
-                if (!release.await(10, TimeUnit.SECONDS))
+                if (!release.await(10, TimeUnit.SECONDS)) {
                     throw new IllegalStateException("test latch timed out");
+                }
             }
             synchronized (database) {
                 try (var statement =
@@ -464,31 +477,41 @@ class SideEffectLedgerTest {
                     try {
                         statement.executeUpdate();
                     } catch (SQLException ex) {
-                        if (!"23505".equals(ex.getSQLState())) throw ex;
+                        if (!"23505".equals(ex.getSQLState())) {
+                            throw ex;
+                        }
                     }
                 }
             }
-            if (crash) Runtime.getRuntime().halt(23);
-            if (interruptAfterCommit) throw new InterruptedException("interrupted after commit");
-            if (loseResponse) throw new java.io.IOException("response lost after durable commit");
-            return SideEffectLedger.Outcome.success("receipt");
+            if (crash) {
+                Runtime.getRuntime().halt(23);
+            }
+            if (interruptAfterCommit) {
+                throw new InterruptedException("interrupted after commit");
+            }
+            if (loseResponse) {
+                throw new java.io.IOException("response lost after durable commit");
+            }
+            return SideEffectOutcomeDTO.success("receipt");
         }
 
-        public SideEffectLedger.Outcome lookup(String operationId) throws Exception {
+        public SideEffectOutcomeDTO lookup(String operationId) throws Exception {
             lookupCalls.incrementAndGet();
             if (lookupStarted != null) {
                 int active = activeLookups.incrementAndGet();
                 maximumActiveLookups.accumulateAndGet(active, Math::max);
                 lookupStarted.countDown();
                 try {
-                    if (!lookupRelease.await(10, TimeUnit.SECONDS))
+                    if (!lookupRelease.await(10, TimeUnit.SECONDS)) {
                         throw new IllegalStateException("lookup test latch timed out");
+                    }
                 } finally {
                     activeLookups.decrementAndGet();
                 }
             }
-            if (lookupUnknown)
-                return new SideEffectLedger.Outcome(SideEffectLedger.OutcomeStatus.UNKNOWN, null);
+            if (lookupUnknown) {
+                return new SideEffectOutcomeDTO(SideEffectOutcomeStatus.UNKNOWN, null);
+            }
             synchronized (database) {
                 try (var statement =
                         database.prepareStatement(
@@ -496,9 +519,9 @@ class SideEffectLedgerTest {
                     statement.setString(1, operationId);
                     try (var rows = statement.executeQuery()) {
                         return rows.next()
-                                ? SideEffectLedger.Outcome.success(rows.getString(1))
-                                : new SideEffectLedger.Outcome(
-                                        SideEffectLedger.OutcomeStatus.CONFIRMED_NOT_EXECUTED,
+                                ? SideEffectOutcomeDTO.success(rows.getString(1))
+                                : new SideEffectOutcomeDTO(
+                                        SideEffectOutcomeStatus.CONFIRMED_NOT_EXECUTED,
                                         null);
                     }
                 }

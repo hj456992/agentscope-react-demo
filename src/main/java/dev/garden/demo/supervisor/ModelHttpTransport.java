@@ -11,11 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 /** 禁止底层隐式重发，保留服务端 Retry-After，重试统一回到共享预算入口。 */
-final class ModelHttpTransport implements HttpTransport, AutoCloseable {
+public final class ModelHttpTransport implements HttpTransport, AutoCloseable {
     private final HttpTransport delegate;
 
-    ModelHttpTransport() {
-        this(
+    public ModelHttpTransport() {
+        this.delegate =
                 OkHttpTransport.builder()
                         .client(
                                 new OkHttpClient.Builder()
@@ -27,11 +27,7 @@ final class ModelHttpTransport implements HttpTransport, AutoCloseable {
                                         .readTimeout(20, TimeUnit.SECONDS)
                                         .writeTimeout(20, TimeUnit.SECONDS)
                                         .build())
-                        .build());
-    }
-
-    ModelHttpTransport(HttpTransport delegate) {
-        this.delegate = delegate;
+                        .build();
     }
 
     public HttpResponse execute(HttpRequest request) {
@@ -39,8 +35,9 @@ final class ModelHttpTransport implements HttpTransport, AutoCloseable {
         int status = response.getStatusCode();
         if (status == 429
                 && java.util.Objects.toString(response.getBody(), "")
-                        .contains("insufficient_quota"))
+                        .contains("insufficient_quota")) {
             throw new IllegalStateException("模型账户额度不足，本次不重试");
+        }
         if (status == 429 || status >= 500 && status < 600) {
             String header =
                     response.getHeaders().entrySet().stream()
@@ -54,7 +51,9 @@ final class ModelHttpTransport implements HttpTransport, AutoCloseable {
     }
 
     static Duration retryAfter(String value) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         try {
             return Duration.ofSeconds(Math.max(0, Long.parseLong(value.strip())));
         } catch (RuntimeException ignored) {

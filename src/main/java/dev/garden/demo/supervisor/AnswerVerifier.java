@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.ReActAgent;
 
@@ -29,24 +31,26 @@ final class AnswerVerifier {
         this.factory = factory;
     }
 
-    Mono<Result> finish(String ignoredModelAnswer) {
+    Mono<ResultDTO> finish(String ignoredModelAnswer) {
         context.boundary();
         Status status = context.outcome();
-        if (status != Status.SUCCESS && status != Status.PARTIAL)
+        if (status != Status.SUCCESS && status != Status.PARTIAL) {
             return Mono.just(context.result(status, render()));
+        }
         return verify(0)
                 .onErrorResume(
                         error -> {
                             context.rememberFailure(error);
                             context.check();
-                            if (context.failureStatus() != Status.FAILED)
+                            if (context.failureStatus() != Status.FAILED) {
                                 return Mono.just(context.result(context.failureStatus(), render()));
+                            }
                             context.event("答案生成失败，返回已核对证据");
                             return Mono.just(context.result(context.outcome(), render()));
                         });
     }
 
-    private Mono<Result> verify(int repair) {
+    private Mono<ResultDTO> verify(int repair) {
         context.boundary();
         String key = "answer-repair:" + RunContext.fingerprint(context.evidence());
         ReActAgent agent = factory.stage("answer", PROMPT);
@@ -70,14 +74,18 @@ final class AnswerVerifier {
     }
 
     private boolean valid(Draft draft) {
-        if (draft == null || draft.claims() == null) return false;
-        List<Evidence> facts =
+        if (draft == null || draft.claims() == null) {
+            return false;
+        }
+        List<EvidenceDTO> facts =
                 new ArrayList<>(
                         context.evidence().stream()
                                 .filter(e -> e.status() == Status.SUCCESS)
                                 .toList());
         for (Claim claim : draft.claims()) {
-            if (claim == null) return false;
+            if (claim == null) {
+                return false;
+            }
             try {
                 Object value =
                         io.agentscope.core.util.JsonUtils.getJsonCodec()
@@ -89,7 +97,9 @@ final class AnswerVerifier {
                         match = i;
                         break;
                     }
-                if (match < 0) return false;
+                if (match < 0) {
+                    return false;
+                }
                 facts.remove(match);
             } catch (RuntimeException ex) {
                 return false;
@@ -101,10 +111,16 @@ final class AnswerVerifier {
     private String render() {
         StringBuilder result = new StringBuilder("【示例数据，非实时天气或车票信息】\n");
         Status status = context.outcome();
-        if (status == Status.PARTIAL) result.append("部分查询失败、缺少数据或尚未执行。\n");
-        if (status == Status.FAILED) result.append("查询未完成，不能确认天气或车票情况。\n");
-        if (status == Status.NO_DATA) result.append("没有匹配的示例数据，不代表实际无车票或无天气信息。\n");
-        for (Evidence evidence : context.evidence()) {
+        if (status == Status.PARTIAL) {
+            result.append("部分查询失败、缺少数据或尚未执行。\n");
+        }
+        if (status == Status.FAILED) {
+            result.append("查询未完成，不能确认天气或车票情况。\n");
+        }
+        if (status == Status.NO_DATA) {
+            result.append("没有匹配的示例数据，不代表实际无车票或无天气信息。\n");
+        }
+        for (EvidenceDTO evidence : context.evidence()) {
             Map<String, Object> d = evidence.data();
             if (evidence.status() != Status.SUCCESS) {
                 result.append(evidence.tool())
@@ -159,11 +175,14 @@ final class AnswerVerifier {
         }
         if (context.decision.intent() == Intent.ITINERARY) {
             result.append("建议：第1天抵达后休息，根据兴趣安排活动。");
-            if (context.decision.days() > 1)
+            if (context.decision.days() > 1) {
                 result.append("第").append(context.decision.days()).append("天预留返程时间。");
+            }
             result.append("仅查询了出发日的天气和去程车次；其他日期、景点、住宿及返程仍需核实。\n");
         }
-        if (status == Status.BUDGET_EXHAUSTED) result.append("调用预算已耗尽，以上仅展示已获取证据。");
+        if (status == Status.BUDGET_EXHAUSTED) {
+            result.append("调用预算已耗尽，以上仅展示已获取证据。");
+        }
         return result.toString();
     }
 }

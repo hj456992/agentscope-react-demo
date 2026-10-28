@@ -6,18 +6,22 @@ Java 17 + Maven + AgentScope Java 2.0.1，与当前 DSH 项目使用的 SDK 版�
 
 ## Supervisor 与三个子 Agent 服务
 
-`dev.garden.demo.supervisor` 已全包复核改造：用户原话 → 主模型选择子 Agent → 工具结果回到主模型 → 继续或结束。已删除强制查询改写、意图识别前置阶段。提供 Spring Boot HTTP 服务、持久任务、执行中追加指令、重启恢复、预算、工具校验、会话记忆和证据核对。
+`dev.garden.demo.supervisor` 当前为 v3.4：固定 Codex 提交的 MultiAgent V2 与本地模型摘要路径。主子会话共用显式模型—工具循环；创建子会话返回独立身份，通过邮箱、followup、wait/list、interrupt协作。父结束或取消不撤回已接受子会话，任务树仍共享期限和调用额度。
 
+模型原始终答直接交付，询问保留原问题和调用编号，收到真实答案后恢复；上下文超窗由模型生成摘要并持久替换历史。删除固定改写/意图前置阶段、固定终答模板及必经第二个答案模型。知识检索与AnswerVerifier组件仍可独立复用，但当前不是核心自动事实保证。Spring Boot、H2、MyBatis、事务分层、鉴权、偏好和副作用账本继续保留。
+
+当前模型接口是Chat Completions，未覆盖Codex全部Responses、remote compact、后台压缩与V2可选运行配置。逐函数依据及尚未一致处见源码映射，不以旅行演示场景解释核心差异。
 ```sh
 mvn -q package
 export SUPERVISOR_AUTH_TOKENS='demo-token=demo-tenant:demo-user:query_weather,query_trains,search_knowledge,memory:write'
 bash run-supervisor-server.sh
 ```
 
-默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。真实本地 HTTP 与强制退出恢复均有自动化验收，结果见实施记录。
+默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。本地HTTP、持久化恢复和核心协作有对应测试；当前执行结果以实施记录为准。
 
 - [完整实现说明：16 项处理、流程图、接口和运行方式](docs/Supervisor使用说明.md)
-- [固定 Codex / Claude 源码映射及适配差异](docs/源码参考与适配边界.md)
+- [2026-10-28 分层、POJO、事务与 MyBatis 重构对照](docs/重构对照说明.md)
+- [固定 Codex V2 / local compact 源码映射及适配差异](docs/源码参考与适配边界.md)
 - [已批准技术方案](docs/技术方案.md)
 - [验收用例](docs/验收用例.md) · [执行结果](docs/实施记录.md)
 
@@ -97,6 +101,6 @@ Function Calling 是模型表达工具调用的机制；ReActAgent 在这个机�
 
 这里的 `ReAct` 是 Reasoning + Acting，与前端 React 无关。演示日志展示工具调用及其结果，不要求或展示模型的私有思维链。
 
-`block` 只用于 CLI 入口，不应照搬到 WebFlux 事件线程；此示例没有 SSE、会话持久化或集群取消链路。关闭全局 HTTP 传输也只发生在独立 CLI 退出时。
+`block` 只用于 CLI 入口，不应照搬到 WebFlux 事件线程；原乘法CLI示例没有SSE、会话持久化或集群取消链路（Supervisor的H2持久化见前述文档）。关闭全局 HTTP 传输也只发生在独立 CLI 退出时。
 
 参考：[AgentScope Java Agent 文档](https://github.com/agentscope-ai/agentscope-java/blob/main/docs/v2/en/docs/building-blocks/agent.md)、[工具文档](https://github.com/agentscope-ai/agentscope-java/blob/main/docs/v2/zh/docs/building-blocks/tool.md)。本示例 API 以本机 2.0.1 源码包及实际构建结果为准。

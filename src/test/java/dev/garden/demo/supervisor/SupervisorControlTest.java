@@ -1,6 +1,15 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,7 +27,7 @@ import java.util.function.*;
 
 class SupervisorControlTest {
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneOffset.UTC);
-    final Request request = new Request("control", "杭州明天的天气", List.of());
+    final RequestDTO request = new RequestDTO("control", "杭州明天的天气", List.of());
 
     Model model(Supplier<ChatResponse> next) {
         return new Model() {
@@ -55,58 +64,30 @@ class SupervisorControlTest {
     }
 
     Supervisor with(Function<String, Model> models, TravelTools.DataSource data) {
-        return new Supervisor(models, clock, Limits.defaults(), data);
+        return new Supervisor(models, clock, LimitsDTO.defaults(), data);
     }
 
     @Test
-    void modelInventedCityMustNotReachWeather() {
-        AtomicInteger queries = new AtomicInteger();
-        AtomicInteger turns = new AtomicInteger();
-        Result result =
-                with(
-                                role ->
-                                        role.equals("supervisor")
-                                                ? model(
-                                                        () ->
-                                                                turns.getAndIncrement() == 0
-                                                                        ? tool(
-                                                                                "weather_agent",
-                                                                                Map.of(
-                                                                                        "city",
-                                                                                        "上海",
-                                                                                        "date",
-                                                                                        "2026-10-29"))
-                                                                        : tool(
-                                                                                "ask_user",
-                                                                                Map.of(
-                                                                                        "question",
-                                                                                        "请确认查询城市。")))
-                                                : new OfflineScenarioModel(role),
-                                counting(queries))
-                        .run(request)
-                        .block();
-        assertEquals(Status.NEEDS_INPUT, result.status());
-        assertEquals(0, queries.get());
+    void runtimeDoesNotGuessCityFromUserText() {
+        AtomicInteger reads = new AtomicInteger(), turns = new AtomicInteger();
+        ResultDTO result = with(role -> model(() -> turns.getAndIncrement() == 0
+                ? tool("query_weather", Map.of("city", "上海", "date", "2026-10-29"))
+                : text("已按工具请求查询上海。")), counting(reads)).run(request).block();
+        assertEquals(1, reads.get());
+        assertEquals("上海", result.evidence().get(0).data().get("city"));
+        assertEquals("已按工具请求查询上海。", result.answer());
     }
 
     @Test
     void nonexistentToolIsReturnedToModelAndBoundedAcrossNewCallIds() {
         AtomicInteger calls = new AtomicInteger();
-        Result result =
-                with(
-                                role ->
-                                        role.equals("weather_agent")
-                                                ? model(
-                                                        () -> {
-                                                            calls.incrementAndGet();
-                                                            return tool("not_registered", Map.of());
-                                                        })
-                                                : new OfflineScenarioModel(role),
-                                TravelTools.demoData())
-                        .run(request)
-                        .block();
-        assertTrue(calls.get() <= 4, "未知工具不能形成无限循环");
-        assertNotEquals(Status.SUCCESS, result.status());
+        Supervisor supervisor = new Supervisor(role -> model(() -> {
+            calls.incrementAndGet();
+            return tool("not_registered", Map.of());
+        }), clock, new LimitsDTO(Duration.ofSeconds(30), 2, 1024), TravelTools.demoData());
+        ResultDTO result = supervisor.run(request).block();
+        assertEquals(Status.BUDGET_EXHAUSTED, result.status());
+        assertEquals(2, calls.get());
         assertTrue(result.evidence().isEmpty());
         assertTrue(result.events().stream().anyMatch(e -> e.contains("TOOL_NOT_FOUND")));
     }
@@ -114,7 +95,7 @@ class SupervisorControlTest {
     @Test
     void repeatedToolCallDoesNotRepeatRead() {
         AtomicInteger steps = new AtomicInteger(), reads = new AtomicInteger();
-        Result result =
+        ResultDTO result =
                 with(
                                 role ->
                                         role.equals("weather_agent")
@@ -140,7 +121,7 @@ class SupervisorControlTest {
     @Test
     void wrongSchemaCanBeCorrectedThroughRealSdkLoop() {
         AtomicInteger steps = new AtomicInteger(), reads = new AtomicInteger();
-        Result result =
+        ResultDTO result =
                 with(
                                 role ->
                                         role.equals("weather_agent")
@@ -171,90 +152,84 @@ class SupervisorControlTest {
                         .block();
         assertEquals(Status.SUCCESS, result.status());
         assertEquals(1, reads.get());
-        assertTrue(result.events().stream().anyMatch(e -> e.contains("INVALID_SCHEMA")));
+        assertEquals(3, steps.get(), "无效参数回传后模型修正，再生成终答");
     }
 
     @Test
-    void invalidFinalClaimRepairsOnceThenUsesEvidence() {
+    void evidenceVerifierIsAnExplicitComponentNotAnAutomaticFinalAnswerStage() {
         AtomicInteger answers = new AtomicInteger();
-        Result result =
-                with(
-                                role ->
-                                        role.equals("answer")
-                                                ? model(
-                                                        () -> {
-                                                            answers.incrementAndGet();
-                                                            return tool(
-                                                                    "generate_response",
-                                                                    Map.of(
-                                                                            "response",
-                                                                            new AnswerVerifier
-                                                                                    .Draft(
-                                                                                    List.of(
-                                                                                            new AnswerVerifier
-                                                                                                    .Claim(
-                                                                                                    "query_weather",
-                                                                                                    "{\"temperature\":99}")))));
-                                                        })
-                                                : new OfflineScenarioModel(role),
-                                TravelTools.demoData())
-                        .run(request)
-                        .block();
+        RunContext context = new RunContext(request, LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
+        context.add(new EvidenceDTO("query_weather", Status.SUCCESS, "demo-v1", Map.of("city", "杭州", "date", "2026-10-29", "weather", Map.of("temperature", 18, "condition", "晴"))));
+        TravelAgentFactory factory = new TravelAgentFactory(context, role -> model(() -> {
+            answers.incrementAndGet();
+            return tool("generate_response", Map.of("response", new AnswerVerifier.Draft(List.of(
+                    new AnswerVerifier.Claim("query_weather", "{\"temperature\":99}")))));
+        }), TravelTools.demoData());
+        ResultDTO result = new AnswerVerifier(context, factory).finish("错误候选答案").block();
         assertEquals(2, answers.get());
-        assertEquals(Status.SUCCESS, result.status());
         assertTrue(result.answer().contains("18"));
         assertFalse(result.answer().contains("99"));
-        assertTrue(result.events().stream().anyMatch(e -> e.contains("证据兜底")));
     }
 
     @Test
-    void longHistoryDoesNotSilentlyRemoveEarlierUserConstraint() {
-        List<Turn> turns = new ArrayList<>();
-        turns.add(new Turn("只坐二等座", ""));
-        for (int i = 0; i < 8; i++) turns.add(new Turn("第" + i + "轮补充", "无关回答".repeat(1000)));
-        Map<String, Object> input =
-                ContextBuilder.conversationInput(
-                        new Request("x", "杭州明天的天气", turns), LocalDate.of(2026, 10, 28));
-        assertTrue(json(input).contains("只坐二等座"));
-        assertTrue(ContextBuilder.estimate(input) <= 4000);
+    void longHistoryKeepsEarlierUserConstraintAfterActualModelCompaction() {
+        List<TurnDTO> turns = new ArrayList<>();
+        turns.add(new TurnDTO("只坐二等座", ""));
+        for (int i = 0; i < 8; i++) {
+            turns.add(new TurnDTO("第" + i + "轮补充", "无关回答".repeat(1000)));
+        }
+        RunContext context = new RunContext(new RequestDTO("x", "杭州明天的天气", turns),
+                LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
+        context.today = LocalDate.of(2026, 10, 28);
+        LoopConversation conversation = new LoopConversation(context);
+        ContextCompactor compactor = new ContextCompactor(context, model(() -> text("已确认只坐二等座，继续查询天气。")));
+        assertTrue(compactor.compactIfNeeded("可信规则", conversation, List.of()).block());
+        assertTrue(conversation.messages.stream().anyMatch(m -> m.getRole() == MsgRole.USER
+                && m.getTextContent().equals("只坐二等座")));
+        assertFalse(conversation.messages.stream().anyMatch(m -> m.getTextContent().contains("无关回答")));
+        List<Msg> input = ContextBuilder.modelInput("可信规则", context.request, context.today, conversation.messages, List.of());
+        assertFalse(input.get(0).getTextContent().contains("只坐二等座"));
+        assertTrue(ContextBuilder.estimate(Map.of("messages", input, "tools", List.of())) <= ContextBuilder.INPUT_LIMIT);
     }
 
     @Test
-    void oversizedCriticalHistoryAsksInsteadOfTruncating() {
-        Result result =
-                Supervisor.offline(clock)
-                        .run(
-                                new Request(
-                                        "large",
-                                        "杭州明天的天气",
-                                        List.of(new Turn("不能丢的条件".repeat(1000), ""))))
-                        .block();
-        assertEquals(Status.CONTEXT_LIMIT, result.status());
-        assertTrue(result.evidence().isEmpty());
+    void oversizedUserHistoryRetainsLatestInputAndMarksTheTruncatedBoundary() {
+        RunContext context = new RunContext(new RequestDTO("large", "杭州明天的天气",
+                List.of(new TurnDTO("历史用户条件".repeat(3000), ""))),
+                LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
+        context.today = LocalDate.of(2026, 10, 28);
+        LoopConversation conversation = new LoopConversation(context);
+        ContextCompactor compactor = new ContextCompactor(context, model(() -> text("已整理历史条件，下一步查询杭州天气。")));
+        assertTrue(compactor.compactIfNeeded("可信规则", conversation, List.of()).block());
+        assertTrue(conversation.messages.stream().anyMatch(m -> m.getTextContent().equals("杭州明天的天气")));
+        assertTrue(conversation.messages.stream().anyMatch(m ->
+                Boolean.TRUE.equals(m.getMetadata().get("retainedSourcesIncomplete"))));
+        List<Msg> input = ContextBuilder.modelInput("可信规则", context.request, context.today, conversation.messages, List.of());
+        assertTrue(ContextBuilder.estimate(Map.of("messages", input, "tools", List.of())) <= ContextBuilder.INPUT_LIMIT);
     }
 
     @Test
     void knowledgeExpiryExcludesOldEvidence() {
-        Evidence evidence = new KnowledgeService().search("行程规划", LocalDate.of(2100, 1, 1));
+        EvidenceDTO evidence = new KnowledgeService().search("行程规划", LocalDate.of(2100, 1, 1));
         assertEquals(Status.NO_DATA, evidence.status());
     }
 
     @Test
     void checkpointedChildIsReusedWithSameConditions() {
         AtomicInteger reads = new AtomicInteger();
-        RunControl control = RunControl.local(Limits.defaults());
+        RunControl control = RunControl.local(LimitsDTO.defaults());
         Supervisor supervisor = with(OfflineScenarioModel::new, counting(reads));
         assertEquals(Status.SUCCESS, supervisor.run(request, control).block().status());
         int used = control.modelCalls();
         assertEquals(Status.SUCCESS, supervisor.run(request, control).block().status());
         assertEquals(1, reads.get());
-        assertTrue(control.modelCalls() > used);
+        assertEquals(used, control.modelCalls(), "已保存终答恢复不重复调用模型");
     }
 
     @Test
     void sdkRateLimitRetriesWithoutRepeatingWholeTask() {
         AtomicInteger attempts = new AtomicInteger();
-        Result result =
+        ResultDTO result =
                 with(
                                 role -> {
                                     Model delegate = new OfflineScenarioModel(role);
@@ -268,11 +243,12 @@ class SupervisorControlTest {
                                                 List<ToolSchema> tools,
                                                 GenerateOptions options) {
                                             if (role.equals("weather_agent")
-                                                    && attempts.incrementAndGet() == 1)
+                                                    && attempts.incrementAndGet() == 1) {
                                                 return Flux.error(
                                                         new io.agentscope.extensions.model.openai
                                                                 .exception.RateLimitException(
                                                                 "limited", "rate_limit", ""));
+                                            }
                                             return delegate.stream(messages, tools, options);
                                         }
                                     };
@@ -286,7 +262,9 @@ class SupervisorControlTest {
 
     @Test
     void sameLogicalModelStepCannotResetAttemptsWithNewMessageIds() {
-        RunContext context = new RunContext(request, Limits.defaults());
+        RunContext context =
+                new RunContext(
+                        request, LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
         AtomicInteger sends = new AtomicInteger();
         Model delegate =
                 model(
@@ -322,45 +300,21 @@ class SupervisorControlTest {
 
     @Test
     void unsupportedSeatConstraintMustNotBeSilentlyIgnored() {
-        Result result =
+        ResultDTO result =
                 Supervisor.offline(clock)
-                        .run(new Request("seat", "明天从杭州到上海的火车票，只要一等座", List.of()))
+                        .run(new RequestDTO("seat", "明天从杭州到上海的火车票，只要一等座", List.of()))
                         .block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
     }
 
     @Test
-    void modelCannotChangeExplicitTripLength() {
-        AtomicInteger turns = new AtomicInteger();
-        Result result =
-                with(
-                                role ->
-                                        role.equals("supervisor")
-                                                ? model(
-                                                        () ->
-                                                                turns.getAndIncrement() == 0
-                                                                        ? tool(
-                                                                                "itinerary_agent",
-                                                                                Map.of(
-                                                                                        "from",
-                                                                                        "杭州",
-                                                                                        "to",
-                                                                                        "上海",
-                                                                                        "date",
-                                                                                        "2026-10-29",
-                                                                                        "days",
-                                                                                        1))
-                                                                        : tool(
-                                                                                "ask_user",
-                                                                                Map.of(
-                                                                                        "question",
-                                                                                        "请确认行程天数。")))
-                                                : new OfflineScenarioModel(role),
-                                TravelTools.demoData())
-                        .run(new Request("days", "明天从杭州到上海玩3天", List.of()))
-                        .block();
+    void runtimePreservesModelQuestionWithoutInventingTravelFields() {
+        ResultDTO result = with(role -> model(() -> tool("request_user_input", Map.of("questions", List.of(
+                Map.of("id", "days", "header", "天数", "question", "请确认行程天数。"))))), TravelTools.demoData())
+                .run(new RequestDTO("days", "明天从杭州到上海玩3天", List.of())).block();
         assertEquals(Status.NEEDS_INPUT, result.status());
+        assertEquals("请确认行程天数。", result.answer());
         assertTrue(result.evidence().isEmpty());
     }
 

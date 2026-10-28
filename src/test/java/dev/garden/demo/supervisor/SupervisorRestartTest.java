@@ -1,10 +1,17 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.service.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.config.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -35,8 +42,8 @@ class SupervisorRestartTest {
         try {
             assertTrue(child.waitFor(12, TimeUnit.SECONDS), "崩溃子进程必须有界退出");
             assertEquals(24, child.exitValue(), Files.readString(directory.resolve("child.log")));
-            try (var repository = new TaskRepository(url, new ObjectMapper())) {
-                var before = repository.all().get(0);
+            try (var repository = new TestRepository(url)) {
+                var before = repository.all().stream().filter(task -> task.parentRunId == null).findFirst().orElseThrow();
                 int callsBefore = before.calls;
                 long deadline = before.deadline;
                 assertTrue(callsBefore > 0);
@@ -45,12 +52,11 @@ class SupervisorRestartTest {
                         new Supervisor(
                                 OfflineScenarioModel::new,
                                 SupervisorRuntimeIntegrationTest.CLOCK,
-                                Limits.defaults(),
+                                LimitsDTO.defaults(),
                                 SupervisorCrashProcess.source(calls, false));
                 try (var tasks =
-                        new TaskService(
+                        TestServices.taskService(
                                 repository,
-                                new ConversationService(repository),
                                 SupervisorRuntimeIntegrationTest.settings(url),
                                 supervisor::run)) {
                     var result = SupervisorRuntimeIntegrationTest.done(tasks, before.runId);
@@ -65,7 +71,9 @@ class SupervisorRestartTest {
                 }
             }
         } finally {
-            if (child.isAlive()) child.destroyForcibly();
+            if (child.isAlive()) {
+                child.destroyForcibly();
+            }
         }
     }
 }

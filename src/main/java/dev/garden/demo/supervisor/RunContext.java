@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
-import static dev.garden.demo.supervisor.SupervisorContracts.*;
+import static dev.garden.demo.supervisor.support.Contracts.*;
+
+import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.*;
@@ -17,18 +19,18 @@ import java.util.function.Supplier;
 
 /** 一轮的业务快照；持久预算和取消权属于 RunControl，所有子 Agent 共用。 */
 final class RunContext {
-    Request request;
+    RequestDTO request;
     RunContext parent;
     java.time.LocalDate today;
-    final Limits limits;
+    final LimitsDTO limits;
     final RunControl control;
     String query = "";
-    Decision decision = new Decision(Intent.UNKNOWN, "", "", "", "", 0);
+    DecisionDTO decision = new DecisionDTO(Intent.UNKNOWN, "", "", "", "", 0);
     private static final reactor.core.scheduler.Scheduler MODEL_WORK =
             reactor.core.scheduler.Schedulers.newBoundedElastic(8, 64, "model-boundary", 30, true);
     private final List<String> events = new ArrayList<>();
     private final Set<String> agents = new LinkedHashSet<>();
-    private final Map<String, Evidence> evidence = new LinkedHashMap<>();
+    private final Map<String, EvidenceDTO> evidence = new LinkedHashMap<>();
     private final Set<String> failedChildren = new HashSet<>();
     private final Map<String, Mono<?>> pending = new ConcurrentHashMap<>();
     private volatile Status halted;
@@ -38,7 +40,7 @@ final class RunContext {
         check();
     }
 
-    RunContext child(Decision conditions) {
+    RunContext child(DecisionDTO conditions) {
         RunContext child = new RunContext(request, limits, control);
         child.parent = this;
         child.today = today;
@@ -48,48 +50,17 @@ final class RunContext {
     }
 
     void acceptInput(String text) {
-        List<Turn> history = new ArrayList<>(request.history());
-        history.add(new Turn(request.question(), "本轮此前的用户要求"));
-        request = new Request(request.sessionId(), text, history, request.requestId());
+        List<TurnDTO> history = new ArrayList<>(request.history());
+        history.add(new TurnDTO(request.question(), "本轮此前的用户要求"));
+        request = new RequestDTO(request.sessionId(), text, history, request.requestId());
         query = text;
-        // 历史消息仍给模型参考，但最终事实只保留仍满足新条件的证据。
-        evidence.entrySet().removeIf(entry -> !stillRelevant(entry.getValue()));
+        // 历史证据保留来源和条件，由模型判断新指令如何使用；运行器不解析自然语言。
         failedChildren.clear();
-        decision = new Decision(Intent.UNKNOWN, "", "", "", "", 0);
+        decision = new DecisionDTO(Intent.UNKNOWN, "", "", "", "", 0);
         event("新指令已加入当前会话");
     }
 
-    private boolean stillRelevant(Evidence e) {
-        if (e.status() != Status.SUCCESS || !control.identity().allows(e.tool())) return false;
-        Map<String, Object> d = e.data();
-        Decision conditions;
-        if (e.tool().equals("query_weather"))
-            conditions =
-                    new Decision(
-                            Intent.WEATHER,
-                            Objects.toString(d.get("city"), ""),
-                            "",
-                            "",
-                            Objects.toString(d.get("date"), ""),
-                            0);
-        else if (e.tool().equals("query_trains"))
-            conditions =
-                    new Decision(
-                            Intent.TRAIN,
-                            "",
-                            Objects.toString(d.get("from"), ""),
-                            Objects.toString(d.get("to"), ""),
-                            Objects.toString(d.get("date"), ""),
-                            0);
-        else return false;
-        return BusinessConditions.validate(request, conditions, today).isEmpty();
-    }
-
-    RunContext(Request request, Limits limits) {
-        this(request, limits, RunControl.local(limits));
-    }
-
-    RunContext(Request request, Limits limits, RunControl control) {
+    RunContext(RequestDTO request, LimitsDTO limits, RunControl control) {
         this.request = request;
         this.limits = limits;
         this.control = control;
@@ -102,8 +73,9 @@ final class RunContext {
             parent.event(text);
             return;
         }
-        if (events.size() < 200)
+        if (events.size() < 200) {
             events.add(text.length() > 2000 ? text.substring(0, 2000) + "…" : text);
+        }
         try {
             control.event(text.length() > 2000 ? text.substring(0, 2000) : text);
         } catch (RunControl.Cancelled | RunControl.DeadlineExceeded ignored) {
@@ -112,19 +84,25 @@ final class RunContext {
     }
 
     synchronized void agent(String name) {
-        if (parent != null) parent.agent(name);
-        if (agents.add(name)) event("进入" + name + "助手");
+        if (parent != null) {
+            parent.agent(name);
+        }
+        if (agents.add(name)) {
+            event("进入" + name + "助手");
+        }
     }
 
-    synchronized void add(Evidence item) {
-        if (ContextBuilder.estimate(item) > 16000)
+    synchronized void add(EvidenceDTO item) {
+        if (ContextBuilder.estimate(item) > 16000) {
             throw new IllegalArgumentException("工具结果过大，需缩小查询范围");
-        if (item.status() == Status.SUCCESS || item.status() == Status.NO_DATA)
+        }
+        if (item.status() == Status.SUCCESS || item.status() == Status.NO_DATA) {
             evidence.entrySet()
                     .removeIf(
                             e ->
                                     e.getValue().tool().equals(item.tool())
                                             && (e.getValue().status() == Status.INVALID_INPUT));
+        }
         evidence.put(evidenceKey(item), item);
         if (parent != null) {
             parent.add(item);
@@ -134,13 +112,13 @@ final class RunContext {
         event("工具结果：" + item.tool() + " / " + item.status());
     }
 
-    private static String evidenceKey(Evidence e) {
+    private static String evidenceKey(EvidenceDTO e) {
         Map<String, Object> fields = new TreeMap<>(e.data());
         fields.keySet().retainAll(Set.of("city", "from", "to", "date", "documentId"));
         return e.tool() + ":" + fingerprint(fields);
     }
 
-    synchronized List<Evidence> evidence() {
+    synchronized List<EvidenceDTO> evidence() {
         return evidence.values().stream().filter(e -> control.identity().allows(e.tool())).toList();
     }
 
@@ -150,12 +128,16 @@ final class RunContext {
 
     synchronized void childFailed(String name) {
         failedChildren.add(name);
-        if (parent != null) parent.childFailed(name);
+        if (parent != null) {
+            parent.childFailed(name);
+        }
     }
 
     synchronized void childSucceeded(String name) {
         failedChildren.remove(name);
-        if (parent != null) parent.childSucceeded(name);
+        if (parent != null) {
+            parent.childSucceeded(name);
+        }
     }
 
     void check() {
@@ -168,12 +150,19 @@ final class RunContext {
     }
 
     void rememberFailure(Throwable ex) {
-        if (parent != null) parent.rememberFailure(ex);
-        if (ex instanceof RunControl.BudgetExceeded) halted = Status.BUDGET_EXHAUSTED;
-        else if (ex instanceof RunControl.Cancelled) halted = Status.CANCELLED;
-        else if (ex instanceof RunControl.ContextLimit) halted = Status.CONTEXT_LIMIT;
-        else if (ex instanceof RunControl.DeadlineExceeded
-                || ex instanceof java.util.concurrent.TimeoutException) halted = Status.TIMEOUT;
+        if (parent != null) {
+            parent.rememberFailure(ex);
+        }
+        if (ex instanceof RunControl.BudgetExceeded) {
+            halted = Status.BUDGET_EXHAUSTED;
+        } else if (ex instanceof RunControl.Cancelled) {
+            halted = Status.CANCELLED;
+        } else if (ex instanceof RunControl.ContextLimit) {
+            halted = Status.CONTEXT_LIMIT;
+        } else if (ex instanceof RunControl.DeadlineExceeded
+                || ex instanceof java.util.concurrent.TimeoutException) {
+            halted = Status.TIMEOUT;
+        }
     }
 
     Status failureStatus() {
@@ -184,19 +173,15 @@ final class RunContext {
         check();
         String old = control.checkpoint(key);
         int count = old == null ? 0 : Integer.parseInt(old);
-        if (count >= maximum) throw new RunControl.BudgetExceeded("该逻辑步骤已达到尝试上限");
+        if (count >= maximum) {
+            throw new RunControl.BudgetExceeded("该逻辑步骤已达到尝试上限");
+        }
         control.checkpoint(key, Integer.toString(count + 1));
         return count + 1;
     }
 
     void correction(String role, String reason) {
         event("工具纠错：" + reason);
-        try {
-            increment("correction:" + role + ":" + fingerprint(decision), 3);
-        } catch (RuntimeException ex) {
-            rememberFailure(ex);
-            throw ex;
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -206,6 +191,15 @@ final class RunContext {
     }
 
     Model budgeted(Model delegate) {
+        return budgeted(delegate, false);
+    }
+
+    /** 摘要失败的分片不向调用者泄漏；内部超窗由压缩器处理，不能提前污染终态。 */
+    Model budgetedCompaction(Model delegate) {
+        return budgeted(delegate, true);
+    }
+
+    private Model budgeted(Model delegate, boolean compaction) {
         return new Model() {
             public String getModelName() {
                 return delegate.getModelName();
@@ -233,9 +227,10 @@ final class RunContext {
                 return Flux.defer(
                                 () -> {
                                     boundary();
-                                    if (input > ContextBuilder.INPUT_LIMIT)
+                                    if (input > ContextBuilder.INPUT_LIMIT) {
                                         throw new RunControl.ContextLimit(
                                                 "输入包含工具定义后超过预算，请缩小问题或历史。");
+                                    }
                                     // 模型真实发送前预留共享额度；SDK 自动重试关闭，每次重试重新计数。
                                     control.reserveModelStep(
                                             step, input + limits.outputTokens(), 3);
@@ -244,9 +239,11 @@ final class RunContext {
                                                             < 0
                                                     ? control.remaining()
                                                     : Duration.ofSeconds(20);
-                                    return delegate.stream(messages, tools, options)
-                                            .doOnNext(x -> emitted.set(true))
-                                            .timeout(timeout);
+                                    Flux<ChatResponse> response = delegate.stream(messages, tools, options).timeout(timeout);
+                                    if (compaction) {
+                                        return response.collectList().flatMapMany(Flux::fromIterable);
+                                    }
+                                    return response.doOnNext(x -> emitted.set(true));
                                 })
                         .retryWhen(
                                 Retry.from(
@@ -257,8 +254,9 @@ final class RunContext {
                                                             if (emitted.get()
                                                                     || signal.totalRetries() >= 2
                                                                     || !ToolExecutor.retryable(
-                                                                            error))
+                                                                            error)) {
                                                                 return Mono.error(error);
+                                                            }
                                                             Duration delay =
                                                                     ToolExecutor.retryDelay(
                                                                             error,
@@ -267,13 +265,18 @@ final class RunContext {
                                                                                                     .totalRetries()
                                                                                     + 1);
                                                             if (control.remaining().compareTo(delay)
-                                                                    <= 0)
+                                                                    <= 0) {
                                                                 return Mono.error(
                                                                         new RunControl
                                                                                 .DeadlineExceeded());
+                                                            }
                                                             return Mono.delay(delay);
                                                         })))
-                        .doOnError(RunContext.this::rememberFailure)
+                        .doOnError(error -> {
+                            if (!ContextCompactor.isContextOverflow(error)) {
+                                RunContext.this.rememberFailure(error);
+                            }
+                        })
                         .subscribeOn(MODEL_WORK)
                         .publishOn(MODEL_WORK);
             }
@@ -281,7 +284,9 @@ final class RunContext {
     }
 
     synchronized Status outcome() {
-        if (halted != null) return halted;
+        if (halted != null) {
+            return halted;
+        }
         long successes = evidence().stream().filter(e -> e.status() == Status.SUCCESS).count();
         boolean failed =
                 evidence.values().stream().anyMatch(e -> !control.identity().allows(e.tool()))
@@ -291,20 +296,23 @@ final class RunContext {
                                         e ->
                                                 e.status() == Status.FAILED
                                                         || e.status() == Status.INVALID_INPUT);
-        if (evidence.isEmpty()) return Status.FAILED;
-        if (failed) return successes > 0 ? Status.PARTIAL : Status.FAILED;
-        if (successes == 0) return Status.NO_DATA;
-        if (successes < evidence.size()) return Status.PARTIAL;
-        if (decision.intent() == Intent.ITINERARY
-                && !(evidence.values().stream().anyMatch(e -> e.tool().equals("query_weather"))
-                        && evidence.values().stream()
-                                .anyMatch(e -> e.tool().equals("query_trains"))))
+        if (evidence.isEmpty()) {
+            return Status.FAILED;
+        }
+        if (failed) {
+            return successes > 0 ? Status.PARTIAL : Status.FAILED;
+        }
+        if (successes == 0) {
+            return Status.NO_DATA;
+        }
+        if (successes < evidence.size()) {
             return Status.PARTIAL;
+        }
         return Status.SUCCESS;
     }
 
-    synchronized Result result(Status status, String answer) {
-        return new Result(
+    synchronized ResultDTO result(Status status, String answer) {
+        return new ResultDTO(
                 status,
                 request.question(),
                 query,
@@ -331,11 +339,13 @@ final class RunContext {
     }
 
     private static Object stableBlock(io.agentscope.core.message.ContentBlock block) {
-        if (block instanceof io.agentscope.core.message.TextBlock text)
+        if (block instanceof io.agentscope.core.message.TextBlock text) {
             return Map.of("type", "text", "text", stableText(text.getText()));
-        if (block instanceof io.agentscope.core.message.ToolUseBlock tool)
+        }
+        if (block instanceof io.agentscope.core.message.ToolUseBlock tool) {
             return Map.of("type", "tool_use", "name", tool.getName(), "input", tool.getInput());
-        if (block instanceof io.agentscope.core.message.ToolResultBlock result)
+        }
+        if (block instanceof io.agentscope.core.message.ToolResultBlock result) {
             return Map.of(
                     "type",
                     "tool_result",
@@ -343,13 +353,16 @@ final class RunContext {
                     Objects.toString(result.getName(), ""),
                     "output",
                     result.getOutput().stream().map(RunContext::stableBlock).toList());
+        }
         return json(block);
     }
 
     private static Object stableText(String text) {
         try {
             var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(text);
-            if (node != null && (node.isObject() || node.isArray())) return canonicalNode(node);
+            if (node != null && (node.isObject() || node.isArray())) {
+                return canonicalNode(node);
+            }
         } catch (java.io.IOException ignored) {
             /* 普通文本按原文保留。 */
         }
