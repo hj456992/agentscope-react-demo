@@ -437,7 +437,7 @@ class SideEffectLedgerTest {
             database.createStatement()
                     .execute(
                             "CREATE TABLE IF NOT EXISTS actual_effects (operation_id VARCHAR"
-                                + " PRIMARY KEY, receipt VARCHAR NOT NULL)");
+                                    + " PRIMARY KEY, receipt VARCHAR NOT NULL)");
         }
 
         public boolean supportsIdempotency() {

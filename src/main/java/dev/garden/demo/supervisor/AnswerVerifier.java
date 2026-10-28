@@ -38,7 +38,7 @@ final class AnswerVerifier {
                 .onErrorResume(
                         error -> {
                             context.rememberFailure(error);
-                            context.throwIfSteered();
+                            context.check();
                             if (context.failureStatus() != Status.FAILED)
                                 return Mono.just(context.result(context.failureStatus(), render()));
                             context.event("答案生成失败，返回已核对证据");
@@ -71,17 +71,29 @@ final class AnswerVerifier {
 
     private boolean valid(Draft draft) {
         if (draft == null || draft.claims() == null) return false;
-        List<Evidence> facts = new ArrayList<>(context.evidence().stream().filter(e -> e.status() == Status.SUCCESS).toList());
+        List<Evidence> facts =
+                new ArrayList<>(
+                        context.evidence().stream()
+                                .filter(e -> e.status() == Status.SUCCESS)
+                                .toList());
         for (Claim claim : draft.claims()) {
             if (claim == null) return false;
             try {
-                Object value = io.agentscope.core.util.JsonUtils.getJsonCodec().fromJson(claim.value(), Map.class);
+                Object value =
+                        io.agentscope.core.util.JsonUtils.getJsonCodec()
+                                .fromJson(claim.value(), Map.class);
                 int match = -1;
                 for (int i = 0; i < facts.size(); i++)
-                    if (facts.get(i).tool().equals(claim.tool()) && facts.get(i).data().equals(value)) { match = i; break; }
+                    if (facts.get(i).tool().equals(claim.tool())
+                            && facts.get(i).data().equals(value)) {
+                        match = i;
+                        break;
+                    }
                 if (match < 0) return false;
                 facts.remove(match);
-            } catch (RuntimeException ex) { return false; }
+            } catch (RuntimeException ex) {
+                return false;
+            }
         }
         return facts.isEmpty();
     }

@@ -31,10 +31,10 @@ final class ToolGuard implements MiddlewareBase {
         return Flux.defer(
                 () -> {
                     context.check();
-                    context.throwIfSteered();
+                    context.check();
                     for (var call : input.toolCalls()) {
-                        if (call.getName().equals("generate_response")
-                                && role.equals("answer")) continue;
+                        if (call.getName().equals("generate_response") && role.equals("answer"))
+                            continue;
                         AgentTool tool = toolkit.getTool(call.getName());
                         if (tool == null)
                             context.correction(role, "TOOL_NOT_FOUND: " + call.getName());

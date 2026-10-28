@@ -32,9 +32,11 @@ final class RunContext {
     private final Set<String> failedChildren = new HashSet<>();
     private final Map<String, Mono<?>> pending = new ConcurrentHashMap<>();
     private volatile Status halted;
+
     // 只有主循环读取新输入；子 Agent 不消费或清空父任务的输入队列。
-    void boundary() { check(); }
-    void throwIfSteered() { check(); }
+    void boundary() {
+        check();
+    }
 
     RunContext child(Decision conditions) {
         RunContext child = new RunContext(request, limits, control);
@@ -59,12 +61,26 @@ final class RunContext {
 
     private boolean stillRelevant(Evidence e) {
         if (e.status() != Status.SUCCESS || !control.identity().allows(e.tool())) return false;
-        Map<String,Object> d = e.data();
+        Map<String, Object> d = e.data();
         Decision conditions;
         if (e.tool().equals("query_weather"))
-            conditions = new Decision(Intent.WEATHER, Objects.toString(d.get("city"), ""), "", "", Objects.toString(d.get("date"), ""), 0);
+            conditions =
+                    new Decision(
+                            Intent.WEATHER,
+                            Objects.toString(d.get("city"), ""),
+                            "",
+                            "",
+                            Objects.toString(d.get("date"), ""),
+                            0);
         else if (e.tool().equals("query_trains"))
-            conditions = new Decision(Intent.TRAIN, "", Objects.toString(d.get("from"), ""), Objects.toString(d.get("to"), ""), Objects.toString(d.get("date"), ""), 0);
+            conditions =
+                    new Decision(
+                            Intent.TRAIN,
+                            "",
+                            Objects.toString(d.get("from"), ""),
+                            Objects.toString(d.get("to"), ""),
+                            Objects.toString(d.get("date"), ""),
+                            0);
         else return false;
         return BusinessConditions.validate(request, conditions, today).isEmpty();
     }
@@ -82,7 +98,10 @@ final class RunContext {
     }
 
     synchronized void event(String text) {
-        if (parent != null) { parent.event(text); return; }
+        if (parent != null) {
+            parent.event(text);
+            return;
+        }
         if (events.size() < 200)
             events.add(text.length() > 2000 ? text.substring(0, 2000) + "…" : text);
         try {
@@ -101,21 +120,32 @@ final class RunContext {
         if (ContextBuilder.estimate(item) > 16000)
             throw new IllegalArgumentException("工具结果过大，需缩小查询范围");
         if (item.status() == Status.SUCCESS || item.status() == Status.NO_DATA)
-            evidence.entrySet().removeIf(e -> e.getValue().tool().equals(item.tool()) && (e.getValue().status() == Status.INVALID_INPUT || e.getValue().status() == Status.FAILED));
+            evidence.entrySet()
+                    .removeIf(
+                            e ->
+                                    e.getValue().tool().equals(item.tool())
+                                            && (e.getValue().status() == Status.INVALID_INPUT));
         evidence.put(evidenceKey(item), item);
-        if (parent != null) { parent.add(item); return; }
+        if (parent != null) {
+            parent.add(item);
+            return;
+        }
         control.checkpoint("progress", json(result(Status.RUNNING, "任务执行中")));
         event("工具结果：" + item.tool() + " / " + item.status());
     }
 
     private static String evidenceKey(Evidence e) {
-        Map<String,Object> fields = new TreeMap<>(e.data());
+        Map<String, Object> fields = new TreeMap<>(e.data());
         fields.keySet().retainAll(Set.of("city", "from", "to", "date", "documentId"));
         return e.tool() + ":" + fingerprint(fields);
     }
 
     synchronized List<Evidence> evidence() {
         return evidence.values().stream().filter(e -> control.identity().allows(e.tool())).toList();
+    }
+
+    synchronized List<String> failedCalls() {
+        return List.copyOf(failedChildren);
     }
 
     synchronized void childFailed(String name) {
@@ -266,7 +296,9 @@ final class RunContext {
         if (successes == 0) return Status.NO_DATA;
         if (successes < evidence.size()) return Status.PARTIAL;
         if (decision.intent() == Intent.ITINERARY
-                && !(evidence.values().stream().anyMatch(e -> e.tool().equals("query_weather")) && evidence.values().stream().anyMatch(e -> e.tool().equals("query_trains"))))
+                && !(evidence.values().stream().anyMatch(e -> e.tool().equals("query_weather"))
+                        && evidence.values().stream()
+                                .anyMatch(e -> e.tool().equals("query_trains"))))
             return Status.PARTIAL;
         return Status.SUCCESS;
     }

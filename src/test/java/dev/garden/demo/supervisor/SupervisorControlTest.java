@@ -62,11 +62,29 @@ class SupervisorControlTest {
     void modelInventedCityMustNotReachWeather() {
         AtomicInteger queries = new AtomicInteger();
         AtomicInteger turns = new AtomicInteger();
-        Result result = with(role -> role.equals("supervisor")
-                ? model(() -> turns.getAndIncrement() == 0
-                    ? tool("weather_agent", Map.of("city", "上海", "date", "2026-10-29"))
-                    : tool("ask_user", Map.of("question", "请确认查询城市。")))
-                : new OfflineScenarioModel(role), counting(queries)).run(request).block();
+        Result result =
+                with(
+                                role ->
+                                        role.equals("supervisor")
+                                                ? model(
+                                                        () ->
+                                                                turns.getAndIncrement() == 0
+                                                                        ? tool(
+                                                                                "weather_agent",
+                                                                                Map.of(
+                                                                                        "city",
+                                                                                        "上海",
+                                                                                        "date",
+                                                                                        "2026-10-29"))
+                                                                        : tool(
+                                                                                "ask_user",
+                                                                                Map.of(
+                                                                                        "question",
+                                                                                        "请确认查询城市。")))
+                                                : new OfflineScenarioModel(role),
+                                counting(queries))
+                        .run(request)
+                        .block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertEquals(0, queries.get());
     }
@@ -315,12 +333,33 @@ class SupervisorControlTest {
     @Test
     void modelCannotChangeExplicitTripLength() {
         AtomicInteger turns = new AtomicInteger();
-        Result result = with(role -> role.equals("supervisor")
-                ? model(() -> turns.getAndIncrement() == 0
-                    ? tool("itinerary_agent", Map.of("from", "杭州", "to", "上海", "date", "2026-10-29", "days", 1))
-                    : tool("ask_user", Map.of("question", "请确认行程天数。")))
-                : new OfflineScenarioModel(role), TravelTools.demoData())
-                .run(new Request("days", "明天从杭州到上海玩3天", List.of())).block();
+        Result result =
+                with(
+                                role ->
+                                        role.equals("supervisor")
+                                                ? model(
+                                                        () ->
+                                                                turns.getAndIncrement() == 0
+                                                                        ? tool(
+                                                                                "itinerary_agent",
+                                                                                Map.of(
+                                                                                        "from",
+                                                                                        "杭州",
+                                                                                        "to",
+                                                                                        "上海",
+                                                                                        "date",
+                                                                                        "2026-10-29",
+                                                                                        "days",
+                                                                                        1))
+                                                                        : tool(
+                                                                                "ask_user",
+                                                                                Map.of(
+                                                                                        "question",
+                                                                                        "请确认行程天数。")))
+                                                : new OfflineScenarioModel(role),
+                                TravelTools.demoData())
+                        .run(new Request("days", "明天从杭州到上海玩3天", List.of()))
+                        .block();
         assertEquals(Status.NEEDS_INPUT, result.status());
         assertTrue(result.evidence().isEmpty());
     }

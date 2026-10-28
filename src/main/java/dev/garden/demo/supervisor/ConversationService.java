@@ -80,8 +80,8 @@ public final class ConversationService {
                     execute(
                             c,
                             "ALTER TABLE supervisor_conversations ADD COLUMN IF NOT EXISTS"
-                                + " required_tools CLOB DEFAULT '[\"legacy-unclassified\"]' NOT"
-                                + " NULL");
+                                    + " required_tools CLOB DEFAULT '[\"legacy-unclassified\"]' NOT"
+                                    + " NULL");
                     execute(
                             c,
                             "CREATE INDEX IF NOT EXISTS supervisor_conversation_session ON"
@@ -113,7 +113,7 @@ public final class ConversationService {
                     try (var expire =
                             c.prepareStatement(
                                     "UPDATE supervisor_memories SET memory_value=NULL,deleted=TRUE"
-                                        + " WHERE expires_at<=? AND deleted=FALSE")) {
+                                            + " WHERE expires_at<=? AND deleted=FALSE")) {
                         expire.setLong(1, now.toEpochMilli());
                         expire.executeUpdate();
                     } catch (SQLException e) {
@@ -177,7 +177,7 @@ public final class ConversationService {
                     try (var existing =
                             c.prepareStatement(
                                     "SELECT 1 FROM supervisor_conversations WHERE tenant_id=? AND"
-                                        + " user_id=? AND run_id=?")) {
+                                            + " user_id=? AND run_id=?")) {
                         scope(existing, identity);
                         existing.setString(3, runId);
                         try (var rows = existing.executeQuery()) {
@@ -314,8 +314,8 @@ public final class ConversationService {
         try (var query =
                 c.prepareStatement(
                         "SELECT run_id,question,answer,required_tools FROM supervisor_conversations"
-                            + " WHERE tenant_id=? AND user_id=? AND session_id=? ORDER BY"
-                            + " sequence_id")) {
+                                + " WHERE tenant_id=? AND user_id=? AND session_id=? ORDER BY"
+                                + " sequence_id")) {
             scope(query, identity);
             query.setString(3, sessionId);
             List<SavedTurn> values = new ArrayList<>();
@@ -376,8 +376,8 @@ public final class ConversationService {
         try (var query =
                 c.prepareStatement(
                         "SELECT memory_key,memory_value,version,source,expires_at,deleted FROM"
-                            + " supervisor_memories WHERE tenant_id=? AND user_id=? AND"
-                            + " memory_key=?")) {
+                                + " supervisor_memories WHERE tenant_id=? AND user_id=? AND"
+                                + " memory_key=?")) {
             scope(query, identity);
             query.setString(3, key);
             try (var rows = query.executeQuery()) {
@@ -401,7 +401,7 @@ public final class ConversationService {
         try (var delete =
                 c.prepareStatement(
                         "DELETE FROM supervisor_conversations WHERE tenant_id=? AND user_id=? AND"
-                            + " created_at<?")) {
+                                + " created_at<?")) {
             scope(delete, identity);
             delete.setLong(3, now.minus(conversationRetention).toEpochMilli());
             delete.executeUpdate();

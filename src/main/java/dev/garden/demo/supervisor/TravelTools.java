@@ -132,7 +132,7 @@ public final class TravelTools {
                             if (!context.control.identity().allows(tool)) {
                                 context.correction(tool, "PERMISSION_DENIED");
                                 return reactor.core.publisher.Mono.just(
-                                        failure(tool, Status.FAILED, "PERMISSION_DENIED"));
+                                        failure(tool, params, Status.FAILED, "PERMISSION_DENIED"));
                             }
                             boolean dateValid = true;
                             try {
@@ -145,6 +145,7 @@ public final class TravelTools {
                                 return reactor.core.publisher.Mono.just(
                                         failure(
                                                 tool,
+                                                params,
                                                 Status.INVALID_INPUT,
                                                 "参数与用户已确认条件不一致，请修正或澄清。"));
                             }
@@ -165,12 +166,15 @@ public final class TravelTools {
                             if (context.failureStatus() != Status.FAILED)
                                 return reactor.core.publisher.Mono.error(ex);
                             return reactor.core.publisher.Mono.just(
-                                    failure(tool, Status.FAILED, "查询失败；其他成功结果继续保留。"));
+                                    failure(tool, params, Status.FAILED, "查询失败；其他成功结果继续保留。"));
                         });
     }
 
-    private ToolResultBlock failure(String tool, Status status, String message) {
-        Evidence evidence = new Evidence(tool, status, "demo-v1", Map.of("message", message));
+    private ToolResultBlock failure(
+            String tool, Map<String, Object> params, Status status, String message) {
+        Map<String, Object> details = new LinkedHashMap<>(params);
+        details.put("message", message);
+        Evidence evidence = new Evidence(tool, status, "demo-v1", details);
         context.add(evidence);
         return ToolResultBlock.error(json(evidence));
     }

@@ -245,7 +245,7 @@ class ConversationServiceTest {
                                     var rows =
                                             s.executeQuery(
                                                     "SELECT COUNT(*) FROM"
-                                                        + " supervisor_conversations")) {
+                                                            + " supervisor_conversations")) {
                                 rows.next();
                                 return rows.getInt(1);
                             } catch (java.sql.SQLException e) {
@@ -260,7 +260,7 @@ class ConversationServiceTest {
                                     var rows =
                                             s.executeQuery(
                                                     "SELECT memory_value,deleted,version FROM"
-                                                        + " supervisor_memories")) {
+                                                            + " supervisor_memories")) {
                                 if (!rows.next()) return null;
                                 return new Object[] {
                                     rows.getString(1), rows.getBoolean(2), rows.getInt(3)

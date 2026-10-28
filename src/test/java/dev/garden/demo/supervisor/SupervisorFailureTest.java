@@ -95,12 +95,31 @@ class SupervisorFailureTest {
 
     @Test
     void repeatedMalformedToolArgumentsStopBeforeAnyQuery() {
-        Function<String, Model> models = role -> fixedModel(() -> Flux.just(
-                ChatResponse.builder().content(List.of(ToolUseBlock.builder().id("invalid")
-                        .name("weather_agent").input(Map.of("city", 99))
-                        .content("{\"city\":99}").build())).finishReason("tool_calls").build()));
-        Result result = supervisor(models, Limits.defaults(), TravelTools.demoData())
-                .run(request("杭州明天的天气")).block();
+        Function<String, Model> models =
+                role ->
+                        fixedModel(
+                                () ->
+                                        Flux.just(
+                                                ChatResponse.builder()
+                                                        .content(
+                                                                List.of(
+                                                                        ToolUseBlock.builder()
+                                                                                .id("invalid")
+                                                                                .name(
+                                                                                        "weather_agent")
+                                                                                .input(
+                                                                                        Map.of(
+                                                                                                "city",
+                                                                                                99))
+                                                                                .content(
+                                                                                        "{\"city\":99}")
+                                                                                .build()))
+                                                        .finishReason("tool_calls")
+                                                        .build()));
+        Result result =
+                supervisor(models, Limits.defaults(), TravelTools.demoData())
+                        .run(request("杭州明天的天气"))
+                        .block();
         assertEquals(Status.BUDGET_EXHAUSTED, result.status());
         assertTrue(result.agents().isEmpty());
         assertTrue(result.evidence().isEmpty());

@@ -46,7 +46,8 @@ final class BusinessConditions {
                 && currentCities.size() == 1
                 && !currentCities.get(0).equals(decision.city())) return "模型识别的城市与本次要求不一致，请确认城市。";
         Matcher route = Pattern.compile("(杭州|上海|北京|成都)(?:到|去)(杭州|上海|北京|成都)").matcher(original);
-        if (decision.intent() != Intent.WEATHER && route.find()
+        if (decision.intent() != Intent.WEATHER
+                && route.find()
                 && (!route.group(1).equals(decision.from())
                         || !route.group(2).equals(decision.to()))) return "识别的出发地或目的地与用户要求不一致。";
         String date = explicitDate(original, today);

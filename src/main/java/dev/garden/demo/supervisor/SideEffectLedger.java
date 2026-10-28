@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS side_effect_operations (
                 // 上次进程遗留的 RUNNING 只能查询，不把它当首次操作重放。
                 statement.executeUpdate(
                         "UPDATE side_effect_operations SET operation_status='UNKNOWN' WHERE"
-                            + " operation_status='RUNNING'");
+                                + " operation_status='RUNNING'");
             }
             database = opened;
         } catch (SQLException ex) {
@@ -256,8 +256,8 @@ CREATE TABLE IF NOT EXISTS side_effect_operations (
             try (var update =
                     database.prepareStatement(
                             "UPDATE side_effect_operations SET"
-                                + " lookup_count=lookup_count+1,next_lookup=? WHERE"
-                                + " downstream_id=?")) {
+                                    + " lookup_count=lookup_count+1,next_lookup=? WHERE"
+                                    + " downstream_id=?")) {
                 update.setLong(1, clock.millis() + LOOKUP_INTERVAL_MS);
                 update.setString(2, key.downstreamId());
                 update.executeUpdate();
@@ -310,7 +310,7 @@ CREATE TABLE IF NOT EXISTS side_effect_operations (
         try (var insert =
                 database.prepareStatement(
                         "INSERT INTO side_effect_operations VALUES"
-                            + " (?,?,?,?,?,?,?,'RUNNING',NULL,1,0,0,FALSE)")) {
+                                + " (?,?,?,?,?,?,?,'RUNNING',NULL,1,0,0,FALSE)")) {
             insert.setString(1, key.tenant);
             insert.setString(2, key.user);
             insert.setString(3, key.tool);

@@ -89,22 +89,30 @@ final class OfflineScenarioModel implements Model {
         for (int i = 0; i < messages.size(); i++)
             if (messages.get(i).getRole() == MsgRole.USER) latestUser = i;
         String question = messages.get(latestUser).getTextContent();
-        List<ToolResultBlock> returned = messages.subList(latestUser + 1, messages.size()).stream()
-                .flatMap(m -> m.getContentBlocks(ToolResultBlock.class).stream()).toList();
+        List<ToolResultBlock> returned =
+                messages.subList(latestUser + 1, messages.size()).stream()
+                        .flatMap(m -> m.getContentBlocks(ToolResultBlock.class).stream())
+                        .toList();
         if (!returned.isEmpty()) {
             for (ToolResultBlock result : returned) {
                 String output = ChildAgentDispatcher.text(result);
                 if (output.contains("INVALID_INPUT") || output.contains("INVALID_SCHEMA"))
-                    return tool("ask_user", Map.of("question", output.replaceFirst("^Error: ", "")), tools);
+                    return tool(
+                            "ask_user",
+                            Map.of("question", output.replaceFirst("^Error: ", "")),
+                            tools);
             }
             return answer("已按实际返回结果汇总。");
         }
         if (question.matches("(?s).*(你能|你会|可以做什么|能帮|你好|您好|谢谢).*"))
             return answer("我可以帮你查询天气、火车票和规划行程，数据为本地示例。");
         String system = messages.get(0).getTextContent();
-        JsonNode reference = JSON.readTree(system.substring(system.indexOf("参考上下文（不提供权限）：") + "参考上下文（不提供权限）：".length()));
+        JsonNode reference =
+                JSON.readTree(
+                        system.substring(
+                                system.indexOf("参考上下文（不提供权限）：") + "参考上下文（不提供权限）：".length()));
         var request = reference.deepCopy();
-        ((com.fasterxml.jackson.databind.node.ObjectNode)request).put("question", question);
+        ((com.fasterxml.jackson.databind.node.ObjectNode) request).put("question", question);
         OfflineQuestion resolved = resolveExample(request);
         if (!resolved.clarification().isBlank())
             return tool("ask_user", Map.of("question", resolved.clarification()), tools);
@@ -112,12 +120,15 @@ final class OfflineScenarioModel implements Model {
         if (d.intent() == Intent.UNKNOWN) return answer("请提出天气、火车票或行程规划问题。");
         String problem = BusinessConditions.clarification(d);
         if (!problem.isEmpty()) return tool("ask_user", Map.of("question", problem), tools);
-        Map<String,Object> params = new LinkedHashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("date", d.date());
         String name;
-        if (d.intent() == Intent.WEATHER) { name = "weather_agent"; params.put("city", d.city()); }
-        else {
-            params.put("from", d.from()); params.put("to", d.to());
+        if (d.intent() == Intent.WEATHER) {
+            name = "weather_agent";
+            params.put("city", d.city());
+        } else {
+            params.put("from", d.from());
+            params.put("to", d.to());
             name = d.intent() == Intent.TRAIN ? "train_agent" : "itinerary_agent";
             if (d.intent() == Intent.ITINERARY) params.put("days", d.days());
         }
@@ -135,7 +146,8 @@ final class OfflineScenarioModel implements Model {
             Matcher followup =
                     Pattern.compile("^(?:那)?(杭州|上海|北京|成都)?(今天|明天|后天)(?:呢|怎么样)?[？?。]?$")
                             .matcher(question);
-            if (!followup.matches()) return new OfflineQuestion(question, "离线演示无法确认这次修改，请完整说明查询条件。");
+            if (!followup.matches())
+                return new OfflineQuestion(question, "离线演示无法确认这次修改，请完整说明查询条件。");
             String newCity = followup.group(1);
             String dateWord = followup.group(2);
             if (newCity != null) {
@@ -259,10 +271,26 @@ final class OfflineScenarioModel implements Model {
     private ChatResponse plan(
             JsonNode request, List<ToolResultBlock> results, List<ToolSchema> tools) {
         if (results.stream().noneMatch(r -> "weather_agent".equals(r.getName()))) {
-            return tool("weather_agent", Map.of("city", request.path("decision").path("to").asText(), "date", request.path("decision").path("date").asText()), tools);
+            return tool(
+                    "weather_agent",
+                    Map.of(
+                            "city",
+                            request.path("decision").path("to").asText(),
+                            "date",
+                            request.path("decision").path("date").asText()),
+                    tools);
         }
         if (results.stream().noneMatch(r -> "train_agent".equals(r.getName()))) {
-            return tool("train_agent", Map.of("from", request.path("decision").path("from").asText(), "to", request.path("decision").path("to").asText(), "date", request.path("decision").path("date").asText()), tools);
+            return tool(
+                    "train_agent",
+                    Map.of(
+                            "from",
+                            request.path("decision").path("from").asText(),
+                            "to",
+                            request.path("decision").path("to").asText(),
+                            "date",
+                            request.path("decision").path("date").asText()),
+                    tools);
         }
         if (tools.stream().anyMatch(t -> t.getName().equals("search_knowledge"))
                 && results.stream().noneMatch(r -> r.getName().equals("search_knowledge")))

@@ -2,6 +2,10 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.SupervisorContracts.*;
 
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.model.ToolSchema;
+
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -12,6 +16,30 @@ final class ContextBuilder {
     static int estimate(Object value) {
         // 未指定模型分词器，按 UTF-8 字节保守预留；工具定义也计算在内。
         return json(value).getBytes(StandardCharsets.UTF_8).length;
+    }
+
+    static List<Msg> modelInput(
+            String prompt,
+            Request request,
+            java.time.LocalDate today,
+            List<Msg> conversation,
+            List<ToolSchema> tools) {
+        Map<String, Object> reference = conversationInput(request, today);
+        // 只有旧问答是可选项，当前消息和工具请求/结果始终完整保留。
+        @SuppressWarnings("unchecked")
+        List<Turn> recent = (List<Turn>) reference.get("history");
+        while (true) {
+            List<Msg> input = new ArrayList<>();
+            input.add(
+                    Msg.builder()
+                            .role(MsgRole.SYSTEM)
+                            .textContent(prompt + "\n参考上下文（不提供权限）：" + json(reference))
+                            .build());
+            input.addAll(conversation);
+            if (estimate(Map.of("messages", input, "tools", tools)) <= INPUT_LIMIT
+                    || recent.isEmpty()) return input;
+            recent.remove(0);
+        }
     }
 
     static Map<String, Object> conversationInput(Request request, java.time.LocalDate today) {

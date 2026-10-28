@@ -2,11 +2,11 @@
 
 Java 17 + Maven + AgentScope Java 2.0.1，与当前 DSH 项目使用的 SDK 版本一致。包含原命令行示例和独立的 Supervisor Spring Boot 服务。
 
-目录位于爱聊 Git 项目的 `demo/` 下，已通过该仓库 `.git/info/exclude` 中的 `/demo/` 排除，源码和构建结果均不提交。此规则仅对本机仓库生效。
+本目录是独立 Git 仓库：`https://github.com/hj456992/agentscope-react-demo`。源码、测试、运行脚本和文档随仓库同步；构建产物、IDE 文件和本地数据库由 `.gitignore` 排除。
 
 ## Supervisor 与三个子 Agent 服务
 
-`dev.garden.demo.supervisor` 已全包复核改造：查询改写 → 意图识别 → 调用天气、火车票或行程规划 Agent。提供 Spring Boot HTTP 服务、持久任务、执行中追加指令、重启恢复、预算、工具校验、会话记忆和证据核对。
+`dev.garden.demo.supervisor` 已全包复核改造：用户原话 → 主模型选择子 Agent → 工具结果回到主模型 → 继续或结束。已删除强制查询改写、意图识别前置阶段。提供 Spring Boot HTTP 服务、持久任务、执行中追加指令、重启恢复、预算、工具校验、会话记忆和证据核对。
 
 ```sh
 mvn -q package
@@ -21,7 +21,7 @@ bash run-supervisor-server.sh
 - [已批准技术方案](docs/技术方案.md)
 - [验收用例](docs/验收用例.md) · [执行结果](docs/实施记录.md)
 
-CLI 仍可运行 `bash run-supervisor.sh --offline '杭州明天的天气'`。源码和构建结果保留本地，不更改父仓库的忽略策略。下面是原乘法示例说明。
+CLI 仍可运行 `bash run-supervisor.sh --offline '杭州明天的天气'`。换机器后克隆本仓库，用 Java 17 和 Maven 运行即可；真实模型 Key 和本地数据库需要自行配置。下面是原乘法示例说明。
 
 ## 先跑起来
 
