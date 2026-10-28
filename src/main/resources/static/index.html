@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supervisor 测试台</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d2129;
+    --line: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #8d96a6;
+    --accent: #4c8dff;
+    --green: #35c07a;
+    --amber: #e0a33a;
+    --red: #e3605f;
+    --gray: #6b7385;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.55 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #171b23, #12151b);
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .2px; }
+  header .hint { color: var(--muted); font-size: 12px; }
+  header .spacer { flex: 1; }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) minmax(300px, 360px);
+    gap: 14px; padding: 14px; align-items: start;
+  }
+  @media (max-width: 1200px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .panel h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted); margin: 0 0 2px; font-weight: 600;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea, button {
+    font: inherit; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; width: 100%;
+  }
+  textarea { resize: vertical; min-height: 76px; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  button {
+    cursor: pointer; background: #263043; border-color: #33415c; transition: .15s;
+  }
+  button:hover { background: #2d3a51; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: #5f9bff; }
+  button.danger { background: #3a2226; border-color: #5c3034; color: #ffb3b3; }
+  button.danger:hover { background: #4a2a2f; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; min-width: 0; }
+  .row.tight > * { flex: 0 0 auto; }
+  .muted { color: var(--muted); font-size: 12px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button { width: auto; padding: 5px 9px; font-size: 12px; background: #202734; border-color: #2b3444; }
+  .badge {
+    display: inline-block; padding: 2px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; letter-spacing: .3px;
+    background: #2a3040; color: var(--text); border: 1px solid var(--line);
+  }
+  .badge.SUCCESS { background: rgba(53,192,122,.14); color: var(--green); border-color: rgba(53,192,122,.35); }
+  .badge.NEEDS_INPUT, .badge.PARTIAL, .badge.BUDGET_EXHAUSTED, .badge.CONTEXT_LIMIT { background: rgba(224,163,58,.14); color: var(--amber); border-color: rgba(224,163,58,.35); }
+  .badge.FAILED, .badge.TIMEOUT, .badge.INVALID_INPUT { background: rgba(227,96,95,.14); color: var(--red); border-color: rgba(227,96,95,.35); }
+  .badge.RUNNING { background: rgba(76,141,255,.16); color: var(--accent); border-color: rgba(76,141,255,.4); }
+  .badge.UNKNOWN_INTENT, .badge.NO_DATA, .badge.CANCELLED, .badge.REPLACED, .badge.RESULT_UNKNOWN { background: rgba(107,115,133,.18); color: #b9c0cd; border-color: rgba(107,115,133,.4); }
+  .answer {
+    white-space: pre-wrap; word-break: break-word; background: #12151b;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 12px; min-height: 90px;
+  }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .meta { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
+  .meta span { display: block; color: var(--muted); font-size: 11px; }
+  .meta b { font-weight: 600; font-size: 13px; word-break: break-all; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  details { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+  details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+  pre {
+    margin: 8px 0 0; padding: 10px; background: #0d1015; border: 1px solid var(--line);
+    border-radius: 8px; overflow: auto; max-height: 260px; font-size: 12px;
+    font-family: ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all;
+  }
+  .log-entry { border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 12px; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-line { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .method { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-weight: 600; }
+  .code { font-family: ui-monospace, Consolas, monospace; }
+  .code.ok { color: var(--green); }
+  .code.warn { color: var(--amber); }
+  .code.bad { color: var(--red); }
+  .events { display: flex; flex-direction: column; gap: 3px; max-height: 180px; overflow: auto; }
+  .events div { font-size: 12px; color: #b9c0cd; }
+  .events div::before { content: "·"; color: var(--muted); margin-right: 6px; }
+  .scroll { max-height: 320px; overflow: auto; }
+  .toast {
+    position: fixed; right: 18px; bottom: 18px; background: #1e2430; border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,.45); opacity: 0;
+    transform: translateY(8px); transition: .2s; pointer-events: none; max-width: 420px;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.bad { border-left-color: var(--red); }
+  .pill { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Supervisor 测试台</h1>
+  <span class="pill">统一模型—工具循环 · v3.3</span>
+  <span class="hint">六个接口：chat / runs / instructions / memories</span>
+  <span class="spacer"></span>
+  <span class="hint" id="connState">未连接</span>
+</header>
+
+<div class="layout">
+  <!-- 左：连接与对话 -->
+  <div class="panel">
+    <h2>连接</h2>
+    <div>
+      <label for="base">服务地址</label>
+      <input id="base" placeholder="http://127.0.0.1:8080">
+    </div>
+    <div>
+      <label for="token">Bearer 令牌</label>
+      <input id="token" placeholder="demo-token">
+    </div>
+    <div class="muted">令牌由服务端 supervisor.auth-tokens 映射为租户、用户和权限；请求正文不能携带身份。</div>
+
+    <h2 style="margin-top:6px">发起任务</h2>
+    <div>
+      <label for="sessionId">会话编号</label>
+      <input id="sessionId" value="demo-session">
+    </div>
+    <div>
+      <label for="question">用户原话</label>
+      <textarea id="question" placeholder="例如：明天从杭州到上海玩一天，看看天气和火车票，规划行程"></textarea>
+    </div>
+    <div class="row">
+      <div>
+        <label for="requestId">requestId（可空）</label>
+        <input id="requestId" placeholder="留空由服务端生成">
+      </div>
+      <div style="flex:0 0 120px">
+        <label>&nbsp;</label>
+        <label style="display:flex;gap:6px;align-items:center;color:var(--text);font-size:12px;margin:0">
+          <input type="checkbox" id="async" style="width:auto"> 异步 202
+        </label>
+      </div>
+    </div>
+    <div class="row">
+      <button class="primary" id="send">发送</button>
+      <button id="resend">同 requestId 重发</button>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <!-- 中：结果 -->
+  <div class="panel">
+    <h2>任务结果</h2>
+    <div class="row tight" style="align-items:center;gap:10px">
+      <span class="badge" id="stateBadge">IDLE</span>
+      <span class="muted" id="stateHint">尚未发起任务</span>
+    </div>
+    <div class="meta-grid" id="metaGrid"></div>
+    <div>
+      <label>答复</label>
+      <div class="answer" id="answer">—</div>
+    </div>
+    <div>
+      <label>证据（实际查询记录）</label>
+      <div class="scroll" id="evidence"><div class="muted">暂无</div></div>
+    </div>
+    <div>
+      <label>事件</label>
+      <div class="events" id="events"><div class="muted">暂无</div></div>
+    </div>
+  </div>
+
+  <!-- 右：指令 / 查询 / 记忆 -->
+  <div class="panel">
+    <h2>执行中的新指令</h2>
+    <div class="row">
+      <div>
+        <label for="action">动作</label>
+        <select id="action">
+          <option value="SUPPLEMENT">SUPPLEMENT 补充</option>
+          <option value="REVISE">REVISE 修改</option>
+          <option value="SWITCH">SWITCH 切换</option>
+          <option value="CANCEL">CANCEL 停止</option>
+          <option value="AUTO">AUTO 自动</option>
+        </select>
+      </div>
+      <div style="flex:0 0 110px">
+        <label for="expectedRevision">expectedRevision</label>
+        <input id="expectedRevision" type="number" min="1" value="1">
+      </div>
+    </div>
+    <div>
+      <label for="instruction">指令文本（停止可空）</label>
+      <textarea id="instruction" style="min-height:60px" placeholder="例如：改成上海后天的天气"></textarea>
+    </div>
+    <button id="instruct">提交指令</button>
+    <div class="muted">版本与状态不匹配会返回 409；编号相同、内容相同会返回原结果。</div>
+
+    <h2 style="margin-top:6px">查询任务</h2>
+    <div class="row">
+      <input id="runId" placeholder="runId">
+      <button id="query" style="flex:0 0 80px">查询</button>
+    </div>
+
+    <h2 style="margin-top:6px">长期偏好</h2>
+    <div class="row">
+      <div>
+        <label for="memKey">键</label>
+        <select id="memKey">
+          <option value="preferredDepartureCity">preferredDepartureCity</option>
+          <option value="preferredSeat">preferredSeat</option>
+        </select>
+      </div>
+      <div style="flex:0 0 92px">
+        <label for="memVersion">版本</label>
+        <input id="memVersion" type="number" min="0" value="0">
+      </div>
+    </div>
+    <div class="row">
+      <input id="memValue" placeholder="值：杭州 / 二等座">
+      <button id="memSave" style="flex:0 0 80px">保存</button>
+    </div>
+    <div class="row">
+      <button id="memLoad">读取列表</button>
+      <button class="danger" id="memDelete">删除</button>
+    </div>
+    <div class="scroll" id="memList" style="max-height:150px"><div class="muted">未读取</div></div>
+  </div>
+</div>
+
+<div class="layout" style="grid-template-columns:1fr;padding-top:0">
+  <div class="panel">
+    <h2>请求日志</h2>
+    <div id="log"><div class="muted">还没有请求</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+ * 这个页面不用任何框架，异步全部用 async/await + fetch。
+ *
+ * 与服务端的交互有两种形态：
+ *   1. 同步：POST /chat 直接等到 200，响应里就是最终结果；
+ *   2. 异步：带 Prefer: respond-async 或任务还在跑时返回 202，
+ *      之后用 GET /runs/{runId} 轮询，直到 state 不再是 RUNNING。
+ * 没有用 SSE/WebSocket，因为服务端只提供轮询接口，轮询最省事也最好观察。
+ */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    base: localStorage.getItem("sv.base") || location.origin,
+    token: localStorage.getItem("sv.token") || "demo-token"
+  };
+  $("base").value = store.base;
+  $("token").value = store.token;
+
+  let current = { runId: null, revision: 1 };
+  let polling = null;
+
+  function toast(text, bad) {
+    const el = $("toast");
+    el.textContent = text;
+    el.classList.toggle("bad", !!bad);
+    el.classList.add("show");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  function base() {
+    const v = $("base").value.trim().replace(/\/+$/, "");
+    localStorage.setItem("sv.base", v);
+    return v;
+  }
+  function token() {
+    const v = $("token").value.trim();
+    localStorage.setItem("sv.token", v);
+    return v;
+  }
+
+  /**
+   * 统一的请求封装：所有接口都从这里走，方便把状态码、耗时和原始响应记到日志里。
+   *
+   * 注意先取 text 再尝试 JSON.parse：错误响应体可能是纯文本，直接 reply.json() 会抛异常，
+   * 就看不到 4xx/5xx 的实际内容了。网络层异常也在这里收敛成 {code:"NETWORK"}，
+   * 保证调用方永远拿到同样形状的结果。
+   */
+  async function api(method, path, body, prefer) {
+    const url = base() + path;
+    const headers = {};
+    const t = token();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+    if (prefer) headers["Prefer"] = prefer;
+    const started = performance.now();
+    let status = 0, data = null, text = "";
+    try {
+      const reply = await fetch(url, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+      status = reply.status;
+      text = await reply.text();
+      try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    } catch (error) {
+      text = String(error);
+      data = { code: "NETWORK", message: text };
+    }
+    const ms = Math.round(performance.now() - started);
+    log(method, path, status, ms, data);
+    $("connState").textContent = status ? "已连接 " + base() : "无法连接";
+    return { status, data, ms };
+  }
+
+  function log(method, path, status, ms, data) {
+    const box = $("log");
+    if (box.dataset.empty !== "no") { box.innerHTML = ""; box.dataset.empty = "no"; }
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    const cls = status >= 500 ? "bad" : status >= 400 ? "warn" : "ok";
+    const head = document.createElement("div");
+    head.className = "log-line";
+    head.innerHTML = '<span class="method">' + method + "</span>" +
+      '<span class="code ' + cls + '">' + status + "</span>" +
+      '<span class="muted">' + ms + " ms</span>" +
+      '<span class="muted">' + path + "</span>";
+    entry.appendChild(head);
+    const detail = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "查看响应";
+    detail.appendChild(summary);
+    const pre = document.createElement("pre");
+    pre.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    detail.appendChild(pre);
+    entry.appendChild(detail);
+    box.prepend(entry);
+    while (box.children.length > 40) box.removeChild(box.lastChild);
+  }
+
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  // 只放行粗体，其余按纯文本处理，避免把模型输出当 HTML 执行。
+  function formatAnswer(text) {
+    if (!text) return "—";
+    return esc(text).replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+  }
+
+  function badge(state) {
+    $("stateBadge").className = "badge " + (state || "");
+    $("stateBadge").textContent = state || "IDLE";
+  }
+
+  function render(view) {
+    if (!view || typeof view !== "object") return;
+    if (view.runId) {
+      current.runId = view.runId;
+      $("runId").value = view.runId;
+    }
+    if (typeof view.revision === "number") {
+      current.revision = view.revision;
+      $("expectedRevision").value = view.revision;
+    }
+    const state = view.state || view.status || "";
+    badge(state);
+    $("stateHint").textContent = view.state === "RUNNING" || view.state === "NEEDS_INPUT"
+      ? "任务已受理，可继续提交指令"
+      : (state === "SUCCESS" ? "已返回业务结果" : "任务已结束");
+
+    const deadline = view.deadline
+      ? new Date(view.deadline).toLocaleTimeString("zh-CN") : "—";
+    const fields = [
+      ["状态", state],
+      ["runId", view.runId],
+      ["revision", view.revision],
+      ["requestId", view.requestId],
+      ["模型调用", view.modelCalls],
+      ["截止时间", deadline],
+      ["intent（展示用）", view.intent],
+      ["agents", (view.agents || []).join(" / ")],
+      ["replacedBy", view.replacedBy]
+    ];
+    $("metaGrid").innerHTML = fields.filter(([, v]) => v !== undefined && v !== null && v !== "")
+      .map(([k, v]) => '<div class="meta"><span>' + esc(k) + "</span><b>" + esc(v) + "</b></div>")
+      .join("");
+
+    $("answer").innerHTML = formatAnswer(view.answer);
+
+    const evidence = view.evidence || [];
+    if (!evidence.length) {
+      $("evidence").innerHTML = '<div class="muted">本次没有实际查询记录</div>';
+    } else {
+      const rows = evidence.map((item) =>
+        "<tr><td>" + esc(item.tool) + "</td><td>" + esc(item.status) + "</td><td>" +
+        esc(item.source) + '</td><td><details><summary>数据</summary><pre>' +
+        esc(JSON.stringify(item.data, null, 2)) + "</pre></details></td></tr>").join("");
+      $("evidence").innerHTML =
+        "<table><thead><tr><th>工具</th><th>状态</th><th>来源</th><th>查询数据</th></tr></thead><tbody>" +
+        rows + "</tbody></table>";
+    }
+
+    const events = view.events || [];
+    $("events").innerHTML = events.length
+      ? events.map((e) => "<div>" + esc(e) + "</div>").join("")
+      : '<div class="muted">暂无</div>';
+  }
+
+  /**
+   * 轮询任务状态。
+   *
+   * 用 setTimeout 递归而不是 setInterval：每次请求的耗时不确定，setInterval 会在慢请求上堆积；
+   * 递归保证“上一次回来才排下一次”。有上限（默认 60 秒），避免页面关掉前无限请求。
+   * 同时只保留一个轮询句柄（polling），新的轮询会取消旧的，防止两个任务互相覆盖视图。
+   */
+  async function poll(runId, limitMs) {
+    if (polling) clearTimeout(polling);
+    const until = Date.now() + (limitMs || 60000);
+    const step = async () => {
+      const reply = await api("GET", "/api/supervisor/runs/" + encodeURIComponent(runId));
+      if (reply.status === 200) {
+        render(reply.data);
+        if (reply.data.state === "RUNNING" && Date.now() < until) {
+          polling = setTimeout(step, 400);
+          return;
+        }
+      }
+      polling = null;
+    };
+    polling = setTimeout(step, 250);
+  }
+
+  async function send(reuseRequestId) {
+    const question = $("question").value.trim();
+    if (!question) { toast("请输入用户原话", true); return; }
+    const body = { sessionId: $("sessionId").value.trim() || "demo-session", question, history: [] };
+    const rid = $("requestId").value.trim();
+    if (rid) body.requestId = rid;
+    const prefer = $("async").checked ? "respond-async" : undefined;
+    $("send").disabled = true;
+    const reply = await api("POST", "/api/supervisor/chat", body, prefer);
+    $("send").disabled = false;
+    if (reply.status === 200) {
+      render(reply.data);
+      toast("任务完成：" + reply.data.status);
+    } else if (reply.status === 202) {
+      render(reply.data);
+      toast("已受理，任务号 " + reply.data.runId);
+      poll(reply.data.runId);
+    } else if (reply.status === 409) {
+      toast("冲突：" + (reply.data && reply.data.message || "会话已有活动任务或 requestId 内容不同"), true);
+      if (reply.data && reply.data.message) {
+        const match = /([0-9a-f-]{36})/.exec(reply.data.message);
+        if (match) { $("runId").value = match[1]; }
+      }
+    } else {
+      toast("HTTP " + reply.status + "：" + (reply.data && (reply.data.message || reply.data.code) || ""), true);
+      renderError(reply.data);
+    }
+  }
+
+  function renderError(data) {
+    badge("FAILED");
+    $("stateHint").textContent = data && data.code ? "错误 " + data.code : "请求失败";
+    $("answer").innerHTML = formatAnswer(data && data.message ? data.message : "请求失败");
+    $("evidence").innerHTML = '<div class="muted">无</div>';
+    $("events").innerHTML = '<div class="muted">无</div>';
+  }
+
+  async function instruct() {
+    const runId = $("runId").value.trim();
+    if (!runId) { toast("先发起任务或填写 runId", true); return; }
+    const body = {
+      instructionId: "ins-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8),
+      expectedRevision: Number($("expectedRevision").value || 1),
+      action: $("action").value,
+      message: $("instruction").value.trim()
+    };
+    if (body.action === "CANCEL" && !body.message) body.message = "";
+    const reply = await api("POST",
+      "/api/supervisor/runs/" + encodeURIComponent(runId) + "/instructions", body);
+    if (reply.status === 202 || reply.status === 200) {
+      toast((reply.data && reply.data.message) || "指令已处理");
+      if (reply.data && reply.data.revision) $("expectedRevision").value = reply.data.revision;
+      if (reply.data && reply.data.runId) $("runId").value = reply.data.runId;
+      if (reply.data && reply.data.state === "RUNNING") poll(reply.data.runId || runId);
+      else {
+        const view = await api("GET", "/api/supervisor/runs/" + encodeURIComponent(reply.data.runId || runId));
+        if (view.status === 200) render(view.data);
+      }
+    } else {
+      toast("HTTP " + reply.status + "：" + (reply.data && reply.data.message || ""), true);
+    }
+  }
+
+  async function queryRun() {
+    const runId = $("runId").value.trim();
+    if (!runId) { toast("请输入 runId", true); return; }
+    const reply = await api("GET", "/api/supervisor/runs/" + encodeURIComponent(runId));
+    if (reply.status === 200) { render(reply.data); if (reply.data.state === "RUNNING") poll(runId); }
+    else toast("HTTP " + reply.status + "：" + (reply.data && reply.data.message || ""), true);
+  }
+
+  function renderMemories(data) {
+    const items = (data && data.items) || [];
+    if (!items.length) {
+      $("memList").innerHTML = '<div class="muted">没有有效偏好</div>';
+      return;
+    }
+    $("memList").innerHTML = "<table><thead><tr><th>键</th><th>值</th><th>版本</th></tr></thead><tbody>" +
+      items.map((m) => "<tr><td>" + esc(m.key) + "</td><td>" + esc(m.value) +
+        "</td><td>" + esc(m.version) + "</td></tr>").join("") +
+      "</tbody></table>";
+  }
+
+  async function loadMemories() {
+    const reply = await api("GET", "/api/supervisor/memories?limit=20");
+    if (reply.status === 200) renderMemories(reply.data);
+    else toast("HTTP " + reply.status + "：" + (reply.data && reply.data.message || ""), true);
+  }
+
+  async function saveMemory() {
+    const key = $("memKey").value;
+    const body = {
+      value: $("memValue").value.trim(),
+      expectedVersion: Number($("memVersion").value || 0)
+    };
+    const reply = await api("PUT", "/api/supervisor/memories/" + encodeURIComponent(key), body);
+    if (reply.status === 200) {
+      toast("已保存 " + key + " v" + reply.data.version);
+      $("memVersion").value = reply.data.version;
+      loadMemories();
+    } else toast("HTTP " + reply.status + "：" + (reply.data && reply.data.message || ""), true);
+  }
+
+  async function deleteMemory() {
+    const key = $("memKey").value;
+    const version = Number($("memVersion").value || 0);
+    const reply = await api("DELETE", "/api/supervisor/memories/" + encodeURIComponent(key) +
+      "?expectedVersion=" + version);
+    if (reply.status === 204) { toast("已删除 " + key); $("memVersion").value = 0; loadMemories(); }
+    else toast("HTTP " + reply.status + "：" + (reply.data && reply.data.message || ""), true);
+  }
+
+  const presets = [
+    ["天气", "杭州明天的天气"],
+    ["火车票", "明天从杭州到上海的火车票"],
+    ["行程", "明天从杭州到上海玩3天，看看天气和火车票，规划行程"],
+    ["缺条件→澄清", "明天天气怎么样"],
+    ["能力问题", "你能帮我做什么？"],
+    ["寒暄+业务", "你好，杭州明天的天气怎么样"],
+    ["无关请求", "帮我写一首诗"],
+    ["无数据", "成都明天的天气"],
+    ["超长→413", "字".repeat(2100)]
+  ];
+  $("presets").innerHTML = presets
+    .map(([label, text], i) => '<button data-i="' + i + '">' + label + "</button>").join("");
+  $("presets").addEventListener("click", (event) => {
+    const index = event.target.dataset.i;
+    if (index === undefined) return;
+    $("question").value = presets[Number(index)][1];
+  });
+
+  $("send").addEventListener("click", () => send(false));
+  $("resend").addEventListener("click", () => send(true));
+  $("instruct").addEventListener("click", instruct);
+  $("query").addEventListener("click", queryRun);
+  $("memLoad").addEventListener("click", loadMemories);
+  $("memSave").addEventListener("click", saveMemory);
+  $("memDelete").addEventListener("click", deleteMemory);
+  $("question").addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") send(false);
+  });
+})();
+</script>
+</body>
+</html>

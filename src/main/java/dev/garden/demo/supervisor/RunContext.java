@@ -169,12 +169,27 @@ final class RunContext {
         }
     }
 
+    /**
+     * 单次执行合并：同一个 key 的多个并发调用只订阅一次。
+     *
+     * <p>{@code Mono.defer(...).share()} 是“冷 → 热”的转换：defer 保证每次订阅才真正建链；
+     * share 让第一次订阅触发执行，后续订阅复用同一个结果，直到完成。
+     * 用途是当模型在一轮里重复请求相同条件的子任务时，避免重复查询和重复计费。
+     * 注意 share 不缓存已完成的结果——跨请求的持久化复用由调用方用检查点单独处理。
+     */
     @SuppressWarnings("unchecked")
     <T> Mono<T> share(String key, Supplier<Mono<T>> supplier) {
         // 单次执行合并并发；持久化成功回放由具体调用方核对权限和参数后完成。
         return (Mono<T>) pending.computeIfAbsent(key, k -> Mono.defer(supplier).share());
     }
 
+    /**
+     * 给模型套上预算、超时和重试的外壳，返回的仍是 Flux（保持流式语义，不在这里聚合）。
+     *
+     * <p>关键点在订阅顺序：所有检查（边界、输入大小、额度预留）都写在 {@code Flux.defer} 里，
+     * 也就是说只有在真正订阅、即将发请求时才执行。这样“预算被消耗”与“请求真的发出”是对齐的，
+     * 不会出现建链时先扣额度、随后被取消导致额度空转的情况。
+     */
     Model budgeted(Model delegate) {
         return new Model() {
             public String getModelName() {
@@ -203,32 +218,40 @@ final class RunContext {
                 return Flux.defer(
                                 () -> {
                                     boundary();
-                                    if (input > ContextBuilder.INPUT_LIMIT)
+                                    if (input > limits.inputBytes())
                                         throw new RunControl.ContextLimit(
                                                 "输入包含工具定义后超过预算，请缩小问题或历史。");
                                     // 模型真实发送前预留共享额度；SDK 自动重试关闭，每次重试重新计数。
                                     control.reserveModelStep(
                                             step, input + limits.outputTokens(), 3);
+                                    // 单次调用上限 20 秒，但不能超过任务剩余时间：先取两者较小值，
+                                    // 这样“任务整体超时”不会被单个模型的 20 秒掩盖。
                                     Duration timeout =
                                             control.remaining().compareTo(Duration.ofSeconds(20))
                                                             < 0
                                                     ? control.remaining()
                                                     : Duration.ofSeconds(20);
                                     return delegate.stream(messages, tools, options)
+                                            // 标记“已经吐过数据”：只要产生过任何增量，就不允许自动重试，
+                                            // 否则会把同一轮的部分输出重复拼进会话。
                                             .doOnNext(x -> emitted.set(true))
                                             .timeout(timeout);
                                 })
+                        // 重试不在 SDK 内部做（那里无法计数），而是在这里逐次经过 reserveModelStep，
+                        // 每次重试都真实消耗一次共享额度，最多 3 次尝试。
                         .retryWhen(
                                 Retry.from(
                                         signals ->
                                                 signals.concatMap(
                                                         signal -> {
                                                             Throwable error = signal.failure();
+                                                            // 已产生输出、超过重试次数、或错误类型不可重试时立即向上抛。
                                                             if (emitted.get()
                                                                     || signal.totalRetries() >= 2
                                                                     || !ToolExecutor.retryable(
                                                                             error))
                                                                 return Mono.error(error);
+                                                            // 服务端给了 Retry-After 就按它等，否则按指数退避。
                                                             Duration delay =
                                                                     ToolExecutor.retryDelay(
                                                                             error,
@@ -236,14 +259,19 @@ final class RunContext {
                                                                                             signal
                                                                                                     .totalRetries()
                                                                                     + 1);
+                                                            // 等待时间超过任务剩余时间就不要再等，直接按超时结束。
                                                             if (control.remaining().compareTo(delay)
                                                                     <= 0)
                                                                 return Mono.error(
                                                                         new RunControl
                                                                                 .DeadlineExceeded());
+                                                            // Mono.delay 是非阻塞等待：让出线程，到点再重试。
                                                             return Mono.delay(delay);
                                                         })))
                         .doOnError(RunContext.this::rememberFailure)
+                        // subscribeOn + publishOn 一起用：SDK 的 HTTP 调用是阻塞的，
+                        // subscribeOn 把“订阅动作”放到 model-boundary 线程池，避免占用 WebFlux 事件线程；
+                        // publishOn 把后续 onNext/onComplete 切回同一池子，避免下游处理又回到事件线程。
                         .subscribeOn(MODEL_WORK)
                         .publishOn(MODEL_WORK);
             }

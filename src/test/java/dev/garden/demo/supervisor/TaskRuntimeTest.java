@@ -33,6 +33,7 @@ class TaskRuntimeTest {
                 Duration.ofSeconds(20),
                 calls,
                 1024,
+                48000,
                 2,
                 1,
                 10,

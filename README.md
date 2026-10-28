@@ -6,7 +6,7 @@ Java 17 + Maven + AgentScope Java 2.0.1，与当前 DSH 项目使用的 SDK 版�
 
 ## Supervisor 与三个子 Agent 服务
 
-`dev.garden.demo.supervisor` 已全包复核改造：查询改写 → 意图识别 → 调用天气、火车票或行程规划 Agent。提供 Spring Boot HTTP 服务、持久任务、执行中追加指令、重启恢复、预算、工具校验、会话记忆和证据核对。
+`dev.garden.demo.supervisor` 已全包复核改造为统一模型—工具循环：用户原话直接进入 Supervisor 模型，模型自行选择天气、火车票或行程规划 Agent，工具结果写回同一会话继续。提供 Spring Boot HTTP 服务、持久任务、执行中追加指令、重启恢复、预算、工具校验、会话记忆和证据核对。
 
 ```sh
 mvn -q package
@@ -14,7 +14,7 @@ export SUPERVISOR_AUTH_TOKENS='demo-token=demo-tenant:demo-user:query_weather,qu
 bash run-supervisor-server.sh
 ```
 
-默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。真实本地 HTTP 与强制退出恢复均有自动化验收，结果见实施记录。
+默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。启动后直接打开 <http://127.0.0.1:8080/> 使用内置测试页面：可发起任务、查看状态/证据/事件、提交执行中的新指令、按 runId 查询任务、维护长期偏好，并查看每条请求的状态码与原始响应。真实本地 HTTP 与强制退出恢复均有自动化验收，结果见实施记录。
 
 - [完整实现说明：16 项处理、流程图、接口和运行方式](docs/Supervisor使用说明.md)
 - [固定 Codex / Claude 源码映射及适配差异](docs/源码参考与适配边界.md)

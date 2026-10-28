@@ -103,8 +103,8 @@ class SupervisorSocketIT {
     }
 
     @Test
-    void longQuestionAndLargeBodyHaveDifferentErrors() throws Exception {
-        assertEquals(400, post(json(new Request("甲", "字".repeat(2001), List.of()))).statusCode());
+    void oversizedInputReturnsPayloadTooLarge() throws Exception {
+        assertEquals(413, post(json(new Request("甲", "字".repeat(2001), List.of()))).statusCode());
         HttpResponse<String> response = post(json(new Request("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, response.statusCode(), response.body());
     }

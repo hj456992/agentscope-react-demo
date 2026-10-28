@@ -8,7 +8,14 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-/** 六个 HTTP 接口统一使用可信身份；数据库操作调度到有界工作线程。 */
+/**
+ * 六个 HTTP 接口统一使用可信身份；数据库操作调度到有界工作线程。
+ *
+ * <p>WebFlux 的约定：控制器返回 {@code Mono/Flux}，框架负责订阅并把结果写回响应；
+ * 方法体里只做参数校验和建链，不能 {@code block()}，否则会卡住事件线程。
+ * 需要读写 JDBC 的入口（记忆接口）显式 {@code subscribeOn(boundedElastic)}，
+ * 因为 H2 是阻塞调用，不能留在 Netty 的事件线程上。
+ */
 @RestController
 @RequestMapping("/api/supervisor")
 public class SupervisorController {
@@ -29,7 +36,7 @@ public class SupervisorController {
             @RequestHeader(value = "Prefer", required = false) String prefer,
             @RequestBody Request request) {
         var identity = access.authenticate(auth);
-        boolean async = "respond-async".equalsIgnoreCase(prefer);
+        boolean async = prefersAsync(prefer);
         return tasks.submit(identity, request, async)
                 .map(
                         result -> {
@@ -98,5 +105,13 @@ public class SupervisorController {
         return Mono.fromRunnable(() -> conversations.delete(identity, key, expectedVersion))
                 .subscribeOn(Schedulers.boundedElastic())
                 .thenReturn(ResponseEntity.noContent().build());
+    }
+
+    /** Prefer 是按逗号分隔的偏好列表，参数用分号带；respond-async 出现在任意项即异步。 */
+    private static boolean prefersAsync(String prefer) {
+        if (prefer == null) return false;
+        for (String item : prefer.split(","))
+            if ("respond-async".equalsIgnoreCase(item.split(";")[0].trim())) return true;
+        return false;
     }
 }

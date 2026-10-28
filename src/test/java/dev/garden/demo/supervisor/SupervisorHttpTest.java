@@ -74,10 +74,24 @@ class SupervisorHttpTest {
     }
 
     @Test
-    void longQuestionAndLargeBodyHaveDifferentErrors() {
-        assertEquals(400, web.post(json(new Request("甲", "字".repeat(2001), List.of()))).status());
+    void oversizedInputReturnsPayloadTooLarge() {
+        assertEquals(413, web.post(json(new Request("甲", "字".repeat(2001), List.of()))).status());
         var reply = web.post(json(new Request("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, reply.status(), reply.body());
+    }
+
+    @Test
+    void preferHeaderListIsParsedByPreferenceName() {
+        var reply =
+                web.exchange(
+                                "POST",
+                                "/api/supervisor/chat",
+                                json(new Request("异步会话", "杭州明天的天气", List.of())),
+                                "test-token",
+                                "respond-async; wait=30")
+                        .block();
+        assertNotNull(reply);
+        assertEquals(202, reply.status(), reply.body());
     }
 
     @Test

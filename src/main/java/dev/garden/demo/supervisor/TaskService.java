@@ -20,7 +20,20 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 
-/** 持久任务持有执行订阅，HTTP 等待者取消只会离开等待，不会取消任务。 */
+/**
+ * 持久任务持有执行订阅，HTTP 等待者取消只会离开等待，不会取消任务。
+ *
+ * <p>并发模型说明（这是本类最容易看错的地方）：
+ *
+ * <ul>
+ *   <li>任务真正的执行是“服务端自己订阅”的一条 {@code Mono<Void>} 链，生命周期跟随
+ *       {@link #owned}，不跟随某个 HTTP 请求；浏览器断开只是不再等待，不会停任务。
+ *   <li>所有 JDBC 操作都放在 {@code Schedulers.boundedElastic()} 上执行，因为 H2 的调用是阻塞的，
+ *       绝不能跑在 WebFlux 的 Netty 事件线程上。
+ *   <li>创建/指令等“读-判断-写”必须串行，所以整个方法用 {@code synchronized} 保护，
+ *       并在同一事务里完成版本校验。
+ * </ul>
+ */
 public final class TaskService implements AutoCloseable {
     public enum Action {
         SUPPLEMENT,
@@ -50,6 +63,32 @@ public final class TaskService implements AutoCloseable {
     private final SupervisorSettings settings;
     private final AccessPolicy accessPolicy;
     private final BiFunction<Request, RunControl, Mono<Result>> runner;
+    /**
+     * 有界弹性调度器（boundedElastic）：专门跑阻塞的 JDBC 与任务链。
+     *
+     * <p>它和传统 {@code new ThreadPoolExecutor(...)} 的区别（参数看着少，是因为 Reactor 把很多
+     * 策略写死了，只暴露两个容量）：
+     *
+     * <ul>
+     *   <li><b>参数含义</b>：第一个 12 是 {@code threadCap}——最多同时存在 12 个线程；
+     *       第二个 256 是 {@code queuedTaskCap}——<b>每个线程的等待队列</b>最多排 256 个任务
+     *       （按线程各算一份，不是全池共用 256）。传统池要自己配 corePoolSize、
+     *       maximumPoolSize、keepAliveTime、队列类型、拒绝策略，这里都不用写。
+     *   <li><b>没有核心线程</b>：线程按需创建，空闲约 60 秒自动回收；传统池的核心线程默认常驻，
+     *       除非开 {@code allowCoreThreadTimeOut}。
+     *   <li><b>队列满了直接拒绝</b>：抛 {@code RejectedExecutionException}，在响应式链里表现为
+     *       一条错误信号；传统池默认也是 AbortPolicy，但入口是 {@code execute/submit}。
+     *   <li><b>返回 Disposable 而不是 Future</b>：只能取消，不能 {@code get()} 阻塞取结果；
+     *       结果要通过 Mono/Flux 的订阅回调拿。所以它服务的是 {@code subscribeOn/publishOn}，
+     *       不是“提交任务再等返回值”那种用法。
+     *   <li><b>线程亲和</b>：同一个 {@code Scheduler.Worker} 上连续排的任务固定在同一线程执行，
+     *       阻塞任务不会在线程间乱跳，ThreadLocal 之类的状态也稳定。
+     *   <li><b>存在意义</b>：Reactor 规定阻塞代码不能跑在 Netty 事件线程上，boundedElastic
+     *       就是官方给阻塞任务（JDBC、文件 IO、同步 SDK）准备的池；全局默认
+     *       {@code Schedulers.boundedElastic()} 则是 10×CPU 核数线程、每线程 10 万队列。
+     *   <li><b>12/256 是演示用业务配置</b>，可按部署容量调整，不是上游默认值，也不是行业标准。
+     * </ul>
+     */
     private final Scheduler scheduler = Schedulers.newBoundedElastic(12, 256, "supervisor-runtime");
     private final Map<String, OwnedRun> owned = new HashMap<>();
     private final ScheduledExecutorService recovery =
@@ -115,13 +154,33 @@ public final class TaskService implements AutoCloseable {
                 TimeUnit.SECONDS);
     }
 
+    /**
+     * 受理请求：先建任务（写库），再决定是立即返回 202 还是等结果。
+     *
+     * <p>{@code Mono.fromCallable(...).subscribeOn(scheduler)} 把“建任务 + 启动执行”挪到弹性线程池，
+     * 因为里面有事务和同步锁；WebFlux 只负责把这个 Mono 订阅出去。
+     * {@code async} 分支直接拿到当前视图返回，同步分支进入 {@link #await} 轮询等待。
+     */
     public Mono<View> submit(AccessPolicy.Identity identity, Request request, boolean async) {
+        // 1) 把“校验 + 建任务 + 落库 + 启动执行”整段包成一个延迟计算。
+        //    fromCallable 的 lambda 此刻并不会执行，只有返回的 Mono 被订阅时才真正跑。
+        //    返回值类型是 Mono<TaskRepository.Task>（建好的那条任务记录）。
         return Mono.fromCallable(() -> create(identity, request))
+                // 2) create 里是同步方法，包含数据库事务和 synchronized 锁，属于“阻塞调用”。
+                //    subscribeOn(scheduler) 表示：订阅和执行这段计算时，切到弹性线程池上去跑。
+                //    这样就不会占用 WebFlux 的 Netty 事件线程（那条线程一旦被阻塞，整个服务都卡）。
                 .subscribeOn(scheduler)
+                // 3) 任务建好后拿到 task，再根据 async 决定给调用方返回什么。
+                //    flatMap 的意思是“把上游的 1 个结果，异步地换成下游的 1 个新 Mono”。
                 .flatMap(
                         task ->
                                 async
+                                        // 3a) 异步模式：任务已经在后台跑了，这里立刻把“当前快照”返回。
+                                        //     Mono.just 就是“现成的一个值”，不等待、不再计算。
+                                        //     前端拿到的 state 通常是 RUNNING，之后靠 get 接口查进度。
                                         ? Mono.just(view(identity, task))
+                                        // 3b) 同步模式：进入 await 轮询，一直等到任务不再是 RUNNING，
+                                        //     才把这个最终结果作为 HTTP 响应返回（长轮询）。
                                         : await(identity, task.runId));
     }
 
@@ -188,6 +247,13 @@ public final class TaskService implements AutoCloseable {
                 .subscribeOn(scheduler);
     }
 
+    /**
+     * 同步等待结果：每 25ms 查一次库，直到状态不再是 RUNNING。
+     *
+     * <p>为什么用轮询而不是 CompletableFuture/Sinks 推送：任务可能在别的线程、甚至在进程重启后
+     * 由恢复线程推进，等待方无法持有执行者。轮询以数据库为唯一真相，重启后依然成立。
+     * {@code Mono.delay(...).then(Mono.defer(...))} 是非阻塞等待：不占线程，到点再查一次。
+     */
     private Mono<View> await(AccessPolicy.Identity identity, String id) {
         return get(identity, id)
                 .flatMap(
@@ -326,6 +392,16 @@ public final class TaskService implements AutoCloseable {
         return reply;
     }
 
+    /**
+     * 启动一个任务的执行订阅。
+     *
+     * <p>{@code Disposable.Swap} 的意义：切换/取消时可以用 {@code update/dispose} 替换或销毁订阅，
+     * 而不必担心旧订阅还在跑。{@code doFinally} 负责把所有权从 {@link #owned} 移除——
+     * 无论正常结束、报错还是被取消都会执行，避免名额泄漏。
+     *
+     * <p>注意 {@code subscribe(ignored -> {}, error -> fail(...))}：任务链的错误不往上抛给 HTTP，
+     * 而是收敛成任务状态 FAILED/TIMEOUT 等，这样查询接口仍然能读到终态。
+     */
     private void start(TaskRepository.Task task) {
         if (closed || owned.containsKey(task.runId)) return;
         var ownership = new OwnedRun(task.identity);
@@ -344,6 +420,18 @@ public final class TaskService implements AutoCloseable {
         ownership.subscription.update(execution);
     }
 
+    /**
+     * 任务的一轮执行：调用 Supervisor，然后把结果写回任务行。
+     *
+     * <p>两个响应式细节：
+     *
+     * <ul>
+     *   <li>{@code timeout(control.remaining())} 用“剩余时间”而不是固定值，重启续跑后也不会重新计时；
+     *   <li>{@code publishOn(scheduler)} 让随后的 {@code flatMap}（里面有事务）跑在弹性线程池上；
+     *       如果版本已被新指令推进（{@code revision} 变化），事务返回 false，这里递归再跑一轮，
+     *       从而“旧结果不覆盖新条件”。
+     * </ul>
+     */
     private Mono<Void> cycle(String id, PersistentControl control) {
         return Mono.defer(
                 () -> {
@@ -700,13 +788,12 @@ public final class TaskService implements AutoCloseable {
     }
 
     static void validateRequest(Request request) {
-        if (request == null
-                || blank(request.sessionId())
-                || request.sessionId().length() > 200
-                || blank(request.question())
+        if (request == null || blank(request.sessionId()) || blank(request.question())) throw invalid();
+        // 过大属于容量问题（413），字段无效才是 400。
+        if (request.sessionId().length() > 200
                 || request.question().length() > 2000
                 || (request.requestId() != null && request.requestId().length() > 200))
-            throw invalid();
+            throw tooLarge();
         for (Turn turn : request.history())
             if (turn == null || blank(turn.question()) || turn.answer() == null) throw invalid();
     }
@@ -717,6 +804,10 @@ public final class TaskService implements AutoCloseable {
 
     private static ResponseStatusException busy() {
         return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    private static ResponseStatusException tooLarge() {
+        return new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     private static ResponseStatusException conflict(String message) {

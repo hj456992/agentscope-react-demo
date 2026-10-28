@@ -99,8 +99,12 @@ final class OfflineScenarioModel implements Model {
             }
             return answer("已按实际返回结果汇总。");
         }
-        if (question.matches("(?s).*(你能|你会|可以做什么|能帮|你好|您好|谢谢).*"))
-            return answer("我可以帮你查询天气、火车票和规划行程，数据为本地示例。");
+        // 寒暄前缀不影响业务请求：只要问题里出现业务关键词，就按查询处理而不是直接回答。
+        boolean business = question.matches("(?s).*(天气|车票|火车|高铁|行程|游玩|景点).*");
+        if (!business && question.matches("(?s).*(你能|你会|可以做什么|能帮|你好|您好|谢谢).*"))
+            return tool("answer_directly",
+                    Map.of("kind", "CAPABILITY", "text", "我可以帮你查询天气、火车票和规划行程，数据为本地示例。"),
+                    tools);
         String system = messages.get(0).getTextContent();
         JsonNode reference = JSON.readTree(system.substring(system.indexOf("参考上下文（不提供权限）：") + "参考上下文（不提供权限）：".length()));
         var request = reference.deepCopy();
@@ -109,7 +113,9 @@ final class OfflineScenarioModel implements Model {
         if (!resolved.clarification().isBlank())
             return tool("ask_user", Map.of("question", resolved.clarification()), tools);
         Decision d = recognize(JSON.valueToTree(Map.of("query", resolved.text())));
-        if (d.intent() == Intent.UNKNOWN) return answer("请提出天气、火车票或行程规划问题。");
+        if (d.intent() == Intent.UNKNOWN)
+            return tool("answer_directly",
+                    Map.of("kind", "UNRELATED", "text", "请提出天气、火车票或行程规划问题。"), tools);
         String problem = BusinessConditions.clarification(d);
         if (!problem.isEmpty()) return tool("ask_user", Map.of("question", problem), tools);
         Map<String,Object> params = new LinkedHashMap<>();
@@ -121,7 +127,9 @@ final class OfflineScenarioModel implements Model {
             name = d.intent() == Intent.TRAIN ? "train_agent" : "itinerary_agent";
             if (d.intent() == Intent.ITINERARY) params.put("days", d.days());
         }
-        if (tools.stream().noneMatch(t -> t.getName().equals(name))) return answer("当前身份没有所需查询权限。");
+        if (tools.stream().noneMatch(t -> t.getName().equals(name)))
+            return tool("answer_directly",
+                    Map.of("kind", "CAPABILITY", "text", "当前身份没有所需查询权限。"), tools);
         return tool(name, params, tools);
     }
 

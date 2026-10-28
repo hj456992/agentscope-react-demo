@@ -7,8 +7,6 @@ import java.util.*;
 
 /** 保留当前问题和历史用户条件，回答文本优先裁剪。估算不等同供应商计费。 */
 final class ContextBuilder {
-    static final int INPUT_LIMIT = 6656;
-
     static int estimate(Object value) {
         // 未指定模型分词器，按 UTF-8 字节保守预留；工具定义也计算在内。
         return json(value).getBytes(StandardCharsets.UTF_8).length;

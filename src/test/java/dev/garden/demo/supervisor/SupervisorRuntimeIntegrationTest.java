@@ -27,6 +27,7 @@ class SupervisorRuntimeIntegrationTest {
                 Duration.ofSeconds(15),
                 16,
                 1024,
+                48000,
                 8,
                 2,
                 10,

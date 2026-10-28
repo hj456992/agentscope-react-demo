@@ -68,19 +68,27 @@ public final class SupervisorContracts {
             List<Evidence> evidence,
             List<String> events) {}
 
-    public record Limits(Duration timeout, int modelCalls, int outputTokens) {
+    /** inputBytes 是单次模型输入的字节预算；真实模型需要比离线脚本更大的窗口。 */
+    public record Limits(Duration timeout, int modelCalls, int outputTokens, int inputBytes) {
+        static final int DEFAULT_INPUT_BYTES = 48000;
+
+        public Limits(Duration timeout, int modelCalls, int outputTokens) {
+            this(timeout, modelCalls, outputTokens, DEFAULT_INPUT_BYTES);
+        }
+
         public Limits {
             if (timeout == null
                     || timeout.isNegative()
                     || timeout.isZero()
                     || modelCalls < 1
-                    || outputTokens < 1) {
+                    || outputTokens < 1
+                    || inputBytes < 1024) {
                 throw new IllegalArgumentException("运行预算必须为正数");
             }
         }
 
         public static Limits defaults() {
-            return new Limits(Duration.ofSeconds(60), 16, 1024);
+            return new Limits(Duration.ofSeconds(60), 16, 1024, DEFAULT_INPUT_BYTES);
         }
     }
 
