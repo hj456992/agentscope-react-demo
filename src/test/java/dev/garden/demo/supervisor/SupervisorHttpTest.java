@@ -2,19 +2,19 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
-import dev.garden.demo.supervisor.pojo.dto.*;
-import dev.garden.demo.supervisor.pojo.param.*;
-import dev.garden.demo.supervisor.pojo.req.*;
-import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
-import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.service.*;
 
 import org.junit.jupiter.api.*;
 
@@ -86,7 +86,8 @@ class SupervisorHttpTest {
 
     @Test
     void longQuestionAndLargeBodyHaveDifferentErrors() {
-        assertEquals(400, web.post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).status());
+        assertEquals(
+                400, web.post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).status());
         var reply = web.post(json(new RequestDTO("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, reply.status(), reply.body());
     }

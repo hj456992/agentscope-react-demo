@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +52,8 @@ class SupervisorTest {
     void itineraryActuallyDelegatesToBothAgents() {
         ResultDTO result = run("明天从杭州到上海玩一天，看看天气和火车票，规划行程");
         assertEquals(Status.SUCCESS, result.status());
-        assertEquals(List.of("行程规划", "天气查询", "火车票查询"), result.agents());
+        assertEquals(
+                java.util.Set.of("行程规划", "天气查询", "火车票查询"), java.util.Set.copyOf(result.agents()));
         assertEquals(3, result.evidence().size());
         assertTrue(result.answer().contains("G-DEMO"));
         assertTrue(result.answer().contains("22"));
@@ -81,9 +82,11 @@ class SupervisorTest {
     }
 
     @Test
-    void unknownIntentDoesNotChooseAnAgent() {
+    void unsupportedOfflineRequestReturnsTextWithoutChoosingAnAgent() {
         ResultDTO result = run("帮我写一首诗");
-        assertEquals(Status.UNKNOWN_INTENT, result.status());
+        assertEquals(Status.SUCCESS, result.status());
+        assertTrue(result.answer().contains("固定演示场景"));
+        assertTrue(result.evidence().isEmpty());
         assertTrue(result.agents().isEmpty());
     }
 

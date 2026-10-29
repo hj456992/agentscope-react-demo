@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
@@ -95,11 +95,7 @@ class SupervisorRuntimeIntegrationTest {
                         LimitsDTO.defaults(),
                         TravelTools.demoData());
         try (var repository = new TestRepository(url);
-                var tasks =
-                        TestServices.taskService(
-                                repository,
-                                settings(url),
-                                supervisor::run)) {
+                var tasks = TestServices.taskService(repository, settings(url), supervisor::run)) {
             var started =
                     tasks.submit(
                                     IdentityDTO.local(),
@@ -107,25 +103,25 @@ class SupervisorRuntimeIntegrationTest {
                                     true)
                             .block();
             assertTrue(entered.await(3, TimeUnit.SECONDS));
-            int calls =
-                    tasks.get(IdentityDTO.local(), started.runId()).block().modelCalls();
+            int calls = tasks.get(IdentityDTO.local(), started.runId()).block().modelCalls();
             var instruction =
                     tasks.instruct(
                                     IdentityDTO.local(),
                                     new InstructionParam(
-                                            started.runId(),
-                                            "change",
-                                            1,
-                                            Action.REVISE,
-                                            "上海后天的天气"))
+                                            started.runId(), "change", 1, Action.REVISE, "上海后天的天气"))
                             .block();
             assertEquals(started.runId(), instruction.runId());
             release.tryEmitValue(true);
             var result = done(tasks, started.runId());
             assertEquals("SUCCESS", result.state(), result.result().toString());
             assertEquals(2, result.revision());
-            assertTrue(result.result().evidence().stream().anyMatch(e -> "上海".equals(e.data().get("city"))
-                    && "2026-10-30".equals(e.data().get("date"))), "保留旧结果并加入新查询结果");
+            assertTrue(
+                    result.result().evidence().stream()
+                            .anyMatch(
+                                    e ->
+                                            "上海".equals(e.data().get("city"))
+                                                    && "2026-10-30".equals(e.data().get("date"))),
+                    "保留旧结果并加入新查询结果");
             assertFalse(result.result().answer().contains("杭州"));
             assertTrue(result.modelCalls() > calls);
         }
@@ -158,11 +154,7 @@ class SupervisorRuntimeIntegrationTest {
                         LimitsDTO.defaults(),
                         TravelTools.demoData());
         try (var repository = new TestRepository(url);
-                var tasks =
-                        TestServices.taskService(
-                                repository,
-                                settings(url),
-                                supervisor::run)) {
+                var tasks = TestServices.taskService(repository, settings(url), supervisor::run)) {
             var started =
                     tasks.submit(
                                     IdentityDTO.local(),
@@ -172,8 +164,7 @@ class SupervisorRuntimeIntegrationTest {
             assertTrue(entered.await(3, TimeUnit.SECONDS));
             tasks.instruct(
                             IdentityDTO.local(),
-                            new InstructionParam(
-                                    started.runId(), "stop", 1, Action.CANCEL, null))
+                            new InstructionParam(started.runId(), "stop", 1, Action.CANCEL, null))
                     .block();
             assertFalse(cancelled.await(100, TimeUnit.MILLISECONDS), "父回合取消不撤回已受理子会话");
             assertEquals("CANCELLED", done(tasks, started.runId()).state());
@@ -184,8 +175,7 @@ class SupervisorRuntimeIntegrationTest {
 
     @Test
     void cachedItineraryCannotLeakAfterPermissionsChange() {
-        AtomicReference<IdentityDTO> identity =
-                new AtomicReference<>(IdentityDTO.local());
+        AtomicReference<IdentityDTO> identity = new AtomicReference<>(IdentityDTO.local());
         RunControl original = RunControl.local(LimitsDTO.defaults());
         RunControl control =
                 new RunControl() {
@@ -234,10 +224,26 @@ class SupervisorRuntimeIntegrationTest {
                     }
                 };
         AtomicInteger turns = new AtomicInteger();
-        Supervisor supervisor = new Supervisor(role -> CoreSourceParityTest.model((messages, tools) ->
-                turns.getAndIncrement() == 0
-                    ? CoreSourceParityTest.tool("query_trains", Map.of("from", "杭州", "to", "上海", "date", "2026-10-29"))
-                    : CoreSourceParityTest.text("已查询 G-DEMO 车次。")), CLOCK, LimitsDTO.defaults(), TravelTools.demoData());
+        Supervisor supervisor =
+                new Supervisor(
+                        role ->
+                                CoreSourceParityTest.model(
+                                        (messages, tools) ->
+                                                turns.getAndIncrement() == 0
+                                                        ? CoreSourceParityTest.tool(
+                                                                "query_trains",
+                                                                Map.of(
+                                                                        "from",
+                                                                        "杭州",
+                                                                        "to",
+                                                                        "上海",
+                                                                        "date",
+                                                                        "2026-10-29"))
+                                                        : CoreSourceParityTest.text(
+                                                                "已查询 G-DEMO 车次。")),
+                        CLOCK,
+                        LimitsDTO.defaults(),
+                        TravelTools.demoData());
         RequestDTO request = new RequestDTO("cached", "明天从杭州到上海的火车票", List.of());
         ResultDTO first = supervisor.run(request, control).block();
         assertEquals(Status.SUCCESS, first.status());

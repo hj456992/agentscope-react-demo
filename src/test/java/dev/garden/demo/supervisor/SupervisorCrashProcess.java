@@ -2,14 +2,14 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.service.*;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -19,6 +19,31 @@ import java.util.*;
 
 /** 独立进程：天气阶段已经保存，火车票工具执行时模拟断电。 */
 public final class SupervisorCrashProcess {
+    static final int RECOVERY_CALL_LIMIT = 32;
+    private static volatile TestRepository crashRepository;
+
+    static SupervisorSettings recoverySettings(String url) {
+        SupervisorSettings base = SupervisorRuntimeIntegrationTest.settings(url);
+        // 恢复需要重建、摘要等额外模型调用；额度耗尽由专门用例验证。
+        // 两个进程使用同一上限，恢复不能重置已经消耗的额度。
+        return new SupervisorSettings(
+                base.mode(),
+                base.timeout(),
+                RECOVERY_CALL_LIMIT,
+                base.maxOutputTokens(),
+                base.maxConcurrentRequests(),
+                base.maxConcurrentPerUser(),
+                base.tasksPerUserMinute(),
+                base.modelCallsPerMinute(),
+                1_000_000,
+                base.maxStoredTasks(),
+                base.taskRetention(),
+                base.conversationRetention(),
+                base.preferenceRetention(),
+                base.databaseUrl(),
+                base.authTokens());
+    }
+
     static TravelTools.DataSource source(Path calls, boolean crash) {
         return new TravelTools.DataSource() {
             void record(String value) {
@@ -43,6 +68,28 @@ public final class SupervisorCrashProcess {
             public List<Map<String, Object>> trains(String from, String to, String date) {
                 record("train");
                 if (crash) {
+                    // 子会话并发执行：等天气成功检查点提交后再断电，明确本用例的崩溃边界。
+                    long deadline =
+                            System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(3);
+                    while (crashRepository == null
+                            || crashRepository.all().stream()
+                                    .noneMatch(
+                                            task ->
+                                                    task.checkpoints.keySet().stream()
+                                                            .anyMatch(
+                                                                    key ->
+                                                                            key.startsWith(
+                                                                                    "read:query_weather:")))) {
+                        if (System.nanoTime() >= deadline) {
+                            throw new AssertionError("天气成功检查点尚未提交");
+                        }
+                        try {
+                            Thread.sleep(5);
+                        } catch (InterruptedException error) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(error);
+                        }
+                    }
                     Runtime.getRuntime().halt(24);
                 }
                 return TravelTools.demoData().trains(from, to, date);
@@ -61,12 +108,12 @@ public final class SupervisorCrashProcess {
         try (var repository = new TestRepository(url);
                 var tasks =
                         TestServices.taskService(
-                                repository,
-                                SupervisorRuntimeIntegrationTest.settings(url),
-                                supervisor::run)) {
+                                repository, recoverySettings(url), supervisor::run)) {
+            crashRepository = repository;
             tasks.submit(
                             IdentityDTO.local(),
-                            new RequestDTO("crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
+                            new RequestDTO(
+                                    "crash", "明天从杭州到上海玩一天，规划行程", List.of(), "durable-request"),
                             true)
                     .block();
             new java.util.concurrent.CountDownLatch(1)

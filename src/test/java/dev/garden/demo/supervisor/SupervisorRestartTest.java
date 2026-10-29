@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,8 +43,13 @@ class SupervisorRestartTest {
             assertTrue(child.waitFor(12, TimeUnit.SECONDS), "崩溃子进程必须有界退出");
             assertEquals(24, child.exitValue(), Files.readString(directory.resolve("child.log")));
             try (var repository = new TestRepository(url)) {
-                var before = repository.all().stream().filter(task -> task.parentRunId == null).findFirst().orElseThrow();
+                var before =
+                        repository.all().stream()
+                                .filter(task -> task.parentRunId == null)
+                                .findFirst()
+                                .orElseThrow();
                 int callsBefore = before.calls;
+                assertEquals(SupervisorCrashProcess.RECOVERY_CALL_LIMIT, before.maxCalls);
                 long deadline = before.deadline;
                 assertTrue(callsBefore > 0);
                 assertEquals("RUNNING", before.state);
@@ -57,13 +62,44 @@ class SupervisorRestartTest {
                 try (var tasks =
                         TestServices.taskService(
                                 repository,
-                                SupervisorRuntimeIntegrationTest.settings(url),
+                                SupervisorCrashProcess.recoverySettings(url),
                                 supervisor::run)) {
-                    var result = SupervisorRuntimeIntegrationTest.done(tasks, before.runId);
-                    assertEquals("SUCCESS", result.state(), result.result().toString());
+                    dev.garden.demo.supervisor.pojo.res.RunRes result;
+                    try {
+                        result = SupervisorRuntimeIntegrationTest.done(tasks, before.runId);
+                    } catch (AssertionError error) {
+                        throw new AssertionError(
+                                repository.all().stream()
+                                        .map(
+                                                t ->
+                                                        t.agentPath
+                                                                + " state="
+                                                                + t.state
+                                                                + " calls="
+                                                                + t.calls
+                                                                + " result="
+                                                                + t.result)
+                                        .toList()
+                                        .toString(),
+                                error);
+                    }
+                    assertEquals(
+                            "SUCCESS",
+                            result.state(),
+                            result
+                                    + "\n"
+                                    + repository.all().stream()
+                                            .map(
+                                                    t ->
+                                                            t.agentPath
+                                                                    + " state="
+                                                                    + t.state
+                                                                    + " calls="
+                                                                    + t.calls)
+                                            .toList());
                     assertEquals(deadline, result.deadline());
                     assertTrue(result.modelCalls() > callsBefore);
-                    assertTrue(result.modelCalls() <= 16);
+                    assertTrue(result.modelCalls() <= before.maxCalls);
                     var events = Files.readAllLines(calls);
                     assertEquals(1, events.stream().filter("weather"::equals).count());
                     assertEquals(2, events.stream().filter("train"::equals).count());

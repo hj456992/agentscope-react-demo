@@ -2,10 +2,18 @@ package dev.garden.demo.supervisor;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
 
+import io.agentscope.core.util.JsonUtils;
+
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
 /** V2 生命周期共用的路径和状态映射，不依赖业务角色。 */
 public final class AgentLifecycle {
     /** 本服务独立 Agent 树的子执行容量；不是 Codex 默认值，也不是 HTTP 请求额度。 */
     public static final int MAX_ACTIVE_CHILDREN = 8;
+
     private AgentLifecycle() {}
 
     public static String childPath(String parent, String name) {
@@ -52,9 +60,45 @@ public final class AgentLifecycle {
         };
     }
 
-    public static AgentMessageDTO result(String sender, String recipient, ResultDTO result) {
-        String text = status(result.status().name()).equals("errored")
-                ? "Agent errored: " + result.answer() : result.answer();
-        return new AgentMessageDTO(sender, recipient, "RESULT", text, result);
+    public static AgentMessageDTO result(
+            String sender, String recipient, ResultDTO result, Map<String, String> checkpoints) {
+        String text =
+                status(result.status().name()).equals("errored")
+                        ? "Agent errored: " + result.answer()
+                        : result.answer();
+        return new AgentMessageDTO(
+                sender,
+                recipient,
+                "RESULT",
+                text,
+                result,
+                requiredPermissions(checkpoints, result));
+    }
+
+    /** 权限来自完整历史快照，不能因为新回合无新证据就丢掉旧内容的访问约束。 */
+    public static Set<String> requiredPermissions(
+            Map<String, String> checkpoints, ResultDTO result) {
+        Set<String> permissions = new LinkedHashSet<>();
+        String inherited = checkpoints.get("agent:inherited-permissions");
+        if (inherited != null) {
+            permissions.addAll(
+                    java.util.Arrays.asList(
+                            JsonUtils.getJsonCodec().fromJson(inherited, String[].class)));
+        }
+        String loop = checkpoints.get("loop:v3.3");
+        if (loop != null) {
+            Map<?, ?> snapshot = JsonUtils.getJsonCodec().fromJson(loop, Map.class);
+            if (snapshot.get("requiredPermissions") instanceof Collection<?> saved) {
+                for (Object permission : saved) {
+                    if (permission instanceof String tool) {
+                        permissions.add(tool);
+                    }
+                }
+            }
+        }
+        if (result != null) {
+            result.evidence().forEach(e -> permissions.add(e.tool()));
+        }
+        return Set.copyOf(permissions);
     }
 }

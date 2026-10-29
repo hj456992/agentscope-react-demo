@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
@@ -29,7 +29,7 @@ class SupervisorAuditTest {
     final RequestDTO request = new RequestDTO("audit", "杭州明天的天气", List.of());
 
     @Test
-    void correctEvidenceCannotBeReplacedByInventedWeather() {
+    void offlineParentUsesStructuredEvidenceInsteadOfChildInventedWeather() {
         Supervisor supervisor =
                 new Supervisor(
                         role -> {
@@ -109,7 +109,7 @@ class SupervisorAuditTest {
                         request, LimitsDTO.defaults(), RunControl.local(LimitsDTO.defaults()));
         context.decision = new DecisionDTO(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
         TravelTools tools = new TravelTools(context, TravelTools.demoData());
-        tools.weather("上海", "2026-10-29");
+        tools.weather("杭州", "invalid-date");
         tools.weather("杭州", "2026-10-29");
         assertEquals(Status.SUCCESS, context.outcome());
     }

@@ -34,36 +34,58 @@ final class LoopConversation {
             String replyText,
             int compactionGeneration,
             String compactionSummary,
-            String lastStartedTurnId) {}
+            String lastStartedTurnId,
+            Set<String> requiredPermissions) {}
 
     LoopConversation(RunContext context) {
         this.context = context;
         String saved = context.control.checkpoint(KEY);
         String turnStart = context.control.checkpoint("agent:turn-start");
         String interrupted = context.control.checkpoint("agent:interrupted");
+        String resumedUserInput = context.control.checkpoint("agent:resume-user-input");
         RequestDTO incomingRequest = context.request;
         if (saved == null) {
+            String permissions = context.control.checkpoint("agent:inherited-permissions");
+            if (permissions != null) {
+                context.restorePermissions(
+                        Arrays.asList(
+                                JsonUtils.getJsonCodec().fromJson(permissions, String[].class)));
+            }
             String inherited = context.control.checkpoint("agent:inherited-history");
             if (inherited != null) {
                 Msg[] inheritedMessages = JsonUtils.getJsonCodec().fromJson(inherited, Msg[].class);
                 // V2 preserve_fork_prefix 保留上下文，但父工具是历史记录，不能在子线程执行。
-                for (Msg inheritedMessage : ContextCompactor.normalize(Arrays.asList(inheritedMessages))) {
+                for (Msg inheritedMessage :
+                        ContextCompactor.normalize(Arrays.asList(inheritedMessages))) {
                     Map<String, Object> metadata = new HashMap<>(inheritedMessage.getMetadata());
                     metadata.put("inheritedUserMessage", true);
                     messages.add(inheritedMessage.withMetadata(metadata));
                 }
-                messages.add(Msg.builder().role(MsgRole.USER).textContent(
-                        "You are now a newly spawned child agent. The preceding conversation is inherited parent context. "
-                        + "Follow your own role, identity, and task below; earlier identities, tasks, and action-specific approvals belong to your ancestors. "
-                        + "Inherited tool calls are historical records; live tool sessions and process handles are not inherited. Report your result to your parent.")
-                        .metadata(Map.of("contextNotice", true)).build());
+                messages.add(
+                        Msg.builder()
+                                .role(MsgRole.USER)
+                                .textContent(
+                                        "You are now a newly spawned child agent. The preceding"
+                                            + " conversation is inherited parent context. Follow"
+                                            + " your own role, identity, and task below; earlier"
+                                            + " identities, tasks, and action-specific approvals"
+                                            + " belong to your ancestors. Inherited tool calls are"
+                                            + " historical records; live tool sessions and process"
+                                            + " handles are not inherited. Report your result to"
+                                            + " your parent.")
+                                .metadata(Map.of("contextNotice", true))
+                                .build());
             } else {
                 for (TurnDTO turn : context.request.history()) {
                     if (turn != null && !blank(turn.question())) {
                         messages.add(user(turn.question()));
                     }
                     if (turn != null && !blank(turn.answer())) {
-                        messages.add(Msg.builder().role(MsgRole.ASSISTANT).textContent(turn.answer()).build());
+                        messages.add(
+                                Msg.builder()
+                                        .role(MsgRole.ASSISTANT)
+                                        .textContent(turn.answer())
+                                        .build());
                     }
                 }
             }
@@ -72,19 +94,29 @@ final class LoopConversation {
             context.control.checkpoint("protocol", "3.3");
         } else {
             Snapshot snapshot = JsonUtils.getJsonCodec().fromJson(saved, Snapshot.class);
+            if (snapshot.requiredPermissions() != null) {
+                context.restorePermissions(snapshot.requiredPermissions());
+            }
             if (snapshot.protocol() != 1 && snapshot.protocol() != 2) {
                 throw new IllegalStateException("无法识别的循环记录版本");
             }
             if (snapshot.protocol() == 1) {
                 // v3.3 将旧问答藏在 request.reference；升级时迁成真实消息一次。
                 Set<String> recordedUsers = new HashSet<>();
-                snapshot.messages().stream().filter(m -> m.getRole() == MsgRole.USER)
+                snapshot.messages().stream()
+                        .filter(m -> m.getRole() == MsgRole.USER)
                         .forEach(m -> recordedUsers.add(m.getTextContent()));
                 for (TurnDTO turn : snapshot.request().history()) {
-                    if (turn != null && !blank(turn.question()) && !recordedUsers.contains(turn.question())) {
+                    if (turn != null
+                            && !blank(turn.question())
+                            && !recordedUsers.contains(turn.question())) {
                         messages.add(user(turn.question()));
                         if (!blank(turn.answer())) {
-                            messages.add(Msg.builder().role(MsgRole.ASSISTANT).textContent(turn.answer()).build());
+                            messages.add(
+                                    Msg.builder()
+                                            .role(MsgRole.ASSISTANT)
+                                            .textContent(turn.answer())
+                                            .build());
                         }
                     }
                 }
@@ -114,16 +146,25 @@ final class LoopConversation {
             // 未确认输入由 RunControl 持久投递批次重放，不能用 revision 猜一条用户消息。
         }
         if (turnStart != null && !Objects.equals(lastStartedTurnId, context.control.turnId())) {
+            context.startNewTurn();
             if (interrupted != null) {
                 List<Msg> normalized = ContextCompactor.normalize(messages);
                 messages.clear();
                 messages.addAll(normalized);
-                messages.add(Msg.builder().role(MsgRole.SYSTEM).textContent(interrupted)
-                        .metadata(Map.of("contextNotice", true)).build());
+                messages.add(
+                        Msg.builder()
+                                .role(MsgRole.SYSTEM)
+                                .textContent(interrupted)
+                                .metadata(Map.of("contextNotice", true))
+                                .build());
             }
             // followup 由带来源的 mailbox 注入；此标记只重开回合，不能伪造成用户原话。
-            context.request = incomingRequest;
-            context.query = incomingRequest.question();
+            if (resumedUserInput != null) {
+                accept(resumedUserInput);
+            } else {
+                context.request = incomingRequest;
+                context.query = incomingRequest.question();
+            }
             replyStatus = null;
             replyText = null;
             lastStartedTurnId = context.control.turnId();
@@ -133,6 +174,7 @@ final class LoopConversation {
         if (turnStart != null) {
             context.control.checkpoint("agent:turn-start", null);
             context.control.checkpoint("agent:interrupted", null);
+            context.control.checkpoint("agent:resume-user-input", null);
         }
     }
 
@@ -200,11 +242,25 @@ final class LoopConversation {
     }
 
     private void persist(List<Msg> history, int generation, String summary) {
-        context.control.checkpoint(KEY, json(new Snapshot(
-                2, context.control.revision(), context.request, List.copyOf(history),
-                context.evidence(), context.result(Status.RUNNING, "").agents(), context.decision,
-                context.failedCalls(), context.today.toString(), replyStatus, replyText,
-                generation, summary, lastStartedTurnId)));
+        context.control.checkpoint(
+                KEY,
+                json(
+                        new Snapshot(
+                                2,
+                                context.control.revision(),
+                                context.request,
+                                List.copyOf(history),
+                                context.evidence(),
+                                context.result(Status.RUNNING, "").agents(),
+                                context.decision,
+                                context.failedCalls(),
+                                context.today.toString(),
+                                replyStatus,
+                                replyText,
+                                generation,
+                                summary,
+                                lastStartedTurnId,
+                                context.requiredPermissions())));
     }
 
     List<ToolUseBlock> pendingCalls() {

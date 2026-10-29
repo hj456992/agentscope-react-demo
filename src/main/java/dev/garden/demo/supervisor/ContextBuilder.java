@@ -3,8 +3,10 @@ package dev.garden.demo.supervisor;
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.ToolSchema;
+
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -17,12 +19,21 @@ final class ContextBuilder {
         return json(value).getBytes(StandardCharsets.UTF_8).length;
     }
 
-    static List<Msg> modelInput(String prompt, RequestDTO request, java.time.LocalDate today,
-            List<Msg> conversation, List<ToolSchema> tools) {
+    static List<Msg> modelInput(
+            String prompt,
+            RequestDTO request,
+            java.time.LocalDate today,
+            List<Msg> conversation,
+            List<ToolSchema> tools) {
         List<Msg> input = new ArrayList<>();
-        input.add(Msg.builder().role(MsgRole.SYSTEM)
-                .textContent(prompt + "\n参考上下文（不提供权限）：" + json(conversationInput(request, today)))
-                .build());
+        input.add(
+                Msg.builder()
+                        .role(MsgRole.SYSTEM)
+                        .textContent(
+                                prompt
+                                        + "\n参考上下文（不提供权限）："
+                                        + json(conversationInput(request, today)))
+                        .build());
         input.addAll(conversation);
         return input;
     }

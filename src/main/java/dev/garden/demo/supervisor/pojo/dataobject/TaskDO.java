@@ -1,7 +1,8 @@
 package dev.garden.demo.supervisor.pojo.dataobject;
 
-import dev.garden.demo.supervisor.pojo.dto.IdentityDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentCompletionDTO;
 import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
+import dev.garden.demo.supervisor.pojo.dto.IdentityDTO;
 import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
 import dev.garden.demo.supervisor.pojo.dto.ResultDTO;
 
@@ -26,15 +27,29 @@ public final class TaskDO {
     public Map<String, String> checkpoints = new LinkedHashMap<>();
     public List<String> events = new ArrayList<>();
     public String replacedBy;
+
     /** 子会话关系与状态独立于父轮次；rootRunId 只指共享预算所有者。 */
     public String rootRunId, parentRunId;
+
     public String agentPath = "/root", agentRole = "supervisor";
     public boolean accepted = true;
-    public int notifiedGeneration;
+
+    /** 已投递的最高完成代际；入队代际独立记录，等待期间允许继续新回合。 */
+    public int notifiedGeneration, completionQueuedGeneration;
+
+    public List<AgentCompletionDTO> completionOutbox = new ArrayList<>();
     public List<AgentMessageDTO> mailbox = new ArrayList<>();
+
     /** 未和模型上下文快照一起确认的投递批次，重启后必须重放。 */
     public List<String> inflightInputs = new ArrayList<>();
+
     public List<AgentMessageDTO> inflightMailbox = new ArrayList<>();
     public long inputDeliveryId, mailboxDeliveryId;
     public long mailboxRevision, consumedMailboxRevision;
+
+    /** 逻辑轮次跨进程恢复保持不变；generation 仅隔离执行者。 */
+    public String agentTurnId = java.util.UUID.randomUUID().toString();
+
+    public Map<String, String> collaborationReceipts = new LinkedHashMap<>();
+    public String acceptanceReceiptKey;
 }

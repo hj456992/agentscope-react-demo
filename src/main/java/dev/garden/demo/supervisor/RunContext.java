@@ -17,10 +17,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-/** 一轮的业务快照；持久预算和取消权属于 RunControl，所有子 Agent 共用。 */
+/** 单个会话当前轮次的结果与日志；独立取消和共享树预算由 RunControl 管理。 */
 final class RunContext {
     RequestDTO request;
-    RunContext parent;
     java.time.LocalDate today;
     final LimitsDTO limits;
     final RunControl control;
@@ -31,6 +30,7 @@ final class RunContext {
     private final List<String> events = new ArrayList<>();
     private final Set<String> agents = new LinkedHashSet<>();
     private final Map<String, EvidenceDTO> evidence = new LinkedHashMap<>();
+    private final Set<String> historicalPermissions = new LinkedHashSet<>();
     private final Set<String> failedChildren = new HashSet<>();
     private final Map<String, Mono<?>> pending = new ConcurrentHashMap<>();
     private volatile Status halted;
@@ -40,13 +40,11 @@ final class RunContext {
         check();
     }
 
-    RunContext child(DecisionDTO conditions) {
-        RunContext child = new RunContext(request, limits, control);
-        child.parent = this;
-        child.today = today;
-        child.query = query;
-        child.decision = conditions;
-        return child;
+    synchronized void startNewTurn() {
+        // 历史工具消息仍在对话中；本轮状态和证据附件从新的执行重新累计。
+        failedChildren.clear();
+        evidence.clear();
+        halted = null;
     }
 
     void acceptInput(String text) {
@@ -69,10 +67,6 @@ final class RunContext {
     }
 
     synchronized void event(String text) {
-        if (parent != null) {
-            parent.event(text);
-            return;
-        }
         if (events.size() < 200) {
             events.add(text.length() > 2000 ? text.substring(0, 2000) + "…" : text);
         }
@@ -84,15 +78,26 @@ final class RunContext {
     }
 
     synchronized void agent(String name) {
-        if (parent != null) {
-            parent.agent(name);
-        }
         if (agents.add(name)) {
             event("进入" + name + "助手");
         }
     }
 
+    synchronized Set<String> requiredPermissions() {
+        return Set.copyOf(historicalPermissions);
+    }
+
+    synchronized void restorePermissions(Collection<String> permissions) {
+        for (String permission : permissions) {
+            if (!control.identity().allows(permission)) {
+                throw new RunControl.Cancelled("历史内容权限已变化，不能继续回放");
+            }
+            historicalPermissions.add(permission);
+        }
+    }
+
     synchronized void add(EvidenceDTO item) {
+        restorePermissions(List.of(item.tool()));
         if (ContextBuilder.estimate(item) > 16000) {
             throw new IllegalArgumentException("工具结果过大，需缩小查询范围");
         }
@@ -104,10 +109,6 @@ final class RunContext {
                                             && (e.getValue().status() == Status.INVALID_INPUT));
         }
         evidence.put(evidenceKey(item), item);
-        if (parent != null) {
-            parent.add(item);
-            return;
-        }
         control.checkpoint("progress", json(result(Status.RUNNING, "任务执行中")));
         event("工具结果：" + item.tool() + " / " + item.status());
     }
@@ -128,21 +129,16 @@ final class RunContext {
 
     synchronized void childFailed(String name) {
         failedChildren.add(name);
-        if (parent != null) {
-            parent.childFailed(name);
-        }
     }
 
     synchronized void childSucceeded(String name) {
         failedChildren.remove(name);
-        if (parent != null) {
-            parent.childSucceeded(name);
-        }
     }
 
     void check() {
         try {
             control.checkActive();
+            restorePermissions(requiredPermissions());
         } catch (RuntimeException ex) {
             rememberFailure(ex);
             throw ex;
@@ -150,9 +146,6 @@ final class RunContext {
     }
 
     void rememberFailure(Throwable ex) {
-        if (parent != null) {
-            parent.rememberFailure(ex);
-        }
         if (ex instanceof RunControl.BudgetExceeded) {
             halted = Status.BUDGET_EXHAUSTED;
         } else if (ex instanceof RunControl.Cancelled) {
@@ -239,9 +232,12 @@ final class RunContext {
                                                             < 0
                                                     ? control.remaining()
                                                     : Duration.ofSeconds(20);
-                                    Flux<ChatResponse> response = delegate.stream(messages, tools, options).timeout(timeout);
+                                    Flux<ChatResponse> response =
+                                            delegate.stream(messages, tools, options)
+                                                    .timeout(timeout);
                                     if (compaction) {
-                                        return response.collectList().flatMapMany(Flux::fromIterable);
+                                        return response.collectList()
+                                                .flatMapMany(Flux::fromIterable);
                                     }
                                     return response.doOnNext(x -> emitted.set(true));
                                 })
@@ -272,11 +268,12 @@ final class RunContext {
                                                             }
                                                             return Mono.delay(delay);
                                                         })))
-                        .doOnError(error -> {
-                            if (!ContextCompactor.isContextOverflow(error)) {
-                                RunContext.this.rememberFailure(error);
-                            }
-                        })
+                        .doOnError(
+                                error -> {
+                                    if (!ContextCompactor.isContextOverflow(error)) {
+                                        RunContext.this.rememberFailure(error);
+                                    }
+                                })
                         .subscribeOn(MODEL_WORK)
                         .publishOn(MODEL_WORK);
             }

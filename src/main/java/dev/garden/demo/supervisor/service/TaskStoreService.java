@@ -1,18 +1,17 @@
 package dev.garden.demo.supervisor.service;
 
-import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.AgentLifecycle;
-import dev.garden.demo.supervisor.pojo.dto.AgentSnapshotDTO;
-import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
-import dev.garden.demo.supervisor.pojo.dto.AgentInputDrainDTO;
-import dev.garden.demo.supervisor.pojo.dto.AgentMailboxDrainDTO;
-import java.util.Map;
-import java.util.Comparator;
+import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.config.SupervisorSettings;
 import dev.garden.demo.supervisor.pojo.dataobject.TaskDO;
 import dev.garden.demo.supervisor.pojo.dto.Action;
+import dev.garden.demo.supervisor.pojo.dto.AgentCompletionDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentInputDrainDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentMailboxDrainDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentOperationReceiptDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentSnapshotDTO;
 import dev.garden.demo.supervisor.pojo.dto.DrainResultDTO;
-import dev.garden.demo.supervisor.pojo.dto.EvidenceDTO;
 import dev.garden.demo.supervisor.pojo.dto.IdentityDTO;
 import dev.garden.demo.supervisor.pojo.dto.Intent;
 import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
@@ -31,8 +30,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -105,14 +106,33 @@ public class TaskStoreService {
         task.deadline = task.createdAt + settings.timeout().toMillis();
         task.maxCalls = settings.maxModelCalls();
         task.userInputs.add(request.question());
-        task.request =
-                conversations.enrich(
+        var history =
+                conversations.enrichWithPermissions(
                         identity,
                         new RequestDTO(
                                 request.sessionId(),
                                 request.question(),
                                 request.history(),
                                 requestId));
+        task.request = history.request();
+        // HTTP 新请求仍拥有新的 runId/预算；同一会话取消后的模型上下文必须原样接续。
+        String priorId = repository.currentSession(identity, request.sessionId());
+        TaskDO prior = priorId == null ? null : repository.get(priorId);
+        if (prior != null && prior.parentRunId == null && prior.state.equals("CANCELLED")) {
+            String loop = prior.checkpoints.get("loop:v3.3");
+            if (loop != null) {
+                task.checkpoints.put("loop:v3.3", loop);
+                task.checkpoints.put("agent:turn-start", "true");
+                task.checkpoints.put("agent:interrupted", "The previous turn was interrupted.");
+                task.checkpoints.put("agent:resume-user-input", request.question());
+            }
+        }
+        if (!task.checkpoints.containsKey("loop:v3.3")
+                && !history.requiredPermissions().isEmpty()) {
+            task.checkpoints.put(
+                    "agent:inherited-permissions",
+                    repository.encode(history.requiredPermissions()));
+        }
         return task;
     }
 
@@ -158,11 +178,7 @@ public class TaskStoreService {
         }
         if (input.action() == Action.AUTO) {
             InstructionRes clarification =
-                    new InstructionRes(
-                            id,
-                            task.revision,
-                            task.state,
-                            "请明确选择补充、修改、切换或停止；自动动作未执行。");
+                    new InstructionRes(id, task.revision, task.state, "请明确选择补充、修改、切换或停止；自动动作未执行。");
             repository.instruction(id, input.instructionId(), fingerprint, clarification);
             return clarification;
         }
@@ -185,9 +201,16 @@ public class TaskStoreService {
             reserveNewTask(identity);
             RequestDTO replacement =
                     new RequestDTO(
-                            task.sessionId, input.message(), List.of(), UUID.randomUUID().toString());
+                            task.sessionId,
+                            input.message(),
+                            List.of(),
+                            UUID.randomUUID().toString());
             TaskDO next =
-                    newTask(identity, replacement, replacement.requestId(), requestHash(replacement));
+                    newTask(
+                            identity,
+                            replacement,
+                            replacement.requestId(),
+                            requestHash(replacement));
             task.state = "REPLACED";
             task.generation++;
             task.revision++;
@@ -223,9 +246,16 @@ public class TaskStoreService {
     }
 
     @Transactional
-    public synchronized boolean commitResult(String id, int generation, int consumedRevision, long mailboxRevision, ResultDTO result) {
+    public synchronized boolean commitResult(
+            String id,
+            int generation,
+            int consumedRevision,
+            long mailboxRevision,
+            ResultDTO result) {
         TaskDO current = repository.get(id);
-        if (current == null || current.generation != generation || !current.state.equals("RUNNING")) {
+        if (current == null
+                || current.generation != generation
+                || !current.state.equals("RUNNING")) {
             return true;
         }
         if (current.revision != consumedRevision || current.mailboxRevision != mailboxRevision) {
@@ -263,7 +293,10 @@ public class TaskStoreService {
                     new RequestDTO(
                             task.sessionId, task.userInputs.get(index), List.of(), task.requestId),
                     turnResult,
-                    task.runId + ":input:" + index);
+                    task.runId + ":input:" + index,
+                    index == task.userInputs.size() - 1
+                            ? AgentLifecycle.requiredPermissions(task.checkpoints, result)
+                            : java.util.Set.of());
         }
         task.recordedInputs = task.userInputs.size();
         repository.save(task);
@@ -341,8 +374,8 @@ public class TaskStoreService {
     public RunRes view(IdentityDTO identity, TaskDO task) {
         ResultDTO result =
                 task.result == null ? emptyResult(task, task.state, "任务执行中") : task.result;
-        for (EvidenceDTO evidence : result.evidence()) {
-            if (!identity.allows(evidence.tool())) {
+        for (String permission : AgentLifecycle.requiredPermissions(task.checkpoints, result)) {
+            if (!identity.allows(permission)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN);
             }
         }
@@ -402,8 +435,12 @@ public class TaskStoreService {
         if (root.calls >= root.maxCalls) {
             throw new RunControl.BudgetExceeded("模型调用预算已耗尽");
         }
-        repository.reserve("models:global", 1, estimatedTokens,
-                settings.modelCallsPerMinute(), settings.modelTokensPerMinute());
+        repository.reserve(
+                "models:global",
+                1,
+                estimatedTokens,
+                settings.modelCallsPerMinute(),
+                settings.modelTokensPerMinute());
         root.calls++;
         if (root != task) {
             task.calls++;
@@ -474,13 +511,23 @@ public class TaskStoreService {
 
     /** 创建未受理的子会话；调用者必须随后接受或清理，不能把它交给恢复执行器。 */
     @Transactional
-    public synchronized TaskDO prepareChild(String parentId, int generation, String taskName,
-            String message, String role, String forkTurns, Map<String, String> inherited) {
+    public synchronized TaskDO prepareChild(
+            String parentId,
+            int generation,
+            String taskName,
+            String message,
+            String role,
+            String forkTurns,
+            Map<String, String> inherited) {
         TaskDO parent = active(parentId, generation);
         AgentLifecycle.validateMessage(message);
         String path = AgentLifecycle.childPath(parent.agentPath, taskName);
-        if (repository.all().stream().anyMatch(t -> rootId(t).equals(rootId(parent))
-                && t.agentPath.equals(path) && !t.state.equals("CLOSED"))) {
+        if (repository.all().stream()
+                .anyMatch(
+                        t ->
+                                rootId(t).equals(rootId(parent))
+                                        && t.agentPath.equals(path)
+                                        && !t.state.equals("CLOSED"))) {
             throw new IllegalArgumentException("任务名已存在：" + path);
         }
         if (repository.all().size() >= settings.maxStoredTasks()) {
@@ -527,11 +574,104 @@ public class TaskStoreService {
     public synchronized void discardChild(String id) {
         TaskDO child = repository.get(id);
         if (child != null && (!child.accepted || child.generation == 1)) {
+            if (child.acceptanceReceiptKey != null) {
+                TaskDO parent = repository.get(child.parentRunId);
+                if (parent != null) {
+                    parent.collaborationReceipts.remove(child.acceptanceReceiptKey);
+                    repository.save(parent);
+                }
+            }
             child.accepted = false;
             child.state = "CLOSED";
             child.checkpoints.clear();
             repository.save(child);
         }
+    }
+
+    public String operationFingerprint(Object... arguments) {
+        return hash(repository.encode(java.util.Arrays.asList(arguments)));
+    }
+
+    private String receiptKey(TaskDO caller, String operationId) {
+        return caller.agentTurnId + ":" + operationId;
+    }
+
+    @Transactional(readOnly = true)
+    public AgentOperationReceiptDTO operationReceipt(
+            String callerId, String operationId, String fingerprint) {
+        if (operationId == null) {
+            return null;
+        }
+        TaskDO caller = repository.get(callerId);
+        String saved = caller.collaborationReceipts.get(receiptKey(caller, operationId));
+        if (saved == null) {
+            if (caller.collaborationReceipts.size() >= 512) {
+                throw new RunControl.ContextLimit("协作操作回执数量超过上限");
+            }
+            return null;
+        }
+        AgentOperationReceiptDTO receipt = repository.decode(saved, AgentOperationReceiptDTO.class);
+        if (!receipt.fingerprint().equals(fingerprint)) {
+            throw new IllegalArgumentException("相同工具调用编号对应不同协作请求");
+        }
+        return receipt;
+    }
+
+    private void saveReceipt(
+            String callerId, String operationId, String fingerprint, AgentSnapshotDTO result) {
+        if (operationId != null) {
+            TaskDO caller = repository.get(callerId);
+            if (caller.collaborationReceipts.size() >= 512) {
+                throw new RunControl.ContextLimit("协作操作回执数量超过上限");
+            }
+            caller.collaborationReceipts.put(
+                    receiptKey(caller, operationId),
+                    repository.encode(new AgentOperationReceiptDTO(fingerprint, result)));
+            repository.save(caller);
+        }
+    }
+
+    /** 子受理与调用方回执同一事务提交，恢复未写入模型上下文的工具结果时不再次派发。 */
+    @Transactional
+    public synchronized TaskDO acceptChildWithReceipt(
+            String id, String callerId, String operationId, String fingerprint) {
+        TaskDO child = acceptChild(id);
+        if (operationId != null) {
+            TaskDO caller = repository.get(callerId);
+            child.acceptanceReceiptKey = receiptKey(caller, operationId);
+            repository.save(child);
+        }
+        saveReceipt(callerId, operationId, fingerprint, agentSnapshot(child));
+        return child;
+    }
+
+    @Transactional
+    public synchronized TaskDO sendAgentWithReceipt(
+            String callerId,
+            String operationId,
+            String fingerprint,
+            String target,
+            String message,
+            boolean trigger) {
+        AgentOperationReceiptDTO prior = operationReceipt(callerId, operationId, fingerprint);
+        if (prior != null) {
+            return repository.get(prior.result().agentId());
+        }
+        TaskDO receiver = sendAgent(callerId, target, message, trigger);
+        saveReceipt(callerId, operationId, fingerprint, agentSnapshot(receiver));
+        return receiver;
+    }
+
+    @Transactional
+    public synchronized AgentSnapshotDTO interruptAgentWithReceipt(
+            String callerId, String operationId, String fingerprint, String target) {
+        AgentOperationReceiptDTO prior = operationReceipt(callerId, operationId, fingerprint);
+        if (prior != null) {
+            return prior.result();
+        }
+        AgentSnapshotDTO previous = interruptAgent(callerId, target);
+        saveReceipt(callerId, operationId, fingerprint, previous);
+        return previous;
     }
 
     /** 恢复或启动时建立新的执行代际，防止旧订阅在重启交接后提交。 */
@@ -556,15 +696,22 @@ public class TaskStoreService {
         if (byId != null && !rootId(byId).equals(rootId(caller))) {
             throw new IllegalArgumentException("目标不在当前任务树中");
         }
-        String path = byId == null ? AgentLifecycle.resolve(caller.agentPath, reference) : byId.agentPath;
+        String path =
+                byId == null ? AgentLifecycle.resolve(caller.agentPath, reference) : byId.agentPath;
         return repository.all().stream()
-                .filter(t -> t.accepted && !t.state.equals("CLOSED") && rootId(t).equals(rootId(caller)))
-                .filter(t -> t.agentPath.equals(path)).findFirst()
+                .filter(
+                        t ->
+                                t.accepted
+                                        && !t.state.equals("CLOSED")
+                                        && rootId(t).equals(rootId(caller)))
+                .filter(t -> t.agentPath.equals(path))
+                .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("目标会话不存在"));
     }
 
     @Transactional
-    public synchronized TaskDO sendAgent(String callerId, String target, String message, boolean trigger) {
+    public synchronized TaskDO sendAgent(
+            String callerId, String target, String message, boolean trigger) {
         AgentLifecycle.validateMessage(message);
         TaskDO caller = repository.get(callerId);
         TaskDO receiver = agentTarget(callerId, target);
@@ -574,13 +721,21 @@ public class TaskStoreService {
         if (receiver.mailbox.size() + receiver.inflightMailbox.size() >= 512) {
             throw new RunControl.ContextLimit("消息箱已满");
         }
-        receiver.mailbox.add(new AgentMessageDTO(caller.agentPath, receiver.agentPath,
-                trigger ? "FOLLOWUP" : "MESSAGE", message, null));
+        receiver.mailbox.add(
+                new AgentMessageDTO(
+                        caller.agentPath,
+                        receiver.agentPath,
+                        trigger ? "FOLLOWUP" : "MESSAGE",
+                        message,
+                        null,
+                        AgentLifecycle.requiredPermissions(caller.checkpoints, caller.result)));
         receiver.mailboxRevision++;
         if (!receiver.state.equals("RUNNING") && trigger) {
+            receiver.agentTurnId = UUID.randomUUID().toString();
             receiver.state = "RUNNING";
             receiver.result = null;
-            receiver.request = new RequestDTO(receiver.sessionId, message, List.of(), receiver.requestId);
+            receiver.request =
+                    new RequestDTO(receiver.sessionId, message, List.of(), receiver.requestId);
             receiver.checkpoints.put("agent:turn-start", "true");
         }
         repository.save(receiver);
@@ -611,14 +766,26 @@ public class TaskStoreService {
         }
         String path = prefix == null ? "/root" : AgentLifecycle.resolve(caller.agentPath, prefix);
         return repository.all().stream()
-                .filter(t -> t.accepted && !t.state.equals("CLOSED") && rootId(t).equals(rootId(caller)))
+                .filter(
+                        t ->
+                                t.accepted
+                                        && !t.state.equals("CLOSED")
+                                        && rootId(t).equals(rootId(caller)))
                 .filter(t -> t.agentPath.equals(path) || t.agentPath.startsWith(path + "/"))
-                .sorted(Comparator.comparing(t -> t.agentPath)).map(this::agentSnapshot).toList();
+                .sorted(Comparator.comparing(t -> t.agentPath))
+                .map(this::agentSnapshot)
+                .toList();
     }
 
     public AgentSnapshotDTO agentSnapshot(TaskDO task) {
-        return new AgentSnapshotDTO(task.runId, task.agentPath, task.agentRole,
-                AgentLifecycle.status(task.state), task.result == null ? null : task.result.answer(), task.result);
+        return new AgentSnapshotDTO(
+                task.runId,
+                task.agentPath,
+                task.agentRole,
+                AgentLifecycle.status(task.state),
+                task.result == null ? null : task.result.answer(),
+                task.result,
+                AgentLifecycle.requiredPermissions(task.checkpoints, task.result));
     }
 
     @Transactional
@@ -639,7 +806,9 @@ public class TaskStoreService {
             task.consumedMailboxRevision = task.mailboxRevision;
         }
         repository.save(task);
-        return new AgentMailboxDrainDTO(List.copyOf(task.inflightMailbox), task.consumedMailboxRevision,
+        return new AgentMailboxDrainDTO(
+                List.copyOf(task.inflightMailbox),
+                task.consumedMailboxRevision,
                 task.inflightMailbox.isEmpty() ? 0 : task.mailboxDeliveryId);
     }
 
@@ -653,7 +822,9 @@ public class TaskStoreService {
             for (int i = 0; i < inputs.size() - 1; i++) {
                 history.add(new TurnDTO(inputs.get(i), ""));
             }
-            task.request = new RequestDTO(task.sessionId, inputs.get(inputs.size() - 1), history, task.requestId);
+            task.request =
+                    new RequestDTO(
+                            task.sessionId, inputs.get(inputs.size() - 1), history, task.requestId);
             task.inflightInputs.addAll(inputs);
             task.pending.clear();
             task.inputDeliveryId++;
@@ -662,14 +833,22 @@ public class TaskStoreService {
             task.consumedRevision = task.revision;
         }
         repository.save(task);
-        return new AgentInputDrainDTO(List.copyOf(task.inflightInputs), task.consumedRevision,
+        return new AgentInputDrainDTO(
+                List.copyOf(task.inflightInputs),
+                task.consumedRevision,
                 task.inflightInputs.isEmpty() ? 0 : task.inputDeliveryId);
     }
 
     /** 模型上下文保存与消息确认在同一事务完成；未读过批次的构造阶段不会误确认。 */
     @Transactional
-    public synchronized void checkpointWithDeliveryAck(String id, int generation, int revision,
-            String key, String value, long inputAck, long mailboxAck) {
+    public synchronized void checkpointWithDeliveryAck(
+            String id,
+            int generation,
+            int revision,
+            String key,
+            String value,
+            long inputAck,
+            long mailboxAck) {
         checkpoint(id, generation, revision, key, value);
         if (!key.equals("loop:v3.3")) {
             return;
@@ -684,20 +863,82 @@ public class TaskStoreService {
         repository.save(task);
     }
 
-    /** 每轮最多投递一次，原子保存结果和直接父消息；普通中断没有完成通知。 */
+    /** 每轮完成先独立入待投队列，再按序投递；新回合不会覆盖尚未投递的旧结果。 */
     private void notifyParent(TaskDO child) {
-        if (child.parentRunId == null || child.notifiedGeneration == child.generation
-                || child.result == null || AgentLifecycle.status(child.state).equals("interrupted")) {
+        if (child.parentRunId == null) {
+            return;
+        }
+        if (child.result != null
+                && !child.state.equals("RUNNING")
+                && !AgentLifecycle.status(child.state).equals("interrupted")
+                && child.generation
+                        > Math.max(child.completionQueuedGeneration, child.notifiedGeneration)) {
+            TaskDO parent = repository.get(child.parentRunId);
+            String recipient = parent == null ? "" : parent.agentPath;
+            child.completionOutbox.add(
+                    new AgentCompletionDTO(
+                            child.generation,
+                            AgentLifecycle.result(
+                                    child.agentPath, recipient, child.result, child.checkpoints)));
+            child.completionQueuedGeneration = child.generation;
+        }
+        if (child.completionOutbox.isEmpty()) {
             return;
         }
         TaskDO parent = repository.get(child.parentRunId);
-        if (parent != null && parent.mailbox.size() + parent.inflightMailbox.size() < 512) {
-            parent.mailbox.add(AgentLifecycle.result(child.agentPath, parent.agentPath, child.result));
-            parent.mailboxRevision++;
+        while (!child.completionOutbox.isEmpty()) {
+            if (parent != null && parent.mailbox.size() + parent.inflightMailbox.size() >= 512) {
+                String event = "完成通知等待父会话邮箱空间";
+                if (!child.events.contains(event) && child.events.size() < 200) {
+                    child.events.add(event);
+                }
+                break;
+            }
+            AgentCompletionDTO completion = child.completionOutbox.remove(0);
+            if (parent != null) {
+                parent.mailbox.add(completion.message());
+                parent.mailboxRevision++;
+            }
+            child.notifiedGeneration = completion.generation();
+        }
+        if (parent != null) {
             repository.save(parent);
         }
-        child.notifiedGeneration = child.generation;
         repository.save(child);
+    }
+
+    /** 正在执行新回合的子会话也可能有旧待投通知；只投直接父，不提升给祖先。 */
+    @Transactional
+    public synchronized void retryPendingNotifications() {
+        for (TaskDO listed : repository.all()) {
+            // 前面的后代投递可能已修改此父聚合；不可把扫描开始时的旧 mailbox 写回。
+            TaskDO task = repository.get(listed.runId);
+            if (task != null && task.accepted && task.parentRunId != null) {
+                notifyParent(task);
+            }
+        }
+    }
+
+    /** 本地调用次数额度已满且本子树无活动后代时，等待不能再产生模型结果。 */
+    @Transactional(readOnly = true)
+    public boolean exhaustedWaitBudget(String id) {
+        TaskDO caller = repository.get(id);
+        TaskDO root = caller == null ? null : repository.get(rootId(caller));
+        if (root == null) {
+            return false;
+        }
+        List<TaskDO> descendants =
+                repository.all().stream()
+                        .filter(
+                                t ->
+                                        t.accepted
+                                                && rootId(t).equals(rootId(caller))
+                                                && t.agentPath.startsWith(caller.agentPath + "/"))
+                        .toList();
+        boolean exhausted =
+                root.calls >= root.maxCalls
+                        || descendants.stream().anyMatch(t -> t.state.equals("BUDGET_EXHAUSTED"));
+        return exhausted && descendants.stream().noneMatch(t -> t.state.equals("RUNNING"));
     }
 
     private static String rootId(TaskDO task) {

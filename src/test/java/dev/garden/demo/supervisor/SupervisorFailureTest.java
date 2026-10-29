@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
@@ -60,8 +60,17 @@ class SupervisorFailureTest {
                         .block();
         assertEquals(Status.PARTIAL, result.status());
         assertEquals(
-                List.of(Status.FAILED, Status.SUCCESS, Status.SUCCESS),
-                result.evidence().stream().map(EvidenceDTO::status).toList());
+                Map.of(
+                        "query_weather",
+                        Status.FAILED,
+                        "query_trains",
+                        Status.SUCCESS,
+                        "search_knowledge",
+                        Status.SUCCESS),
+                result.evidence().stream()
+                        .collect(
+                                java.util.stream.Collectors.toMap(
+                                        EvidenceDTO::tool, EvidenceDTO::status)));
         assertTrue(result.answer().contains("G-DEMO"));
         assertTrue(result.answer().contains("失败"));
     }
@@ -96,35 +105,53 @@ class SupervisorFailureTest {
                         .run(request(itinerary))
                         .block();
         assertEquals(Status.PARTIAL, result.status());
-        assertEquals(List.of("行程规划", "天气查询", "火车票查询"), result.agents());
+        assertEquals(Set.of("行程规划", "天气查询", "火车票查询"), Set.copyOf(result.agents()));
         assertEquals(2, result.evidence().size());
         assertTrue(result.answer().contains("G-DEMO"));
-        assertTrue(result.answer().contains("失败"));
+        assertTrue(
+                result.answer().contains("失败")
+                        || result.answer().contains("未完成")
+                        || result.answer().contains("无法确认")
+                        || result.answer().contains("不完整"),
+                result.answer());
+        assertFalse(
+                result.evidence().stream()
+                        .anyMatch(
+                                e ->
+                                        e.tool().equals("query_weather")
+                                                && e.status() == Status.SUCCESS),
+                "子模型崩溃不能生成天气成功证据");
     }
 
     @Test
     void repeatedMalformedToolArgumentsStopBeforeAnyQuery() {
         Function<String, Model> models =
                 role ->
-                        fixedModel(
-                                () ->
-                                        Flux.just(
-                                                ChatResponse.builder()
-                                                        .content(
-                                                                List.of(
-                                                                        ToolUseBlock.builder()
-                                                                                .id("invalid")
-                                                                                .name(
-                                                                                        "weather_agent")
-                                                                                .input(
-                                                                                        Map.of(
-                                                                                                "city",
-                                                                                                99))
-                                                                                .content(
-                                                                                        "{\"city\":99}")
-                                                                                .build()))
-                                                        .finishReason("tool_calls")
-                                                        .build()));
+                        role.equals("compact")
+                                ? new OfflineScenarioModel(role)
+                                : fixedModel(
+                                        () ->
+                                                Flux.just(
+                                                        ChatResponse.builder()
+                                                                .content(
+                                                                        List.of(
+                                                                                ToolUseBlock
+                                                                                        .builder()
+                                                                                        .id(
+                                                                                                UUID.randomUUID()
+                                                                                                        .toString())
+                                                                                        .name(
+                                                                                                "spawn_agent")
+                                                                                        .input(
+                                                                                                Map
+                                                                                                        .of(
+                                                                                                                "task_name",
+                                                                                                                99,
+                                                                                                                "message",
+                                                                                                                "杭州明天的天气"))
+                                                                                        .build()))
+                                                                .finishReason("tool_calls")
+                                                                .build()));
         ResultDTO result =
                 supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
@@ -169,7 +196,8 @@ class SupervisorFailureTest {
     }
 
     @Test
-    void callerCancellationStopsSubscriptionWithoutEmittingSuccess() throws Exception {
+    void callerCancellationStopsParentOutputButAcceptedChildNeedsExplicitInterrupt()
+            throws Exception {
         CountDownLatch started = new CountDownLatch(1);
         CountDownLatch cancelled = new CountDownLatch(1);
         AtomicInteger responses = new AtomicInteger();
@@ -183,13 +211,21 @@ class SupervisorFailureTest {
                                                     .doOnCancel(cancelled::countDown);
                                         })
                                 : new OfflineScenarioModel(role);
+        RunControl control = RunControl.local(LimitsDTO.defaults());
         var subscription =
                 supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
-                        .run(request("杭州明天的天气"))
+                        .run(request("杭州明天的天气"), control)
                         .subscribe(result -> responses.incrementAndGet());
         try {
             assertTrue(started.await(2, TimeUnit.SECONDS));
             subscription.dispose();
+            assertFalse(cancelled.await(100, TimeUnit.MILLISECONDS), "V2 已受理子回合独立于父订阅");
+            var child =
+                    control.listAgents(null).stream()
+                            .filter(agent -> agent.agentRole().equals("weather_agent"))
+                            .findFirst()
+                            .orElseThrow();
+            control.interruptAgent(child.agentId()).block();
             assertTrue(cancelled.await(2, TimeUnit.SECONDS));
             assertEquals(0, responses.get());
         } finally {
@@ -198,7 +234,7 @@ class SupervisorFailureTest {
     }
 
     @Test
-    void changedToolParametersNeverReachDataSource() {
+    void invalidToolParametersNeverReachDataSource() {
         RunContext context =
                 new RunContext(
                         request("杭州明天的天气"),
@@ -206,7 +242,7 @@ class SupervisorFailureTest {
                         RunControl.local(LimitsDTO.defaults()));
         context.decision = new DecisionDTO(Intent.WEATHER, "杭州", "", "", "2026-10-29", 0);
         ToolResultBlock result =
-                new TravelTools(context, TravelTools.demoData()).weather("上海", "2026-10-29");
+                new TravelTools(context, TravelTools.demoData()).weather("上海", "invalid-date");
         assertEquals(ToolResultState.ERROR, result.getState());
         assertEquals(Status.FAILED, context.outcome());
         assertEquals(
@@ -215,7 +251,7 @@ class SupervisorFailureTest {
     }
 
     @Test
-    void answeringWithoutQueryingDoesNotCountAsSuccess() {
+    void childTextAloneDoesNotCreateVerifiedEvidence() {
         Function<String, Model> models =
                 role ->
                         role.equals("weather_agent")
@@ -236,7 +272,8 @@ class SupervisorFailureTest {
                 supervisor(models, LimitsDTO.defaults(), TravelTools.demoData())
                         .run(request("杭州明天的天气"))
                         .block();
-        assertEquals(Status.FAILED, result.status());
+        assertEquals(Status.SUCCESS, result.status(), "此状态表示会话完成，不代表文字事实经过验证");
+        assertTrue(result.evidence().isEmpty());
         assertFalse(result.answer().contains("天气晴朗"));
     }
 
@@ -271,11 +308,21 @@ class SupervisorFailureTest {
                         .run(request(itinerary))
                         .block();
         assertEquals(Status.SUCCESS, result.status());
-        assertEquals(Set.of("query_weather"), seen.get("weather_agent"));
-        assertEquals(Set.of("query_trains"), seen.get("train_agent"));
-        assertEquals(
-                Set.of("weather_agent", "train_agent", "search_knowledge"),
-                seen.get("itinerary_agent"));
+        assertTrue(seen.get("weather_agent").contains("query_weather"));
+        assertFalse(seen.get("weather_agent").contains("query_trains"));
+        assertFalse(seen.get("weather_agent").contains("search_knowledge"));
+        assertTrue(seen.get("train_agent").contains("query_trains"));
+        assertFalse(seen.get("train_agent").contains("query_weather"));
+        assertFalse(seen.get("train_agent").contains("search_knowledge"));
+        assertTrue(
+                seen.get("itinerary_agent")
+                        .containsAll(Set.of("spawn_agent", "wait_agent", "search_knowledge")));
+        assertFalse(
+                seen.values().stream()
+                        .anyMatch(
+                                names ->
+                                        names.contains("weather_agent")
+                                                || names.contains("train_agent")));
     }
 
     private Model fixedModel(java.util.function.Supplier<Flux<ChatResponse>> response) {

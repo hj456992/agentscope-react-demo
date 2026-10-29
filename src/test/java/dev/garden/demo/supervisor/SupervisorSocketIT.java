@@ -2,19 +2,19 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
-import dev.garden.demo.supervisor.pojo.dto.*;
-import dev.garden.demo.supervisor.pojo.param.*;
-import dev.garden.demo.supervisor.pojo.req.*;
-import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
-import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
+import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.param.*;
+import dev.garden.demo.supervisor.pojo.req.*;
+import dev.garden.demo.supervisor.pojo.res.*;
+import dev.garden.demo.supervisor.repo.*;
+import dev.garden.demo.supervisor.service.*;
 
 import org.junit.jupiter.api.*;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -95,7 +95,10 @@ class SupervisorSocketIT {
     @Test
     void businessBranchesAreNormalResponses() throws Exception {
         assertEquals("NEEDS_INPUT", ask("明天天气怎么样").path("status").asText());
-        assertEquals("UNKNOWN_INTENT", ask("帮我写诗").path("status").asText());
+        JsonNode directAnswer = ask("帮我写诗");
+        assertEquals("SUCCESS", directAnswer.path("status").asText());
+        assertFalse(directAnswer.path("answer").asText().isBlank());
+        assertEquals(0, directAnswer.path("evidence").size());
         assertEquals("NO_DATA", ask("成都明天的天气").path("status").asText());
     }
 
@@ -115,8 +118,10 @@ class SupervisorSocketIT {
 
     @Test
     void longQuestionAndLargeBodyHaveDifferentErrors() throws Exception {
-        assertEquals(400, post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).statusCode());
-        HttpResponse<String> response = post(json(new RequestDTO("甲", "x".repeat(70_000), List.of())));
+        assertEquals(
+                400, post(json(new RequestDTO("甲", "字".repeat(2001), List.of()))).statusCode());
+        HttpResponse<String> response =
+                post(json(new RequestDTO("甲", "x".repeat(70_000), List.of())));
         assertEquals(413, response.statusCode(), response.body());
     }
 

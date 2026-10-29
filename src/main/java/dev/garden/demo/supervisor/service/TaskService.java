@@ -1,15 +1,12 @@
 package dev.garden.demo.supervisor.service;
 
-import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.AgentLifecycle;
-import dev.garden.demo.supervisor.pojo.dto.AgentSnapshotDTO;
-import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
-import dev.garden.demo.supervisor.pojo.dto.AgentWaitDTO;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.config.SupervisorSettings;
 import dev.garden.demo.supervisor.pojo.dataobject.TaskDO;
+import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentSnapshotDTO;
+import dev.garden.demo.supervisor.pojo.dto.AgentWaitDTO;
 import dev.garden.demo.supervisor.pojo.dto.IdentityDTO;
 import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
 import dev.garden.demo.supervisor.pojo.dto.ResultDTO;
@@ -30,10 +27,13 @@ import reactor.core.scheduler.Schedulers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 /** 持久任务持有执行订阅，HTTP 等待者取消只会离开等待，不会取消任务。 */
@@ -69,9 +69,8 @@ public final class TaskService implements AutoCloseable {
     /**
      * 唯一构造器：只做字段赋值并启动后台恢复线程，不执行模型调用。
      *
-     * <p>容器按构造器注入：TaskStoreService（带 @Transactional 代理）、SupervisorSettings、
-     * 执行函数 runner（supervisorRunner bean，即 supervisor::run）和 AccessPolicy。
-     * 直接构造时也只用这一个构造器，不另加重载；
+     * <p>容器按构造器注入：TaskStoreService（带 @Transactional 代理）、SupervisorSettings、 执行函数
+     * runner（supervisorRunner bean，即 supervisor::run）和 AccessPolicy。 直接构造时也只用这一个构造器，不另加重载；
      * accessPolicy 允许为 null，此时执行期使用任务保存的身份快照。
      */
     public TaskService(
@@ -104,13 +103,11 @@ public final class TaskService implements AutoCloseable {
     /**
      * 对话接口的受理入口：先建任务（或复用幂等结果），再按同步 / 异步两条分支交付结果。
      *
-     * <p>方法只组装 {@link Mono}，被调用时业务代码一行都不执行；建任务发生在订阅之后，
-     * 在 {@code scheduler} 线程上跑。任务执行是另一条独立订阅，客户端断开只取消“等待”，
-     * 已受理的任务仍会继续跑，要停止必须调用指令接口。
+     * <p>方法只组装 {@link Mono}，被调用时业务代码一行都不执行；建任务发生在订阅之后， 在 {@code scheduler}
+     * 线程上跑。任务执行是另一条独立订阅，客户端断开只取消“等待”， 已受理的任务仍会继续跑，要停止必须调用指令接口。
      *
-     * <p>重复提交同一 requestId 且内容一致时不会新建任务，返回原任务的当前快照。
-     * 建任务失败（参数 400、编号或会话冲突 409、容量或配额不足 429）走 {@code onError}；
-     * 同步模式的任务失败 / 超时不是异常，而是 FAILED / TIMEOUT 状态的 {@link RunRes}。
+     * <p>重复提交同一 requestId 且内容一致时不会新建任务，返回原任务的当前快照。 建任务失败（参数 400、编号或会话冲突 409、容量或配额不足 429）走 {@code
+     * onError}； 同步模式的任务失败 / 超时不是异常，而是 FAILED / TIMEOUT 状态的 {@link RunRes}。
      */
     public Mono<RunRes> submit(IdentityDTO identity, RequestDTO request, boolean async) {
         // fromCallable：把“同步的建任务”包成一个 Mono。
@@ -137,10 +134,9 @@ public final class TaskService implements AutoCloseable {
     /**
      * 受理一次对话：校验参数、幂等复用、会话互斥、容量与配额检查，落库后按需启动执行。
      *
-     * <p>只能由 {@link #submit} 的 {@code Mono.fromCallable} 在调度线程上调用，
-     * 不要在请求线程直接调用（会阻塞等数据库事务）。本方法不加 {@code @Transactional}，
-     * 事务边界在 {@link TaskStoreService#create}；锁顺序是 TaskService → TaskStoreService。
-     * {@code synchronized} 保护的是本类的 {@code owned} 映射，临界区内只有一次短事务。
+     * <p>只能由 {@link #submit} 的 {@code Mono.fromCallable} 在调度线程上调用， 不要在请求线程直接调用（会阻塞等数据库事务）。本方法不加
+     * {@code @Transactional}， 事务边界在 {@link TaskStoreService#create}；锁顺序是 TaskService →
+     * TaskStoreService。 {@code synchronized} 保护的是本类的 {@code owned} 映射，临界区内只有一次短事务。
      */
     private synchronized TaskDO create(IdentityDTO identity, RequestDTO request) {
         // 建任务本身交给存储层：参数校验、requestId 幂等复用、同会话只允许一个 RUNNING、
@@ -176,8 +172,7 @@ public final class TaskService implements AutoCloseable {
     }
 
     public Mono<InstructionRes> instruct(IdentityDTO identity, InstructionParam input) {
-        return Mono.fromCallable(() -> applyInstruction(identity, input))
-                .subscribeOn(scheduler);
+        return Mono.fromCallable(() -> applyInstruction(identity, input)).subscribeOn(scheduler);
     }
 
     private synchronized InstructionRes applyInstruction(
@@ -211,17 +206,13 @@ public final class TaskService implements AutoCloseable {
     }
 
     /**
-     * 把一个已经落库、状态为 RUNNING 的任务接到本实例的执行循环上：
-     * 先在 owned 里登记“这个任务归我跑”，再单独起一条订阅去执行 cycle。
+     * 把一个已经落库、状态为 RUNNING 的任务接到本实例的执行循环上： 先在 owned 里登记“这个任务归我跑”，再单独起一条订阅去执行 cycle。
      *
-     * <p>这条订阅是整条链的终点（{@code subscribe} 之后没有下游了），所以任务的生命周期
-     * 和 HTTP 请求无关：客户端断开、Controller 那条 Mono 被取消，都不影响这里已经开始执行。
-     * 要停任务只能走指令接口或 {@link #close()}。
+     * <p>这条订阅是整条链的终点（{@code subscribe} 之后没有下游了），所以任务的生命周期 和 HTTP 请求无关：客户端断开、Controller 那条 Mono
+     * 被取消，都不影响这里已经开始执行。 要停任务只能走指令接口或 {@link #close()}。
      *
-     * <p>约定：只在持锁的同步方法里调用（{@link #create}、applyInstruction、recover），
-     * 并且同一个 runId 只会成功启动一次——已关闭或已有归属时直接返回，避免重复执行。
-     * 结束时无论成功、失败还是取消，{@code doFinally} 都会释放归属，
-     * 之后恢复扫描可以重新接手。
+     * <p>约定：只在持锁的同步方法里调用（{@link #create}、applyInstruction、recover）， 并且同一个 runId
+     * 只会成功启动一次——已关闭或已有归属时直接返回，避免重复执行。 结束时无论成功、失败还是取消，{@code doFinally} 都会释放归属， 之后恢复扫描可以重新接手。
      */
     private void start(TaskDO requested) {
         // 两种情况不启动：服务已经关了，或者这个 runId 已经有执行订阅了。
@@ -264,12 +255,10 @@ public final class TaskService implements AutoCloseable {
     /**
      * 一个任务的执行主循环：跑一轮 → 尝试提交结果 → 如果期间又来了新指令，就带着最新输入再跑一轮。
      *
-     * <p>只有当结果按“最新版本”提交成功（或者任务已被取消、替换、不再是 RUNNING）时循环才结束，
-     * 返回的 {@link Mono} 发出完成信号；取消、超期、执行异常都以 {@code onError} 结束，
-     * 由 {@link #start} 里订阅的 error 回调交给存储层标记最终状态。
+     * <p>只有当结果按“最新版本”提交成功（或者任务已被取消、替换、不再是 RUNNING）时循环才结束， 返回的 {@link Mono} 发出完成信号；取消、超期、执行异常都以
+     * {@code onError} 结束， 由 {@link #start} 里订阅的 error 回调交给存储层标记最终状态。
      *
-     * <p>每一轮都会重新读库、重新检查期限，所以补充 / 修改的输入能在下一轮生效；
-     * 期限是任务的绝对截止时间，多轮共享，不会因为重跑而续期。
+     * <p>每一轮都会重新读库、重新检查期限，所以补充 / 修改的输入能在下一轮生效； 期限是任务的绝对截止时间，多轮共享，不会因为重跑而续期。
      */
     private Mono<Void> cycle(String id, PersistentControl control) {
         // defer：把里面整段推迟到“订阅那一刻”才执行。
@@ -320,7 +309,8 @@ public final class TaskService implements AutoCloseable {
                 });
     }
 
-    private synchronized boolean commitResult(String id, int generation, int revision, long mailboxRevision, ResultDTO result) {
+    private synchronized boolean commitResult(
+            String id, int generation, int revision, long mailboxRevision, ResultDTO result) {
         return store.commitResult(id, generation, revision, mailboxRevision, result);
     }
 
@@ -346,66 +336,108 @@ public final class TaskService implements AutoCloseable {
                 }
             } else if (task.state.equals("RUNNING")
                     && !owned.containsKey(task.runId)
-                    && (task.parentRunId == null ? hasCapacity(task.identity) : hasChildCapacity(task))) {
+                    && (task.parentRunId == null
+                            ? hasCapacity(task.identity)
+                            : hasChildCapacity(task))) {
                 start(task);
             }
         }
+        store.retryPendingNotifications();
         store.cleanup(System.currentTimeMillis() - settings.taskRetention().toMillis());
         store.cleanupConversations();
     }
 
     /** 临时记录准备完成后以原子状态提交接受边界；调用方取消只能清理尚未接受的子会话。 */
-    private Mono<AgentSnapshotDTO> spawnChild(PersistentControl caller, String taskName, String message,
-            String role, String forkTurns, Map<String, String> inherited) {
-        return Mono.create(sink -> {
-            // 0=准备中，-1=调用方已取消，1=接受边界已提交；取消不能撤销 1。
-            AtomicInteger admission = new AtomicInteger();
-            sink.onCancel(() -> admission.compareAndSet(0, -1));
-            scheduler.schedule(() -> {
-                synchronized (TaskService.this) {
-                    if (admission.get() == -1) {
-                        return;
-                    }
-                    TaskDO prepared = null;
-                    try {
-                        caller.checkActive();
-                        TaskDO parent = store.get(caller.id);
-                        if (!hasChildCapacity(parent)) {
-                            throw new RunControl.BudgetExceeded("子会话并发额度已满");
-                        }
-                        prepared = store.prepareChild(caller.id, caller.generation,
-                                taskName, message, role, forkTurns, inherited);
-                        if (admission.get() == -1) {
-                            store.discardChild(prepared.runId);
-                            return;
-                        }
-                        TaskDO accepted = store.acceptChild(prepared.runId);
-                        AgentSnapshotDTO receipt = store.agentSnapshot(accepted);
-                        if (!admission.compareAndSet(0, 1)) {
-                            store.discardChild(accepted.runId);
-                            return;
-                        }
-                        // 接受后不再检查父回合取消；执行由 TaskService 独立拥有。
-                        start(accepted);
-                        sink.success(receipt);
-                    } catch (Throwable error) {
-                        if (prepared != null && admission.get() != 1) {
-                            store.discardChild(prepared.runId);
-                        }
-                        sink.error(error);
-                    }
-                }
-            });
-        });
+    private Mono<AgentSnapshotDTO> spawnChild(
+            PersistentControl caller,
+            String operationId,
+            String taskName,
+            String message,
+            String role,
+            String forkTurns,
+            Map<String, String> inherited) {
+        return Mono.create(
+                sink -> {
+                    // 0=准备中，-1=调用方已取消，1=接受边界已提交；取消不能撤销 1。
+                    AtomicInteger admission = new AtomicInteger();
+                    sink.onCancel(() -> admission.compareAndSet(0, -1));
+                    scheduler.schedule(
+                            () -> {
+                                synchronized (TaskService.this) {
+                                    if (admission.get() == -1) {
+                                        return;
+                                    }
+                                    TaskDO prepared = null;
+                                    try {
+                                        caller.checkActive();
+                                        String fingerprint =
+                                                store.operationFingerprint(
+                                                        "spawn", taskName, message, role,
+                                                        forkTurns);
+                                        var prior =
+                                                store.operationReceipt(
+                                                        caller.id, operationId, fingerprint);
+                                        if (prior != null) {
+                                            sink.success(prior.result());
+                                            return;
+                                        }
+                                        TaskDO parent = store.get(caller.id);
+                                        if (!hasChildCapacity(parent)) {
+                                            throw new RunControl.BudgetExceeded("子会话并发额度已满");
+                                        }
+                                        prepared =
+                                                store.prepareChild(
+                                                        caller.id,
+                                                        caller.generation,
+                                                        taskName,
+                                                        message,
+                                                        role,
+                                                        forkTurns,
+                                                        inherited);
+                                        if (admission.get() == -1) {
+                                            store.discardChild(prepared.runId);
+                                            return;
+                                        }
+                                        TaskDO accepted =
+                                                store.acceptChildWithReceipt(
+                                                        prepared.runId,
+                                                        caller.id,
+                                                        operationId,
+                                                        fingerprint);
+                                        AgentSnapshotDTO receipt = store.agentSnapshot(accepted);
+                                        if (!admission.compareAndSet(0, 1)) {
+                                            store.discardChild(accepted.runId);
+                                            return;
+                                        }
+                                        // 接受后不再检查父回合取消；执行由 TaskService 独立拥有。
+                                        start(accepted);
+                                        sink.success(receipt);
+                                    } catch (Throwable error) {
+                                        if (prepared != null && admission.get() != 1) {
+                                            store.discardChild(prepared.runId);
+                                        }
+                                        sink.error(error);
+                                    }
+                                }
+                            });
+                });
     }
 
     private boolean hasChildCapacity(TaskDO task) {
         String root = task.rootRunId == null ? task.runId : task.rootRunId;
-        return !closed && owned.keySet().stream().map(store::get)
-                .filter(java.util.Objects::nonNull)
-                .filter(t -> t.parentRunId != null)
-                .filter(t -> root.equals(t.rootRunId == null ? t.runId : t.rootRunId)).count()
-                < AgentLifecycle.MAX_ACTIVE_CHILDREN;
+        return !closed
+                && owned.keySet().stream()
+                                .map(store::get)
+                                .filter(java.util.Objects::nonNull)
+                                .filter(t -> t.parentRunId != null)
+                                .filter(
+                                        t ->
+                                                root.equals(
+                                                        t.rootRunId == null
+                                                                ? t.runId
+                                                                : t.rootRunId))
+                                .count()
+                        < AgentLifecycle.MAX_ACTIVE_CHILDREN;
     }
 
     private final class PersistentControl implements RunControl {
@@ -413,7 +445,7 @@ public final class TaskService implements AutoCloseable {
         private final int generation;
         private final IdentityDTO identity;
         private volatile int consumed;
-        private final String role, path;
+        private final String role, path, logicalTurnId;
         private long inputAck, mailboxAck, mailboxRevision;
 
         PersistentControl(TaskDO task) {
@@ -424,57 +456,121 @@ public final class TaskService implements AutoCloseable {
             mailboxRevision = task.consumedMailboxRevision;
             role = task.agentRole;
             path = task.agentPath;
+            logicalTurnId = task.agentTurnId;
         }
 
         public String runId() {
             return id;
         }
 
-        public String agentRole() { return role; }
-        public String agentPath() { return path; }
-        public String turnId() { return id + ":" + generation; }
+        public String agentRole() {
+            return role;
+        }
 
-        public Mono<AgentSnapshotDTO> spawnAgent(String taskName, String message, String agentRole,
-                String forkTurns, Map<String, String> inherited) {
-            return spawnChild(this, taskName, message, agentRole, forkTurns, inherited);
+        public String agentPath() {
+            return path;
+        }
+
+        public String turnId() {
+            return logicalTurnId;
+        }
+
+        public Mono<AgentSnapshotDTO> spawnAgent(
+                String taskName,
+                String message,
+                String agentRole,
+                String forkTurns,
+                Map<String, String> inherited) {
+            return spawnAgent(null, taskName, message, agentRole, forkTurns, inherited);
+        }
+
+        public Mono<AgentSnapshotDTO> spawnAgent(
+                String operationId,
+                String taskName,
+                String message,
+                String role,
+                String forkTurns,
+                Map<String, String> inherited) {
+            return spawnChild(this, operationId, taskName, message, role, forkTurns, inherited);
         }
 
         public Mono<Void> sendMessage(String target, String message, boolean triggerTurn) {
-            return Mono.fromRunnable(() -> {
-                synchronized (TaskService.this) {
-                    checkActive();
-                    TaskDO receiver = store.agentTarget(id, target);
-                    if (triggerTurn && !receiver.state.equals("RUNNING") && !hasChildCapacity(receiver)) {
-                        throw new RunControl.BudgetExceeded("子会话并发额度已满");
-                    }
-                    receiver = store.sendAgent(id, target, message, triggerTurn);
-                    if (receiver.state.equals("RUNNING") && !owned.containsKey(receiver.runId)) {
-                        start(receiver);
-                    }
-                }
-            });
+            return sendMessage(null, target, message, triggerTurn);
+        }
+
+        public Mono<Void> sendMessage(
+                String operationId, String target, String message, boolean triggerTurn) {
+            return Mono.fromRunnable(
+                    () -> {
+                        synchronized (TaskService.this) {
+                            checkActive();
+                            String fingerprint =
+                                    store.operationFingerprint(
+                                            "send", target, message, triggerTurn);
+                            if (store.operationReceipt(id, operationId, fingerprint) != null) {
+                                return;
+                            }
+                            TaskDO receiver = store.agentTarget(id, target);
+                            if (triggerTurn
+                                    && !receiver.state.equals("RUNNING")
+                                    && !hasChildCapacity(receiver)) {
+                                throw new RunControl.BudgetExceeded("子会话并发额度已满");
+                            }
+                            receiver =
+                                    store.sendAgentWithReceipt(
+                                            id,
+                                            operationId,
+                                            fingerprint,
+                                            target,
+                                            message,
+                                            triggerTurn);
+                            if (receiver.state.equals("RUNNING")
+                                    && !owned.containsKey(receiver.runId)) {
+                                start(receiver);
+                            }
+                        }
+                    });
         }
 
         public Mono<AgentSnapshotDTO> interruptAgent(String target) {
-            return Mono.fromCallable(() -> {
-                synchronized (TaskService.this) {
-                    checkActive();
-                    AgentSnapshotDTO previous = store.interruptAgent(id, target);
-                    OwnedRun running = owned.get(previous.agentId());
-                    if (running != null) {
-                        running.subscription.dispose();
-                    }
-                    checkEvidence(previous.result());
-                    return previous;
-                }
-            });
+            return interruptAgent(null, target);
+        }
+
+        public Mono<AgentSnapshotDTO> interruptAgent(String operationId, String target) {
+            return Mono.fromCallable(
+                    () -> {
+                        synchronized (TaskService.this) {
+                            checkActive();
+                            String fingerprint = store.operationFingerprint("interrupt", target);
+                            var prior = store.operationReceipt(id, operationId, fingerprint);
+                            if (prior != null) {
+                                checkPermissions(prior.result().requiredPermissions());
+                                checkEvidence(prior.result().result());
+                                return prior.result();
+                            }
+                            AgentSnapshotDTO previous =
+                                    store.interruptAgentWithReceipt(
+                                            id, operationId, fingerprint, target);
+                            OwnedRun running = owned.get(previous.agentId());
+                            if (running != null) {
+                                running.subscription.dispose();
+                            }
+                            checkPermissions(previous.requiredPermissions());
+                            checkEvidence(previous.result());
+                            return previous;
+                        }
+                    });
         }
 
         public List<AgentSnapshotDTO> listAgents(String prefix) {
             synchronized (TaskService.this) {
                 identity();
                 List<AgentSnapshotDTO> agents = store.listAgents(id, prefix);
-                agents.forEach(agent -> checkEvidence(agent.result()));
+                agents.forEach(
+                        agent -> {
+                            checkPermissions(agent.requiredPermissions());
+                            checkEvidence(agent.result());
+                        });
                 return agents;
             }
         }
@@ -483,10 +579,22 @@ public final class TaskService implements AutoCloseable {
             synchronized (TaskService.this) {
                 identity();
                 var delivery = store.deliverMailbox(id, generation);
-                delivery.messages().forEach(message -> checkEvidence(message.result()));
+                delivery.messages()
+                        .forEach(
+                                message -> {
+                                    checkPermissions(message.requiredPermissions());
+                                    checkEvidence(message.result());
+                                });
                 mailboxRevision = delivery.consumedMailboxRevision();
                 mailboxAck = delivery.deliveryId();
                 return delivery.messages();
+            }
+        }
+
+        private void checkPermissions(java.util.Set<String> permissions) {
+            IdentityDTO current = identity();
+            if (permissions.stream().anyMatch(permission -> !current.allows(permission))) {
+                throw new RunControl.Cancelled("代理消息历史权限已变化，不能继续回放");
             }
         }
 
@@ -510,26 +618,32 @@ public final class TaskService implements AutoCloseable {
         }
 
         public Mono<AgentWaitDTO> waitAgent(long timeoutMs) {
-            return Mono.defer(() -> waitUntil(System.nanoTime() + Duration.ofMillis(timeoutMs).toNanos()));
+            return Mono.defer(
+                    () -> waitUntil(System.nanoTime() + Duration.ofMillis(timeoutMs).toNanos()));
         }
 
         private Mono<AgentWaitDTO> waitUntil(long deadline) {
-            return Mono.defer(() -> {
-                synchronized (TaskService.this) {
-                    checkActive();
-                    TaskDO latest = store.get(id);
-                    if (!latest.pending.isEmpty() || !latest.inflightInputs.isEmpty()) {
-                        return Mono.just(new AgentWaitDTO("Wait interrupted by new input.", false));
-                    }
-                    if (!latest.mailbox.isEmpty() || !latest.inflightMailbox.isEmpty()) {
-                        return Mono.just(new AgentWaitDTO("Wait completed.", false));
-                    }
-                    if (System.nanoTime() >= deadline) {
-                        return Mono.just(new AgentWaitDTO("Wait timed out.", true));
-                    }
-                }
-                return Mono.delay(Duration.ofMillis(10)).then(waitUntil(deadline));
-            });
+            return Mono.defer(
+                    () -> {
+                        synchronized (TaskService.this) {
+                            checkActive();
+                            TaskDO latest = store.get(id);
+                            if (!latest.pending.isEmpty() || !latest.inflightInputs.isEmpty()) {
+                                return Mono.just(
+                                        new AgentWaitDTO("Wait interrupted by new input.", false));
+                            }
+                            if (!latest.mailbox.isEmpty() || !latest.inflightMailbox.isEmpty()) {
+                                return Mono.just(new AgentWaitDTO("Wait completed.", false));
+                            }
+                            if (store.exhaustedWaitBudget(id)) {
+                                throw new RunControl.BudgetExceeded("模型调用预算已耗尽");
+                            }
+                            if (System.nanoTime() >= deadline) {
+                                return Mono.just(new AgentWaitDTO("Wait timed out.", true));
+                            }
+                        }
+                        return Mono.delay(Duration.ofMillis(10)).then(waitUntil(deadline));
+                    });
         }
 
         public int revision() {
@@ -582,7 +696,8 @@ public final class TaskService implements AutoCloseable {
         public void checkpoint(String key, String value) {
             synchronized (TaskService.this) {
                 checkActive();
-                store.checkpointWithDeliveryAck(id, generation, consumed, key, value, inputAck, mailboxAck);
+                store.checkpointWithDeliveryAck(
+                        id, generation, consumed, key, value, inputAck, mailboxAck);
                 if (key.equals("loop:v3.3")) {
                     inputAck = 0;
                     mailboxAck = 0;
@@ -615,11 +730,15 @@ public final class TaskService implements AutoCloseable {
     }
 
     private boolean hasCapacity(IdentityDTO identity) {
-        return owned.values().stream().filter(o -> !o.child).count() < settings.maxConcurrentRequests()
+        return owned.values().stream().filter(o -> !o.child).count()
+                        < settings.maxConcurrentRequests()
                 && owned.values().stream()
                                 .filter(
                                         o ->
-                                                !o.child && o.identity.tenantId().equals(identity.tenantId())
+                                                !o.child
+                                                        && o.identity
+                                                                .tenantId()
+                                                                .equals(identity.tenantId())
                                                         && o.identity
                                                                 .userId()
                                                                 .equals(identity.userId()))

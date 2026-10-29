@@ -2,16 +2,16 @@ package dev.garden.demo.supervisor;
 
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import dev.garden.demo.supervisor.config.*;
+import dev.garden.demo.supervisor.pojo.dataobject.*;
 import dev.garden.demo.supervisor.pojo.dto.*;
 import dev.garden.demo.supervisor.pojo.param.*;
 import dev.garden.demo.supervisor.pojo.req.*;
 import dev.garden.demo.supervisor.pojo.res.*;
-import dev.garden.demo.supervisor.pojo.dataobject.*;
-import dev.garden.demo.supervisor.service.*;
 import dev.garden.demo.supervisor.repo.*;
-import dev.garden.demo.supervisor.config.*;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.garden.demo.supervisor.service.*;
 
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.*;
@@ -32,6 +32,7 @@ class SupervisorHttpFailureTest {
     private static volatile CountDownLatch started;
     private static volatile CountDownLatch cancelled;
     private static final AtomicBoolean breakFactory = new AtomicBoolean();
+    private static volatile String failureMode = "normal";
 
     @BeforeAll
     static void start() {
@@ -54,6 +55,7 @@ class SupervisorHttpFailureTest {
         started = new CountDownLatch(1);
         cancelled = new CountDownLatch(1);
         breakFactory.set(false);
+        failureMode = "normal";
     }
 
     private String input(String question) {
@@ -62,6 +64,7 @@ class SupervisorHttpFailureTest {
 
     @Test
     void modelFailureIs502AndPartialResultIs200() {
+        failureMode = "fail";
         var failed = web.post(input("杭州明天天气 模拟失败"));
         assertEquals(502, failed.status(), failed.body());
         assertTrue(failed.body().contains("FAILED"));
@@ -74,14 +77,17 @@ class SupervisorHttpFailureTest {
 
     @Test
     void timeoutReturns504AndReleasesCapacity() throws Exception {
+        failureMode = "wait";
         var result = web.post(input("杭州明天天气 模拟等待"));
         assertEquals(504, result.status(), result.body());
         assertTrue(cancelled.await(1, TimeUnit.SECONDS));
+        failureMode = "normal";
         assertEquals(200, web.post(input("杭州明天天气")).status());
     }
 
     @Test
     void overloadIs429AndHttpDisconnectKeepsOwnedTaskRunning() throws Exception {
+        failureMode = "wait";
         var first = web.exchange(input("杭州明天天气 模拟等待")).subscribe();
         try {
             assertTrue(started.await(1, TimeUnit.SECONDS));
@@ -90,6 +96,7 @@ class SupervisorHttpFailureTest {
             assertFalse(cancelled.await(100, TimeUnit.MILLISECONDS));
             assertEquals(429, web.post(input("上海明天天气")).status());
             assertTrue(cancelled.await(3, TimeUnit.SECONDS));
+            failureMode = "normal";
             // 下游取消通知先于整个运行的 finally；等待真实任务名额释放。
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
             WebTestSupport.Reply after;
@@ -139,12 +146,12 @@ class SupervisorHttpFailureTest {
                                 messages.stream()
                                         .map(Msg::getTextContent)
                                         .reduce("", String::concat);
-                        if (role.equals("weather_agent") && text.contains("模拟等待")) {
+                        if (role.equals("weather_agent") && failureMode.equals("wait")) {
                             return Flux.<ChatResponse>never()
                                     .doOnSubscribe(ignored -> started.countDown())
                                     .doOnCancel(() -> cancelled.countDown());
                         }
-                        if (role.equals("weather_agent") && text.contains("模拟失败")) {
+                        if (role.equals("weather_agent") && failureMode.equals("fail")) {
                             return Flux.error(
                                     new IllegalStateException("PRIVATE_PROVIDER_DETAILS"));
                         }
