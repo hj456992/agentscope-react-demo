@@ -269,7 +269,8 @@ class AgentLifecycleTest {
                                 }
                                 return Mono.never();
                             },
-                            null)) {
+                            null,
+                            SupervisorPolicy.defaults())) {
                 service.submit(
                                 IdentityDTO.local(),
                                 new RequestDTO("cancel-spawn", "delegate", List.of(), "once"),

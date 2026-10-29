@@ -6,6 +6,7 @@ import dev.garden.demo.supervisor.pojo.dto.*;
 
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.*;
+import io.agentscope.core.tool.AgentTool;
 
 import reactor.core.publisher.*;
 import reactor.util.retry.Retry;
@@ -33,6 +34,9 @@ final class RunContext {
     private final Set<String> historicalPermissions = new LinkedHashSet<>();
     private final Set<String> failedChildren = new HashSet<>();
     private final Map<String, Mono<?>> pending = new ConcurrentHashMap<>();
+    private final CorrectionTracker corrections;
+    private Map<String, AgentTool> frozenTools;
+    private Set<String> frozenToolNames = Set.of();
     private volatile Status halted;
 
     // 只有主循环读取新输入；子 Agent 不消费或清空父任务的输入队列。
@@ -64,6 +68,7 @@ final class RunContext {
         this.control = control;
         this.query = request.question();
         this.today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"));
+        this.corrections = new CorrectionTracker(control, control.policy().correction());
     }
 
     synchronized void event(String text) {
@@ -113,10 +118,23 @@ final class RunContext {
         event("工具结果：" + item.tool() + " / " + item.status());
     }
 
-    private static String evidenceKey(EvidenceDTO e) {
+    /**
+     * 条件键只包含查询条件，用于判断同一条件是否出现不同结果；完整指纹再区分结果本身。
+     *
+     * <p>相同条件相同结果仍去重；相同条件不同结果保留为冲突证据。
+     */
+    static String conditionKey(EvidenceDTO e) {
         Map<String, Object> fields = new TreeMap<>(e.data());
         fields.keySet().retainAll(Set.of("city", "from", "to", "date", "documentId"));
-        return e.tool() + ":" + fingerprint(fields);
+        return fingerprint(fields);
+    }
+
+    private static String evidenceKey(EvidenceDTO e) {
+        return e.tool()
+                + ":"
+                + conditionKey(e)
+                + ":"
+                + fingerprint(new TreeMap<>(e.data()));
     }
 
     synchronized List<EvidenceDTO> evidence() {
@@ -146,7 +164,9 @@ final class RunContext {
     }
 
     void rememberFailure(Throwable ex) {
-        if (ex instanceof RunControl.BudgetExceeded) {
+        if (ex instanceof CorrectionExhausted exhausted) {
+            halted = exhausted.status();
+        } else if (ex instanceof RunControl.BudgetExceeded) {
             halted = Status.BUDGET_EXHAUSTED;
         } else if (ex instanceof RunControl.Cancelled) {
             halted = Status.CANCELLED;
@@ -175,6 +195,46 @@ final class RunContext {
 
     void correction(String role, String reason) {
         event("工具纠错：" + reason);
+    }
+
+    /** 记录一次可修正错误并返回预算决定；开关关闭时只写事件，保持旧行为。 */
+    synchronized CorrectionDecision correction(CorrectionType type, String tool) {
+        CorrectionDecision decision = corrections.record(type, tool);
+        event("工具纠错：" + type.name() + ": " + tool);
+        if (decision == CorrectionDecision.DISABLE_TOOL) {
+            event("工具已暂停：" + tool);
+        }
+        return decision;
+    }
+
+    /** 工具成功执行后重置该工具的连续 schema 错误计数。 */
+    void correctionSuccess(String tool) {
+        corrections.success(tool);
+    }
+
+    boolean toolDisabled(String tool) {
+        return corrections.disabled(tool);
+    }
+
+    /** 在每轮开始时固定完整工具表；后续步骤只读该表，不重新发现工具。 */
+    synchronized void freezeTools(Map<String, AgentTool> tools) {
+        if (frozenTools != null) {
+            return;
+        }
+        frozenTools = java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(tools));
+        frozenToolNames = Set.copyOf(frozenTools.keySet());
+    }
+
+    synchronized Map<String, AgentTool> frozenTools() {
+        return frozenTools == null ? Map.of() : frozenTools;
+    }
+
+    synchronized Set<String> toolSnapshot() {
+        return frozenToolNames;
+    }
+
+    synchronized Map<String, Integer> correctionStats() {
+        return corrections.stats();
     }
 
     @SuppressWarnings("unchecked")
@@ -215,6 +275,8 @@ final class RunContext {
                                                 delegate.getModelName(),
                                                 "messages",
                                                 normalized(messages)));
+                SupervisorPolicy.FailurePolicy failure = control.policy().failure();
+                int maxAttempts = failure.maxAttempts();
                 java.util.concurrent.atomic.AtomicBoolean emitted =
                         new java.util.concurrent.atomic.AtomicBoolean();
                 return Flux.defer(
@@ -226,7 +288,7 @@ final class RunContext {
                                     }
                                     // 模型真实发送前预留共享额度；SDK 自动重试关闭，每次重试重新计数。
                                     control.reserveModelStep(
-                                            step, input + limits.outputTokens(), 3);
+                                            step, input + limits.outputTokens(), maxAttempts);
                                     Duration timeout =
                                             control.remaining().compareTo(Duration.ofSeconds(20))
                                                             < 0
@@ -248,7 +310,8 @@ final class RunContext {
                                                         signal -> {
                                                             Throwable error = signal.failure();
                                                             if (emitted.get()
-                                                                    || signal.totalRetries() >= 2
+                                                                    || signal.totalRetries()
+                                                                            >= maxAttempts - 1
                                                                     || !ToolExecutor.retryable(
                                                                             error)) {
                                                                 return Mono.error(error);
@@ -259,7 +322,8 @@ final class RunContext {
                                                                             (int)
                                                                                             signal
                                                                                                     .totalRetries()
-                                                                                    + 1);
+                                                                                    + 1,
+                                                                            failure.backoffCapMs());
                                                             if (control.remaining().compareTo(delay)
                                                                     <= 0) {
                                                                 return Mono.error(

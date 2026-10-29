@@ -50,7 +50,8 @@ final class TestServices {
         return new ConversationService(
                 new ConversationRepository(repository.database(), repository.codec()),
                 conversationRetention,
-                preferenceRetention);
+                preferenceRetention,
+                SupervisorPolicy.defaults().topic());
     }
 
     static SideEffectLedger sideEffectLedger(Database database, Clock clock) {
@@ -74,7 +75,8 @@ final class TestServices {
                         repository, conversationService(repository), settings),
                 settings,
                 runner,
-                accessPolicy);
+                accessPolicy,
+                SupervisorPolicy.defaults());
     }
 
     static TaskService taskService(

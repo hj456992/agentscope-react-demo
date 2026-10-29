@@ -9,6 +9,7 @@ import dev.garden.demo.supervisor.ModelHttpTransport;
 import dev.garden.demo.supervisor.OfflineScenarioModel;
 import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.Supervisor;
+import dev.garden.demo.supervisor.SupervisorPolicy;
 import dev.garden.demo.supervisor.TravelTools;
 import dev.garden.demo.supervisor.pojo.dto.LimitsDTO;
 import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
@@ -48,7 +49,7 @@ import java.util.function.Function;
 
 /** 容器管理共享依赖；每轮的上下文、模型和 Agent 仍由工厂新建。 */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(SupervisorSettings.class)
+@EnableConfigurationProperties({SupervisorSettings.class, SupervisorPolicySettings.class})
 @EnableTransactionManagement(proxyTargetClass = true)
 public class SupervisorConfiguration {
     @Bean
@@ -74,6 +75,11 @@ public class SupervisorConfiguration {
     public LimitsDTO supervisorLimits(SupervisorSettings settings) {
         return new LimitsDTO(
                 settings.timeout(), settings.maxModelCalls(), settings.maxOutputTokens());
+    }
+
+    @Bean
+    public SupervisorPolicy supervisorPolicy(SupervisorPolicySettings settings) {
+        return settings.toPolicy();
     }
 
     @Bean(destroyMethod = "close")
@@ -142,9 +148,14 @@ public class SupervisorConfiguration {
 
     @Bean
     public ConversationService conversationService(
-            ConversationRepository repository, SupervisorSettings settings) {
+            ConversationRepository repository,
+            SupervisorSettings settings,
+            SupervisorPolicy policy) {
         return new ConversationService(
-                repository, settings.conversationRetention(), settings.preferenceRetention());
+                repository,
+                settings.conversationRetention(),
+                settings.preferenceRetention(),
+                policy.topic());
     }
 
     @Bean

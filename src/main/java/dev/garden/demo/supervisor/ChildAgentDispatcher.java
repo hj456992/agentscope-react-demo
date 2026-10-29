@@ -105,7 +105,8 @@ final class ChildAgentDispatcher {
                                 .map(ChildAgentDispatcher.this::result)
                                 .onErrorResume(
                                         error -> {
-                                            if (error instanceof RunControl.Cancelled
+                                            if (error instanceof CorrectionExhausted
+                                                    || error instanceof RunControl.Cancelled
                                                     || error instanceof RunControl.DeadlineExceeded
                                                     || error instanceof RunControl.BudgetExceeded
                                                     || error instanceof RunControl.ContextLimit) {
@@ -161,6 +162,21 @@ final class ChildAgentDispatcher {
                 if (!allowed(role)) {
                     yield Mono.error(new IllegalArgumentException("PERMISSION_DENIED"));
                 }
+                SupervisorPolicy.MultiAgentPolicy multiAgent =
+                        context.control.policy().multiAgent();
+                if (multiAgent.mode() != SupervisorPolicy.MultiAgentPolicy.Mode.OFF) {
+                    RoutingDecision decision = routingDecision(message, multiAgent);
+                    context.event(decision.event());
+                    if (multiAgent.mode() == SupervisorPolicy.MultiAgentPolicy.Mode.ENFORCE
+                            && (decision.reason()
+                                            == RoutingDecision.Reason.DEPTH_LIMIT_EXCEEDED
+                                    || decision.reason()
+                                            == RoutingDecision.Reason.AGENT_LIMIT_EXCEEDED)) {
+                        yield Mono.error(
+                                new MultiAgentLimit(
+                                        "MULTI_AGENT_LIMIT：子会话深度或活动数量达到上限，未创建新会话。"));
+                    }
+                }
                 String fork = Objects.toString(args.get("fork_turns"), "all");
                 Map<String, String> inherited =
                         fork.equals("all")
@@ -195,6 +211,67 @@ final class ChildAgentDispatcher {
                             ((Number) args.getOrDefault("timeout_ms", 30000)).longValue());
             default -> Mono.error(new IllegalArgumentException("TOOL_NOT_FOUND"));
         };
+    }
+
+    /**
+     * 用当前会话树估算并行度、token 与时延收益。
+     *
+     * <p>演示级估算：单 Agent token 按消息长度两倍计且不低于 256；多 Agent token 随并行度线性增长；
+     * 每多一个并行子任务预计节省 400 毫秒。数值只进入决策事件和硬上限判断，不参与计费。
+     */
+    private RoutingDecision routingDecision(
+            String message, SupervisorPolicy.MultiAgentPolicy policy) {
+        String path = context.control.agentPath();
+        int depth = depth(path);
+        int children = activeChildren(path);
+        int parallelism = children + 1;
+        long singleAgentTokens =
+                Math.max(256L, (long) message.codePointCount(0, message.length()) * 2L);
+        long multiAgentTokens = singleAgentTokens * parallelism;
+        long latencySavingMs = Math.max(0, parallelism - 1) * 400L;
+        RoutingInput input =
+                new RoutingInput(
+                        false,
+                        parallelism,
+                        parallelism,
+                        depth,
+                        singleAgentTokens,
+                        multiAgentTokens,
+                        latencySavingMs,
+                        false);
+        return MultiAgentGate.evaluate(input, policy);
+    }
+
+    /** 路径深度：{@code /root} 为 0，每多一级子会话加 1。 */
+    private static int depth(String path) {
+        int depth = 0;
+        for (int index = 1; index < path.length(); index++) {
+            if (path.charAt(index) == '/' && index + 1 < path.length()) {
+                depth++;
+            }
+        }
+        return depth;
+    }
+
+    /** 当前会话下仍活动的直接子会话数量；已完成、失败或中断的子会话不占用名额。 */
+    private int activeChildren(String path) {
+        int count = 0;
+        for (AgentSnapshotDTO agent : context.control.listAgents(path)) {
+            String child = Objects.toString(agent.agentName(), "");
+            if (!child.startsWith(path + "/")) {
+                continue;
+            }
+            String tail = child.substring(path.length() + 1);
+            if (tail.contains("/")) {
+                continue;
+            }
+            if (Set.of("completed", "errored", "interrupted", "shutdown")
+                    .contains(agent.agentStatus())) {
+                continue;
+            }
+            count++;
+        }
+        return count;
     }
 
     private List<Msg> forkHistory() {

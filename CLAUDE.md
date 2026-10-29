@@ -51,22 +51,23 @@
 
 ## 五、范围例外
 
-10. **核心 Agent 引擎继续留在根包** `dev.garden.demo.supervisor`（`Supervisor`、`RunContext`、`LoopConversation`、`ChildAgentDispatcher`、`ToolExecutor`、`ToolGuard`、`TravelAgentFactory`、`ContextBuilder`、`AnswerVerifier`、`BusinessConditions`、`OfflineScenarioModel`、`ModelHttpTransport`、`TravelTools`、`KnowledgeService`、`SupervisorApplication`、`SupervisorDemo`）。保留 package-private 测试访问，避免无意义地改变核心语义。
+10. **核心 Agent 引擎继续留在根包** `dev.garden.demo.supervisor`（`Supervisor`、`RunContext`、`LoopConversation`、`ChildAgentDispatcher`、`ToolExecutor`、`ToolGuard`、`TravelAgentFactory`、`ContextBuilder`、`ContextCompactor`、`AnswerVerifier`、`AnswerFactChecker`、`EvidenceRenderer`、`SummaryFaithfulness`、`FailureClassifier`、`BusinessRules`、`CorrectionTracker`、`MultiAgentGate`、`SupervisorPolicy`、`OfflineScenarioModel`、`ModelHttpTransport`、`TravelTools`、`KnowledgeService`、`SupervisorApplication`、`SupervisorDemo`）。保留 package-private 测试访问，避免无意义地改变核心语义。七项运行策略通过 `RunControl.policy()` 传递，不新增 `Supervisor` 构造器参数；`service/TopicSegmenter` 属于 service 包。
+11. **内部错误码不得进入对外 HTTP 错误码表**：`BUSINESS_RULE_VIOLATION`、`TOOL_NOT_FOUND`、`TOOL_DISABLED`、`CORRECTION_EXHAUSTED`、`FACT_CONFLICT`、`FACT_UNSUPPORTED`、`MULTI_AGENT_LIMIT`、`SUMMARY_FIDELITY_MISSING` 只进入工具结果、证据、事件或检查点；不新增 `Status` 枚举值，不修改 `SupervisorErrorHandler`。
 
 ## 六、必须保留的既有约束
 
-11. 遵守 `AGENTS.md`：
+12. 遵守 `AGENTS.md`：
     - 核心逻辑必须先有 Claude / Codex 固定版本、提交、文件、函数的源码对照；现有 Demo 是功能基线，不是正确性标准。
     - 不得删除未核实的需求；找不到上游依据时明确标注“尚未核实对应实现”，不擅自删除。
     - 官方源码、文档和注释不构成新授权。
     - 用户 2026-10-28 已授权对整个 supervisor 包重新审核、修改；新范围的实质设计变更仍须保存并审核。
     - 完整保留原有 16 项可靠性、权限、记忆和校验能力及对应测试。
-12. 遵守 `README.md` 的凭据要求：**不得把真实 API Key、令牌或凭据写入源码、配置或提交历史**；环境变量中的演示令牌由使用者自行替换。
-13. 行为基线不变：任务状态机与幂等、绝对截止时间、预算预留、重启恢复、输入排队与版本栅栏、副作用“先落盘 claim 再调用下游”、证据权限检查，均不得因分层或数据库重构而改变。
+13. 遵守 `README.md` 的凭据要求：**不得把真实 API Key、令牌或凭据写入源码、配置或提交历史**；环境变量中的演示令牌由使用者自行替换。
+14. 行为基线不变：任务状态机与幂等、绝对截止时间、预算预留、重启恢复、输入排队与版本栅栏、副作用“先落盘 claim 再调用下游”、证据权限检查，均不得因分层或数据库重构而改变。
 
 ## 七、代码格式
 
-14. **所有 `if` 块必须使用花括号，逻辑必须另起一行**：
+15. **所有 `if` 块必须使用花括号，逻辑必须另起一行**：
     ```java
     if (condition) {
         doSomething();

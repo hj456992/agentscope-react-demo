@@ -70,6 +70,9 @@ public class Supervisor {
                                         }
                                         TravelAgentFactory factory =
                                                 new TravelAgentFactory(context, models, data);
+                                        // 工具表在本轮开始时固定；后续步骤不再发现或重新排序工具。
+                                        context.freezeTools(
+                                                allTools(context, conversation, factory));
                                         Model model =
                                                 context.budgeted(models.apply(control.agentRole()));
                                         return step(context, conversation, factory, model);
@@ -78,6 +81,12 @@ public class Supervisor {
                             .onErrorResume(
                                     error -> {
                                         context.rememberFailure(error);
+                                        if (error instanceof CorrectionExhausted exhausted) {
+                                            return Mono.just(
+                                                    context.result(
+                                                            exhausted.status(),
+                                                            exhausted.getMessage()));
+                                        }
                                         if (error instanceof RunControl.BudgetExceeded) {
                                             context.event("预算停止：" + error.getMessage());
                                         }
@@ -315,15 +324,39 @@ public class Supervisor {
         return Mono.defer(
                 () -> {
                     context.check();
+                    if (context.toolDisabled(call.getName())) {
+                        return Mono.just(
+                                ToolResultBlock.error("TOOL_DISABLED：该工具已暂停使用，请改用其他能力。"));
+                    }
                     AgentTool tool = registry.get(call.getName());
                     if (tool == null) {
-                        context.correction(
-                                context.control.agentRole(), "TOOL_NOT_FOUND: " + call.getName());
+                        CorrectionDecision decision =
+                                context.correction(
+                                        CorrectionType.TOOL_NOT_FOUND, call.getName());
+                        if (decision == CorrectionDecision.FAIL) {
+                            throw new CorrectionExhausted(
+                                    Status.FAILED, "当前请求所需能力暂时不可用，请补充需求或稍后重试。");
+                        }
+                        if (decision == CorrectionDecision.FORCE_CLARIFY) {
+                            return Mono.just(
+                                    ToolResultBlock.error(
+                                            "工具不可用；请重新读取工具目录或向用户澄清。"));
+                        }
                         return Mono.just(ToolResultBlock.error("TOOL_NOT_FOUND：请选择当前注册工具。"));
                     }
                     if (!valid(tool, call)) {
-                        context.correction(
-                                context.control.agentRole(), "INVALID_SCHEMA: " + call.getName());
+                        CorrectionDecision decision =
+                                context.correction(
+                                        CorrectionType.INVALID_SCHEMA, call.getName());
+                        if (decision == CorrectionDecision.FAIL) {
+                            throw new CorrectionExhausted(
+                                    Status.FAILED, "工具参数多次不合法，当前轮次已停止，请补充需求后重试。");
+                        }
+                        if (decision == CorrectionDecision.DISABLE_TOOL) {
+                            return Mono.just(
+                                    ToolResultBlock.error(
+                                            "参数连续不合法，已暂停使用该工具；请改用其他能力或向用户澄清。"));
+                        }
                         return Mono.just(ToolResultBlock.error("INVALID_SCHEMA：请按工具定义修正。"));
                     }
                     if (Set.of(
@@ -334,9 +367,23 @@ public class Supervisor {
                                     "list_agents",
                                     "wait_agent")
                             .contains(call.getName())) {
-                        return new ChildAgentDispatcher(context, conversation).invoke(call);
+                        return new ChildAgentDispatcher(context, conversation)
+                                .invoke(call)
+                                .doOnNext(
+                                        result -> {
+                                            if (result.getState()
+                                                    == ToolResultState.SUCCESS) {
+                                                context.correctionSuccess(call.getName());
+                                            }
+                                        });
                     }
-                    return tool.callAsync(ToolCallParam.builder().input(call.getInput()).build());
+                    return tool.callAsync(ToolCallParam.builder().input(call.getInput()).build())
+                            .doOnNext(
+                                    result -> {
+                                        if (result.getState() == ToolResultState.SUCCESS) {
+                                            context.correctionSuccess(call.getName());
+                                        }
+                                    });
                 });
     }
 
@@ -360,12 +407,28 @@ public class Supervisor {
         }
     }
 
-    private Map<String, AgentTool> registry(
+    /** 本轮只发现一次完整工具表，角色工具、协作工具与询问工具都进入固定快照。 */
+    private Map<String, AgentTool> allTools(
             RunContext context, LoopConversation conversation, TravelAgentFactory factory) {
         Map<String, AgentTool> result =
                 new LinkedHashMap<>(factory.tools(context.control.agentRole()));
         result.putAll(new ChildAgentDispatcher(context, conversation).tools());
         result.put("request_user_input", questionTool());
+        return result;
+    }
+
+    /** 返回固定快照的过滤副本：只隐藏本轮已禁用的工具，不暴露完整目录。 */
+    private Map<String, AgentTool> registry(
+            RunContext context, LoopConversation conversation, TravelAgentFactory factory) {
+        if (context.frozenTools().isEmpty()) {
+            context.freezeTools(allTools(context, conversation, factory));
+        }
+        Map<String, AgentTool> result = new LinkedHashMap<>();
+        for (Map.Entry<String, AgentTool> entry : context.frozenTools().entrySet()) {
+            if (!context.toolDisabled(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
         return result;
     }
 
@@ -550,6 +613,34 @@ public class Supervisor {
                 context.evidence().isEmpty() && context.failedCalls().isEmpty()
                         ? Status.SUCCESS
                         : context.outcome();
+        SupervisorPolicy.FactCheckPolicy policy = context.control.policy().factCheck();
+        if (!policy.enabled()) {
+            return Mono.just(context.result(status, conversation.replyText));
+        }
+        AnswerFactChecker.Check check =
+                AnswerFactChecker.check(
+                        conversation.replyText, context.evidence(), policy.highRiskTools());
+        if (check.conflict()) {
+            context.event("FACT_CONFLICT：同一条件出现不同结果，改用证据答复");
+            return Mono.just(
+                    context.result(
+                            status == Status.SUCCESS ? Status.PARTIAL : status,
+                            new EvidenceRenderer(context).render()));
+        }
+        if (!check.unsupported().isEmpty()) {
+            context.event("FACT_UNSUPPORTED：缺少证据支持的数值 " + String.join("、", check.unsupported()));
+            if (status == Status.SUCCESS) {
+                status = Status.PARTIAL;
+            }
+            conversation.replyText =
+                    conversation.replyText + "\n部分数值未逐项核实：" + String.join("、", check.unsupported());
+        }
+        boolean highRisk =
+                context.evidence().stream()
+                        .anyMatch(item -> policy.highRiskTools().contains(item.tool()));
+        if (policy.semanticVerifierEnabled() && highRisk) {
+            return new AnswerVerifier(context, factory).finish(conversation.replyText);
+        }
         return Mono.just(context.result(status, conversation.replyText));
     }
 }

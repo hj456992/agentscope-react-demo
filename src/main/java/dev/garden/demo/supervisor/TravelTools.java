@@ -104,7 +104,7 @@ public final class TravelTools {
         return execute(
                 "query_trains",
                 params,
-                from != null && !from.isBlank() && to != null && !to.isBlank() && !from.equals(to),
+                from != null && !from.isBlank() && to != null && !to.isBlank(),
                 () -> {
                     List<Map<String, Object>> value = data.trains(from, to, date);
                     Map<String, Object> result = new LinkedHashMap<>(params);
@@ -126,7 +126,7 @@ public final class TravelTools {
                         () -> {
                             context.check();
                             if (!context.control.identity().allows(tool)) {
-                                context.correction(tool, "PERMISSION_DENIED");
+                                context.correction(CorrectionType.PERMISSION_DENIED, tool);
                                 return reactor.core.publisher.Mono.just(
                                         failure(tool, params, Status.FAILED, "PERMISSION_DENIED"));
                             }
@@ -137,13 +137,37 @@ public final class TravelTools {
                                 dateValid = false;
                             }
                             if (!matches || !dateValid) {
-                                context.correction(tool, "INVALID_INPUT");
+                                context.correction(CorrectionType.INVALID_INPUT, tool);
                                 return reactor.core.publisher.Mono.just(
                                         failure(
                                                 tool,
                                                 params,
                                                 Status.INVALID_INPUT,
                                                 "城市或日期参数无效，请根据工具定义修正。"));
+                            }
+                            Optional<BusinessRuleViolation> violation =
+                                    BusinessRules.validate(
+                                            tool,
+                                            params,
+                                            context.today,
+                                            context.control.policy().business());
+                            if (violation.isPresent()) {
+                                BusinessRuleViolation rule = violation.get();
+                                CorrectionDecision decision =
+                                        context.correction(
+                                                CorrectionType.BUSINESS_RULE_VIOLATION, tool);
+                                if (decision == CorrectionDecision.FAIL) {
+                                    throw new CorrectionExhausted(
+                                            Status.FAILED,
+                                            "业务参数多次不成立，当前轮次已停止，请补充需求后重试。");
+                                }
+                                return reactor.core.publisher.Mono.just(
+                                        failure(
+                                                tool,
+                                                params,
+                                                Status.INVALID_INPUT,
+                                                rule.reason() + "。" + rule.suggestion(),
+                                                rule.details()));
                             }
                             return new ToolExecutor(context)
                                     .read(
@@ -154,10 +178,17 @@ public final class TravelTools {
                                                     "sourceVersion",
                                                     data.version()),
                                             action)
-                                    .map(e -> ToolResultBlock.text(json(e)));
+                                    .map(
+                                            e -> {
+                                                context.correctionSuccess(tool);
+                                                return ToolResultBlock.text(json(e));
+                                            });
                         })
                 .onErrorResume(
                         ex -> {
+                            if (ex instanceof CorrectionExhausted) {
+                                return reactor.core.publisher.Mono.error(ex);
+                            }
                             context.rememberFailure(ex);
                             if (context.failureStatus() != Status.FAILED) {
                                 return reactor.core.publisher.Mono.error(ex);
@@ -169,8 +200,18 @@ public final class TravelTools {
 
     private ToolResultBlock failure(
             String tool, Map<String, Object> params, Status status, String message) {
+        return failure(tool, params, status, message, Map.of());
+    }
+
+    private ToolResultBlock failure(
+            String tool,
+            Map<String, Object> params,
+            Status status,
+            String message,
+            Map<String, Object> extra) {
         Map<String, Object> details = new LinkedHashMap<>(params);
         details.put("message", message);
+        details.putAll(extra);
         EvidenceDTO evidence = new EvidenceDTO(tool, status, "demo-v1", details);
         context.add(evidence);
         return ToolResultBlock.error(json(evidence));

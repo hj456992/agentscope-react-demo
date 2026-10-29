@@ -79,7 +79,8 @@ final class ToolExecutor {
         return Mono.defer(
                 () -> {
                     context.check();
-                    int attempt = context.increment("attempt:" + key, 3);
+                    SupervisorPolicy.FailurePolicy failure = context.control.policy().failure();
+                    int attempt = context.increment("attempt:" + key, failure.maxAttempts());
                     Duration timeout =
                             context.control.remaining().compareTo(Duration.ofSeconds(5)) < 0
                                     ? context.control.remaining()
@@ -88,10 +89,11 @@ final class ToolExecutor {
                             .timeout(timeout)
                             .onErrorResume(
                                     ex -> {
-                                        if (!retryable(ex) || attempt >= 3) {
+                                        if (!retryable(ex) || attempt >= failure.maxAttempts()) {
                                             return Mono.error(ex);
                                         }
-                                        Duration delay = retryDelay(ex, attempt);
+                                        Duration delay =
+                                                retryDelay(ex, attempt, failure.backoffCapMs());
                                         if (context.control
                                                         .remaining()
                                                         .compareTo(delay.plusMillis(1))
@@ -105,53 +107,36 @@ final class ToolExecutor {
     }
 
     static Duration retryDelay(Throwable error, int attempt) {
-        for (Throwable cause = error; cause != null; cause = cause.getCause())
-            if (cause instanceof TemporaryFailure failure && failure.retryAfter != null) {
-                return failure.retryAfter;
-            }
-        return Duration.ofMillis(
-                Math.min(2000, 200L << (attempt - 1)) + ThreadLocalRandom.current().nextInt(50));
+        return FailureClassifier.retryDelay(error, attempt, 2000);
+    }
+
+    static Duration retryDelay(Throwable error, int attempt, long capMs) {
+        return FailureClassifier.retryDelay(error, attempt, capMs);
     }
 
     static boolean retryable(Throwable error) {
-        for (int i = 0; error != null && i < 5; i++, error = error.getCause()) {
-            if (error
-                            instanceof
-                            io.agentscope.extensions.model.openai.exception.OpenAIException provider
-                    && "insufficient_quota".equals(provider.getErrorCode())) {
-                return false;
-            }
-            if (error instanceof io.agentscope.core.model.ModelHttpException http
-                    && http.getStatusCode() != null) {
-                return http.isRetryableHttpStatus();
-            }
-            if (error instanceof io.agentscope.core.model.transport.HttpTransportException transport
-                    && transport.getStatusCode() != null) {
-                return transport.isRetryable();
-            }
-            if (error instanceof TemporaryFailure
-                    || error instanceof ConnectException
-                    || error instanceof SocketTimeoutException
-                    || error instanceof java.util.concurrent.TimeoutException) {
-                return true;
-            }
-            if (error instanceof SecurityException
-                    || error instanceof IllegalArgumentException
-                    || error instanceof RunControl.BudgetExceeded
-                    || error instanceof RunControl.Cancelled
-                    || error instanceof RunControl.ContextLimit) {
-                return false;
-            }
-        }
-        return false;
+        return FailureClassifier.retryable(error);
     }
 
+    /** 传输层抛出的暂时失败；携带分类与供应商错误码，供统一重试判定使用。 */
     static final class TemporaryFailure extends RuntimeException {
         final Duration retryAfter;
+        final FailureClass failureClass;
+        final String providerCode;
 
         TemporaryFailure(String message, Duration retryAfter) {
+            this(message, retryAfter, FailureClass.RETRYABLE, "");
+        }
+
+        TemporaryFailure(
+                String message,
+                Duration retryAfter,
+                FailureClass failureClass,
+                String providerCode) {
             super(message);
             this.retryAfter = retryAfter;
+            this.failureClass = failureClass;
+            this.providerCode = providerCode;
         }
     }
 

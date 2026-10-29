@@ -15,13 +15,15 @@ import java.util.function.BiFunction;
 final class LocalAgentControl implements RunControl {
     private static final class Tree {
         final LimitsDTO limits;
+        final SupervisorPolicy policy;
         final long deadline;
         final Map<String, Node> nodes = new LinkedHashMap<>();
         BiFunction<RequestDTO, RunControl, Mono<ResultDTO>> runner;
         int calls;
 
-        Tree(LimitsDTO limits) {
+        Tree(LimitsDTO limits, SupervisorPolicy policy) {
             this.limits = limits;
+            this.policy = policy;
             this.deadline = System.nanoTime() + limits.timeout().toNanos();
         }
     }
@@ -57,10 +59,18 @@ final class LocalAgentControl implements RunControl {
     }
 
     static RunControl root(LimitsDTO limits) {
-        Tree tree = new Tree(limits);
+        return root(limits, SupervisorPolicy.defaults());
+    }
+
+    static RunControl root(LimitsDTO limits, SupervisorPolicy policy) {
+        Tree tree = new Tree(limits, Objects.requireNonNull(policy));
         Node root = new Node("/root", null, "supervisor");
         tree.nodes.put(root.path, root);
         return new LocalAgentControl(tree, root, root.generation);
+    }
+
+    public SupervisorPolicy policy() {
+        return tree.policy;
     }
 
     public String runId() {

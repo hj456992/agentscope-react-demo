@@ -12,6 +12,11 @@ public interface RunControl {
         return "supervisor";
     }
 
+    /** 每次运行共享同一份策略；旧控制实现默认关闭新增能力。 */
+    default SupervisorPolicy policy() {
+        return SupervisorPolicy.defaults();
+    }
+
     default String agentPath() {
         return "/root";
     }
@@ -148,5 +153,9 @@ public interface RunControl {
 
     static RunControl local(LimitsDTO limits) {
         return LocalAgentControl.root(limits);
+    }
+
+    static RunControl local(LimitsDTO limits, SupervisorPolicy policy) {
+        return LocalAgentControl.root(limits, policy);
     }
 }

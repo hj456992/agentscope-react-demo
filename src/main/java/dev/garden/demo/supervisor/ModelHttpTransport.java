@@ -33,21 +33,40 @@ public final class ModelHttpTransport implements HttpTransport, AutoCloseable {
     public HttpResponse execute(HttpRequest request) {
         HttpResponse response = delegate.execute(request);
         int status = response.getStatusCode();
-        if (status == 429
-                && java.util.Objects.toString(response.getBody(), "")
-                        .contains("insufficient_quota")) {
-            throw new IllegalStateException("模型账户额度不足，本次不重试");
+        String code = FailureClassifier.providerCode(response.getBody());
+        if (status == 429) {
+            if (FailureClassifier.quotaCode(code)) {
+                throw new IllegalStateException("模型账户额度不足，本次不重试");
+            }
+            throw new ToolExecutor.TemporaryFailure(
+                    "模型服务限流，HTTP " + status,
+                    retryAfter(retryAfterHeader(response)),
+                    FailureClass.RATE_LIMITED,
+                    code);
         }
-        if (status == 429 || status >= 500 && status < 600) {
-            String header =
-                    response.getHeaders().entrySet().stream()
-                            .filter(e -> e.getKey().equalsIgnoreCase("Retry-After"))
-                            .map(java.util.Map.Entry::getValue)
-                            .findFirst()
-                            .orElse(null);
-            throw new ToolExecutor.TemporaryFailure("模型服务暂时不可用，HTTP " + status, retryAfter(header));
+        if (status == 408) {
+            throw new ToolExecutor.TemporaryFailure(
+                    "模型服务响应超时，HTTP " + status,
+                    retryAfter(retryAfterHeader(response)),
+                    FailureClass.TIMEOUT,
+                    code);
+        }
+        if (status >= 500 && status < 600) {
+            throw new ToolExecutor.TemporaryFailure(
+                    "模型服务暂时不可用，HTTP " + status,
+                    retryAfter(retryAfterHeader(response)),
+                    FailureClass.RETRYABLE,
+                    code);
         }
         return response;
+    }
+
+    private static String retryAfterHeader(HttpResponse response) {
+        return response.getHeaders().entrySet().stream()
+                .filter(e -> e.getKey().equalsIgnoreCase("Retry-After"))
+                .map(java.util.Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     static Duration retryAfter(String value) {

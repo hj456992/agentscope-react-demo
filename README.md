@@ -6,9 +6,23 @@ Java 17 + Maven + AgentScope Java 2.0.1，与当前 DSH 项目使用的 SDK 版�
 
 ## Supervisor 与三个子 Agent 服务
 
-`dev.garden.demo.supervisor` 当前为 v3.4：固定 Codex 提交的 MultiAgent V2 与本地模型摘要路径。主子会话共用显式模型—工具循环；创建子会话返回独立身份，通过邮箱、followup、wait/list、interrupt协作。父结束或取消不撤回已接受子会话，任务树仍共享期限和调用额度。
+`dev.garden.demo.supervisor` 当前为 v3.5：固定 Codex 提交的 MultiAgent V2 与本地模型摘要路径。主子会话共用显式模型—工具循环；创建子会话返回独立身份，通过邮箱、followup、wait/list、interrupt协作。父结束或取消不撤回已接受子会话，任务树仍共享期限和调用额度。
 
 模型原始终答直接交付，询问保留原问题和调用编号，收到真实答案后恢复；上下文超窗由模型生成摘要并持久替换历史。删除固定改写/意图前置阶段、固定终答模板及必经第二个答案模型。知识检索与AnswerVerifier组件仍可独立复用，但当前不是核心自动事实保证。Spring Boot、H2、MyBatis、事务分层、鉴权、偏好和副作用账本继续保留。
+
+v3.5 在此基础上补齐七项运行策略，均可在 `supervisor.policy.*` 单独关闭：
+
+| 能力 | 演示级实现 | 边界 |
+|---|---|---|
+| 业务语义校验 | `BusinessRules` 在数据源前检查过去日期、超出未来窗口、同城路线 | 工具内规则，平台级规则声明未实现 |
+| 事实校验 | `AnswerFactChecker` 确定性比对数值与日期，冲突降级 `PARTIAL` | 语义/NLI 校验未实现 |
+| 纠错上限 | `CorrectionTracker` 限制连续 schema 错误、工具不存在和总纠错次数 | 阈值按运行生效，不改变 `Status` 枚举 |
+| 多 Agent 门槛 | `MultiAgentGate` 按并行度、token、时延、深度给出决策；默认 `ADVISORY` | 在线规划器未实现 |
+| 统一失败分类 | `FailureClassifier` 区分 429 限流与配额耗尽、5xx、认证、输入错误，识别 `Retry-After` | 上游完整重试状态机未搬入 |
+| 压缩保真 | 当前问题优先保留、摘要最后、截断标记、token 级忠实度告警 | 不做 NLI 语义忠实度评测 |
+| 话题切分 | `TopicSegmenter` 只改变历史装配范围 | 不删除会话，不做向量话题识别 |
+
+内部错误码（`BUSINESS_RULE_VIOLATION`、`TOOL_NOT_FOUND`、`TOOL_DISABLED`、`CORRECTION_EXHAUSTED`、`FACT_CONFLICT`、`FACT_UNSUPPORTED`、`MULTI_AGENT_LIMIT`、`SUMMARY_FIDELITY_MISSING`）只进入工具结果、证据、事件和检查点，不新增对外 HTTP 错误码或 `Status` 枚举值。
 
 当前模型接口是Chat Completions，未覆盖Codex全部Responses、remote compact、后台压缩与V2可选运行配置。逐函数依据及尚未一致处见源码映射，不以旅行演示场景解释核心差异。
 ```sh
@@ -18,6 +32,17 @@ bash run-supervisor-server.sh
 ```
 
 默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。本地HTTP、持久化恢复和核心协作有对应测试；当前执行结果以实施记录为准。
+
+七项策略默认值见 `src/main/resources/application.yml` 的 `supervisor.policy.*`：业务校验、事实校验、纠错上限、话题切分、摘要告警开启，语义校验关闭，多 Agent 为 `ADVISORY`。每项都有独立开关，可单独回退。YAML 1.1 会把未加引号的 `OFF` 解析成布尔 `false`，因此 `multi-agent-mode` 必须写成 `"OFF"`。完整配置表见使用说明。
+
+```sh
+# 全量测试（离线模型与本地模拟 HTTP 服务，不调用外部付费模型）
+MAVEN_OPTS=-Dfile.encoding=UTF-8 mvn -q -DargLine=-Dfile.encoding=UTF-8 test
+# 实际 Netty 端口测试
+mvn -q -Dtest=SupervisorSocketIT test
+```
+
+2026-10-29 全量结果为 **256 项通过**，失败、错误、跳过均为 0，分别以阶段 B 关闭配置和安全开启配置运行两次，日志见 `/tmp/full2.log`、`/tmp/full3.log`，明细见[实施记录](docs/实施记录.md)。
 
 - [完整实现说明：16 项处理、流程图、接口和运行方式](docs/Supervisor使用说明.md)
 - [2026-10-28 分层、POJO、事务与 MyBatis 重构对照](docs/重构对照说明.md)

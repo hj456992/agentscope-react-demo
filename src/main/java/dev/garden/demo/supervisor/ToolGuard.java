@@ -40,11 +40,11 @@ final class ToolGuard implements MiddlewareBase {
                         }
                         AgentTool tool = toolkit.getTool(call.getName());
                         if (tool == null) {
-                            context.correction(role, "TOOL_NOT_FOUND: " + call.getName());
+                            context.correction(CorrectionType.TOOL_NOT_FOUND, call.getName());
                         } else if (ToolValidator.validateInput(
                                         json(call.getInput()), tool.getParameters())
                                 != null) {
-                            context.correction(role, "INVALID_SCHEMA: " + call.getName());
+                            context.correction(CorrectionType.INVALID_SCHEMA, call.getName());
                         }
                     }
                     return next.apply(input);

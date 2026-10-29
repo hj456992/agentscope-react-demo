@@ -14,6 +14,32 @@ supervisor:
   max-model-calls: 16
   max-output-tokens: 1024
   max-concurrent-requests: 8
+  policy:
+    # 安全开启值：确定性校验与本地纠错开启；语义校验和强制多 Agent 上限保持关闭。
+    business-rules-enabled: true
+    business-max-future-days: 30
+    fact-check-enabled: true
+    semantic-verifier-enabled: false
+    fact-high-risk-tools: query_weather,query_trains
+    correction-limits-enabled: true
+    max-consecutive-schema-errors: 2
+    max-tool-not-found: 2
+    max-business-violations: 2
+    max-total-corrections: 6
+    # YAML 1.1 会把未加引号的 OFF 解析为布尔 false，必须使用引号保留字符串语义。
+    multi-agent-mode: "ADVISORY"
+    multi-agent-min-parallelism: 2
+    multi-agent-max-agents: 4
+    multi-agent-max-depth: 2
+    multi-agent-max-token-multiplier: 2.0
+    multi-agent-min-latency-saving-ms: 500
+    topic-segmentation-enabled: true
+    topic-recent-turns: 6
+    topic-min-confidence: 0.6
+    retry-max-attempts: 3
+    retry-backoff-cap-ms: 2000
+    summary-fidelity-alert-enabled: true
+    summary-fidelity-threshold: 1.0
 logging:
   level:
     # SDK 异常可能包含供应商原始响应，演示服务只通过统一错误返回暴露必要信息。

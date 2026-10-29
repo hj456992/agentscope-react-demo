@@ -2,6 +2,7 @@ package dev.garden.demo.supervisor.service;
 
 import dev.garden.demo.supervisor.AgentLifecycle;
 import dev.garden.demo.supervisor.RunControl;
+import dev.garden.demo.supervisor.SupervisorPolicy;
 import dev.garden.demo.supervisor.config.SupervisorSettings;
 import dev.garden.demo.supervisor.pojo.dataobject.TaskDO;
 import dev.garden.demo.supervisor.pojo.dto.AgentMessageDTO;
@@ -42,6 +43,7 @@ public final class TaskService implements AutoCloseable {
     private final TaskStoreService store;
     private final SupervisorSettings settings;
     private final AccessPolicy accessPolicy;
+    private final SupervisorPolicy policy;
     private final BiFunction<RequestDTO, RunControl, Mono<ResultDTO>> runner;
     private final Scheduler scheduler = Schedulers.newBoundedElastic(12, 256, "supervisor-runtime");
     private final Map<String, OwnedRun> owned = new HashMap<>();
@@ -70,18 +72,20 @@ public final class TaskService implements AutoCloseable {
      * 唯一构造器：只做字段赋值并启动后台恢复线程，不执行模型调用。
      *
      * <p>容器按构造器注入：TaskStoreService（带 @Transactional 代理）、SupervisorSettings、 执行函数
-     * runner（supervisorRunner bean，即 supervisor::run）和 AccessPolicy。 直接构造时也只用这一个构造器，不另加重载；
-     * accessPolicy 允许为 null，此时执行期使用任务保存的身份快照。
+     * runner（supervisorRunner bean，即 supervisor::run）、AccessPolicy 和每次运行共享的
+     * SupervisorPolicy。直接构造时也只用这一个构造器，不另加重载； accessPolicy 允许为 null，此时执行期使用任务保存的身份快照。
      */
     public TaskService(
             TaskStoreService store,
             SupervisorSettings settings,
             BiFunction<RequestDTO, RunControl, Mono<ResultDTO>> runner,
-            AccessPolicy accessPolicy) {
+            AccessPolicy accessPolicy,
+            SupervisorPolicy policy) {
         this.store = store;
         this.settings = settings;
         this.runner = runner;
         this.accessPolicy = accessPolicy;
+        this.policy = java.util.Objects.requireNonNull(policy);
         recovery.scheduleWithFixedDelay(
                 () -> {
                     if (!closed) {
@@ -465,6 +469,10 @@ public final class TaskService implements AutoCloseable {
 
         public String agentRole() {
             return role;
+        }
+
+        public SupervisorPolicy policy() {
+            return policy;
         }
 
         public String agentPath() {

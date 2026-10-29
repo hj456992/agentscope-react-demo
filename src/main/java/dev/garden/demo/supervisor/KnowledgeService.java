@@ -117,11 +117,13 @@ final class KnowledgeService {
                         () -> {
                             context.check();
                             if (!context.control.identity().allows(getName())) {
+                                context.correction(
+                                        CorrectionType.PERMISSION_DENIED, getName());
                                 return Mono.just(ToolResultBlock.error("PERMISSION_DENIED"));
                             }
                             if (ToolValidator.validateInput(json(param.getInput()), getParameters())
                                     != null) {
-                                context.correction("knowledge", "INVALID_SCHEMA");
+                                context.correction(CorrectionType.INVALID_SCHEMA, getName());
                                 return Mono.just(ToolResultBlock.error("INVALID_SCHEMA"));
                             }
                             // 资料查询约束来自父任务，不采用模型任意扩大后的查询文本。
@@ -130,6 +132,7 @@ final class KnowledgeService {
                                             context.query,
                                             LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")));
                             context.add(found);
+                            context.correctionSuccess(getName());
                             return Mono.just(ToolResultBlock.text(json(found)));
                         });
             }
