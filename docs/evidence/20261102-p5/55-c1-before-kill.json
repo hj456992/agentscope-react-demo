@@ -1,0 +1,368 @@
+{
+  "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+  "chat": {
+    "status": "RUNNING",
+    "originalQuery": "查询杭州2026-11-03的天气，并创建子助手复核结果。",
+    "rewrittenQuery": "",
+    "intent": "UNKNOWN",
+    "answer": "任务执行中",
+    "agents": [],
+    "evidence": [],
+    "events": [],
+    "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+    "revision": 1,
+    "requestId": "019cd16c-8dca-47a2-b6db-9363cc9481b3",
+    "state": "RUNNING",
+    "modelCalls": 0,
+    "deadline": 1793569958753,
+    "replacedBy": null
+  },
+  "capturedAt": "2026-11-01T21:51:39.152Z",
+  "detail": {
+    "result": {
+      "status": "RUNNING",
+      "originalQuery": "查询杭州2026-11-03的天气，并创建子助手复核结果。",
+      "rewrittenQuery": "",
+      "intent": "UNKNOWN",
+      "answer": "任务执行中",
+      "agents": [],
+      "evidence": [],
+      "events": [
+        "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent",
+        "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+      ]
+    },
+    "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+    "requestId": "019cd16c-8dca-47a2-b6db-9363cc9481b3",
+    "sessionId": "0a248895-303d-4d51-92ee-e816e6c9ed54",
+    "state": "RUNNING",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 3,
+    "maxModelCalls": 16,
+    "deadline": 1793569958753,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [
+      {
+        "runId": "c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+        "parentRunId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "agentPath": "/root/acceptance_child",
+        "agentRole": "weather_agent",
+        "agentVersion": "unregistered",
+        "state": "RUNNING",
+        "agentStatus": "running",
+        "generation": 2,
+        "revision": 1,
+        "modelCalls": 1,
+        "maxModelCalls": 16,
+        "deadline": 1793569958753,
+        "createdAt": 1793569898815,
+        "accepted": true,
+        "answer": null,
+        "resultStatus": null,
+        "resultDigest": null,
+        "evidenceTools": [],
+        "requiredPermissions": [],
+        "taskBrief": {
+          "objective": "查询杭州明天的天气并返回结论。用户的原始问题是：查询杭州2026-11-03的天气，并创建子助手复核结果。",
+          "role": "weather_agent",
+          "planTaskId": "",
+          "dependsOn": [],
+          "batch": 0,
+          "outputFormat": "answer+evidence",
+          "budgetModelCalls": 16,
+          "deadline": 1793569958753,
+          "inheritedMessages": 0,
+          "inheritedBytes": 0,
+          "forkMode": "none",
+          "spawnOperationId": "acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f"
+        },
+        "spawnOperationId": "acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "acceptanceReceiptKey": "987d5950-0576-4dbb-afd6-c19546de98f4:acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "completedAt": 0,
+        "recovered": false
+      }
+    ],
+    "toolCalls": [
+      {
+        "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "agentPath": "/root",
+        "callId": "acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "tool": "spawn_agent",
+        "argumentFingerprint": "86480b59ee8bc4358c461cde76046cbe799d898ac2b0ef3d08f23f637d6b7534",
+        "status": "FAILED",
+        "startedAt": 1793569898782,
+        "endedAt": 1793569898818,
+        "durationMs": 36,
+        "resultBytes": 196,
+        "resultSummary": "{\"agentId\":\"c4a3b6c2-8103-4197-baa2-b3447a744c3f\",\"agentName\":\"/root/acceptance_child\",\"agentRole\":\"weather_agent\",\"agentStatus\":\"running\",\"lastAnswer\":null,\"result\":null,\"requiredPermissions\":[]}",
+        "operationId": "acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [
+      {
+        "parentRunId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "parentAgentPath": "/root",
+        "operationId": "acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "receiptKey": "987d5950-0576-4dbb-afd6-c19546de98f4:acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "fingerprint": "ae593b98ce0be949f9f79f1a24014dd2f872328d8068a09a15186e4efe43bd97",
+        "childRunId": "c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+        "childAgentPath": "/root/acceptance_child",
+        "childRole": "weather_agent",
+        "childStatus": "running:RUNNING",
+        "requiredPermissions": []
+      }
+    ],
+    "usage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "cachedTokens": 0,
+      "totalTokens": 0,
+      "source": "missing",
+      "agents": [
+        {
+          "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 3,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 2,
+          "subtreeModelCalls": 3,
+          "remainingModelCalls": 13,
+          "sharedBudget": true
+        },
+        {
+          "runId": "c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+          "agentPath": "/root/acceptance_child",
+          "agentRole": "weather_agent",
+          "modelCalls": 1,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 1,
+          "subtreeModelCalls": 1,
+          "remainingModelCalls": 13,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "spanId": "run:c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "RUNNING",
+        "startedAt": 1793569898753,
+        "endedAt": null,
+        "durationMs": null,
+        "errorCode": null
+      },
+      {
+        "traceId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "spanId": "tool:c68665e1-02fe-4d2b-b702-20500c7fa1e8:acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f",
+        "parentSpanId": "run:c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "kind": "TOOL",
+        "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "agentPath": "/root",
+        "name": "spawn_agent",
+        "status": "COMPLETED",
+        "startedAt": 1793569898777,
+        "endedAt": 1793569898819,
+        "durationMs": 42,
+        "errorCode": "COMPLETED"
+      },
+      {
+        "traceId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "spanId": "run:c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+        "parentSpanId": "run:c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "kind": "RUN",
+        "runId": "c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+        "agentPath": "/root/acceptance_child",
+        "name": "run",
+        "status": "RUNNING",
+        "startedAt": 1793569898815,
+        "endedAt": null,
+        "durationMs": null,
+        "errorCode": null
+      },
+      {
+        "traceId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "spanId": "spawn:c4a3b6c2-8103-4197-baa2-b3447a744c3f",
+        "parentSpanId": "run:c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "kind": "DELEGATION",
+        "runId": "c68665e1-02fe-4d2b-b702-20500c7fa1e8",
+        "agentPath": "/root",
+        "name": "spawn_agent",
+        "status": "RUNNING",
+        "startedAt": 1793569898815,
+        "endedAt": null,
+        "durationMs": null,
+        "errorCode": null
+      }
+    ],
+    "compactions": [],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [],
+      "filteredTools": [],
+      "evidenceTools": [],
+      "evidenceCount": 0,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "spawn_agent"
+      ],
+      "filteredReasons": {
+        "spawn_agent": "执行记录中的工具当前身份不可见"
+      }
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      },
+      {
+        "role": "weather_agent",
+        "promptId": "prompt.travel.weather_agent",
+        "version": "1",
+        "hash": "d2eec5a35619673d1d8cef5b0f1f565cf71cee99c28e5e8be8bdbfe01e79d902",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"ordinal\":1,\"tool\":\"spawn_agent\",\"hint\":\"SPAWN_CHILD\"}",
+      "loop:v1:agent-edges": "{\"/root\":[\"/root/acceptance_child\"]}",
+      "loop:v1:semantic-goals": "[{\"scope\":\"agent\",\"key\":\"/root/acceptance_child\",\"tokens\":\"查询 询杭 杭州 州明 明天 天的 的天 天气 气并 并返 返回 回结 结论 论用 用户 户的 的原 原始 始问 问题 题是 是查 州2 20 02 26 61 11 10 03 3的 并创 创建 建子 子助 助手 手复 复核 核结 结果\",\"sample\":\"查询杭州明天的天气并返回结论。用户的原始问题是：查询杭州2026-11-03的天气，并创建子助手复核结果。\",\"warnings\":0}]",
+      "model:9ea96ed12e3def7e98d4f4227ceb29a0e4573f16e67964cfef85dadce454977e": "1",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "3",
+      "toolcall:v1:acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f": "{\"callId\":\"acceptance-1-567ade63-252a-4c21-801f-beae0f4c597f\",\"tool\":\"spawn_agent\",\"argumentFingerprint\":\"86480b59ee8bc4358c461cde76046cbe799d898ac2b0ef3d08f23f637d6b7534\",\"startedAt\":1793569898782,\"status\":\"FAILED\",\"endedAt\":1793569898818,\"resultBytes\":196,\"resultSummary\":\"{\\\"agentId\\\":\\\"c4a3b6c2-8103-4197-baa2-b3447a744c3f\\\",\\\"agentName\\\":\\\"/root/acceptance_child\\\",\\\"agentRole\\\":\\\"weather_agent\\\",\\\"agentStatus\\\":\\\"running\\\",\\\"lastAnswer\\\":null,\\\"result\\\":null,\\\"requiredPermissions\\\":[]}\",\"reus…"
+    },
+    "approvals": [],
+    "sideEffects": [],
+    "events": [
+      "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent",
+      "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+    ],
+    "createdAt": 1793569898753,
+    "firstEventAt": 1793569898776,
+    "completedAt": 0,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "SPAWN_CHILD",
+    "recovered": false,
+    "requestFingerprint": "4ed9bb40adcfa56ed4251c0efeeca73c45ceef58e59260a7249c1b7276855c46",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793569898776,
+        "text": "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent"
+      },
+      {
+        "sequence": 2,
+        "at": 1793569898804,
+        "text": "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        },
+        {
+          "role": "weather_agent",
+          "catalogTools": [
+            "query_weather"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 3
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 0
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 1
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 1
+      }
+    ]
+  }
+}

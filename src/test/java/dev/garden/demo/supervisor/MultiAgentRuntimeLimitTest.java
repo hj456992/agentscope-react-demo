@@ -50,7 +50,9 @@ class MultiAgentRuntimeLimitTest {
                                 4,
                                 1,
                                 2.0,
-                                500),
+                                500,
+                                false,
+                                8),
                         "/root/a/b",
                         List.of(),
                         spawns);
@@ -104,7 +106,9 @@ class MultiAgentRuntimeLimitTest {
                 maxAgents,
                 maxDepth,
                 2.0,
-                500);
+                500,
+                false,
+                8);
     }
 
     private static ResultDTO run(

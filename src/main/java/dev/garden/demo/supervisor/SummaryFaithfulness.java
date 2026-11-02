@@ -89,8 +89,36 @@ final class SummaryFaithfulness {
                     tokens.add(city);
                 }
             }
+            addRoutes(tokens, text);
         }
         return List.copyOf(tokens);
+    }
+
+    /**
+     * 提取带方向的城市短语，例如“杭州到上海”“从杭州出发去上海”。
+     *
+     * <p>单独保存城市名会丢失出发地与目的地的顺序；保留完整短语能让压缩后的摘要
+     * 仍按用户原文方向理解行程。
+     */
+    private static void addRoutes(Set<String> tokens, String text) {
+        for (String from : CITIES) {
+            for (String to : CITIES) {
+                if (from.equals(to)) {
+                    continue;
+                }
+                for (String route :
+                        List.of(
+                                from + "到" + to,
+                                from + "至" + to,
+                                from + "去" + to,
+                                from + "出发去" + to,
+                                from + "出发到" + to)) {
+                    if (text.contains(route)) {
+                        tokens.add(route);
+                    }
+                }
+            }
+        }
     }
 
     private static void addMatches(Set<String> tokens, Pattern pattern, String text) {

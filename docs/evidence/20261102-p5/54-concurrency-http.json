@@ -1,0 +1,66 @@
+{
+  "results": {
+    "0": {
+      "status": 202,
+      "headers": {
+        "Connection": "close",
+        "Content-Length": "354",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "RUNNING",
+        "originalQuery": "查询2026-11-03杭州的天气（API并发0）",
+        "rewrittenQuery": "",
+        "intent": "UNKNOWN",
+        "answer": "任务执行中",
+        "agents": [],
+        "evidence": [],
+        "events": [],
+        "runId": "288331a4-2182-4e27-be4d-5eb9eada854a",
+        "revision": 1,
+        "requestId": "p5-conc-req-0",
+        "state": "RUNNING",
+        "modelCalls": 0,
+        "deadline": 1793569858739,
+        "replacedBy": null
+      }
+    },
+    "1": {
+      "status": 202,
+      "headers": {
+        "Connection": "close",
+        "Content-Length": "354",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "RUNNING",
+        "originalQuery": "查询2026-11-03杭州的天气（API并发1）",
+        "rewrittenQuery": "",
+        "intent": "UNKNOWN",
+        "answer": "任务执行中",
+        "agents": [],
+        "evidence": [],
+        "events": [],
+        "runId": "c190d2f5-836d-430d-84d3-b7f7ba09c930",
+        "revision": 1,
+        "requestId": "p5-conc-req-1",
+        "state": "RUNNING",
+        "modelCalls": 0,
+        "deadline": 1793569858745,
+        "replacedBy": null
+      }
+    },
+    "2": {
+      "status": 429,
+      "headers": {
+        "Connection": "close",
+        "Content-Length": "73",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "code": "BUSY",
+        "message": "当前处理任务较多，请稍后重试。"
+      }
+    }
+  }
+}

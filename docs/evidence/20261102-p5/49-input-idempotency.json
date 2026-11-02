@@ -1,0 +1,72 @@
+{
+  "runId": "a2aa658f-3772-4941-b59f-55c8a90e8efc",
+  "revisionBefore": 2,
+  "supplement": {
+    "first": [
+      409,
+      {
+        "code": "CONFLICT",
+        "message": "任务已结束"
+      }
+    ],
+    "replay": [
+      409,
+      {
+        "code": "CONFLICT",
+        "message": "任务已结束"
+      }
+    ],
+    "conflict": [
+      409,
+      {
+        "code": "CONFLICT",
+        "message": "任务已结束"
+      }
+    ],
+    "stale": [
+      409,
+      {
+        "code": "CONFLICT",
+        "message": "任务版本已更新"
+      }
+    ]
+  },
+  "cancel": {
+    "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+    "before": {
+      "status": "CANCELLED",
+      "originalQuery": "查询2026-11-03杭州的天气",
+      "rewrittenQuery": "",
+      "intent": "UNKNOWN",
+      "answer": "任务已停止",
+      "agents": [],
+      "evidence": [],
+      "events": [],
+      "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+      "revision": 2,
+      "requestId": "d5912bd0-c082-4984-a826-2df101716a84",
+      "state": "CANCELLED",
+      "modelCalls": 1,
+      "deadline": 1793569797830,
+      "replacedBy": null
+    },
+    "again": [
+      200,
+      {
+        "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "revision": 2,
+        "state": "CANCELLED",
+        "message": "任务已停止"
+      }
+    ],
+    "replay": [
+      200,
+      {
+        "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "revision": 2,
+        "state": "CANCELLED",
+        "message": "任务已停止"
+      }
+    ]
+  }
+}

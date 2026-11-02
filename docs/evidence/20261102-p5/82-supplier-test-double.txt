@@ -1,0 +1,22 @@
+2.11 供应商侧 429/5xx 覆盖说明（测试覆盖，非页面证据）
+
+执行时间：2026-11-02
+执行命令：
+  mvn -q -Dtest=ModelTransportTest,HttpTravelDataSourceTest,SupervisorHttpFailureTest,SupervisorFailureTest,FailureClassifierTest test
+结果：退出码 0。
+
+测试结果：
+  ModelTransportTest         Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+  HttpTravelDataSourceTest   Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+  SupervisorHttpFailureTest  Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+  SupervisorFailureTest      Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+  FailureClassifierTest      Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+
+覆盖内容：
+- 供应商 HTTP 429：解析 Retry-After，按可重试限流处理；
+- 供应商 HTTP 5xx：按可重试服务异常处理，达到重试上限后保留失败分类；
+- 工具侧真实 429/5xx：本地下游独立进程故障档位，页面证据见 29-downstream-500*.png、30-downstream-429*.png。
+
+口径标注：
+- 本文件是测试替身覆盖，不能作为供应商 429/5xx 的真实页面通过证据；
+- 工具侧 429/5xx 有真实页面证据，供应商侧只做测试覆盖并在此明确标注。

@@ -1,0 +1,16 @@
+{
+  "runId": "c1d4182d-b8b2-4ae4-9efb-165e6e5788ad",
+  "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+  "httpAcceptedStatus": 202,
+  "httpAcceptedEvidence": "52-concurrency.json statuses: samples 1/3 status=202，sample2 status=429；同脚本页面轮询可见执行事件",
+  "elapsedSeconds": 6,
+  "createdAt": 1793571196774,
+  "firstEventAt": 1793571197802,
+  "completedAt": 1793571199138,
+  "firstEventDelayMs": 1028,
+  "totalDurationMs": 2364,
+  "state": "SUCCESS",
+  "modelCalls": 2,
+  "eventCount": 1,
+  "answer": "杭州 2026-11-03 的天气情况（示例数据）：\n\n- **天气**：多云\n- **气温**：18℃\n\n**出行建议**：\n- 气温适中，穿长袖或者薄外套即可，早晚可以再带一件薄款针织衫或夹克。\n- 多云无雨，适合户外活动和步行出行，注意一下紫外线防护就行。\n- 如果可以的话，带上折叠伞备用；目前预报没有降雨，但多云天气也比较容易有变化。\n\n如果你需要，我还可以帮你查当天杭州的车次，或者把行程"
+}

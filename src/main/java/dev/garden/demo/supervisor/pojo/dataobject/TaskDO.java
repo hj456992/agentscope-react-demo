@@ -20,18 +20,31 @@ public final class TaskDO {
     public int revision = 1, consumedRevision = 1, generation = 1, calls;
     public int maxCalls;
     public long createdAt, deadline;
+    /** 首次事件和终态时间由服务端写入；旧任务缺少时保持 0，页面不补造。 */
+    public long firstEventAt, completedAt, recoveredAt;
+    /** 本 Agent 自身模型调用数；calls 在根任务上表示整棵树。 */
+    public int ownCalls;
     public ResultDTO result;
     public List<String> pending = new ArrayList<>();
     public List<String> userInputs = new ArrayList<>();
     public int recordedInputs;
     public Map<String, String> checkpoints = new LinkedHashMap<>();
     public List<String> events = new ArrayList<>();
+    /** 与 events 一一对应的事件时间；旧任务允许为空或较短。 */
+    public List<Long> eventTimes = new ArrayList<>();
     public String replacedBy;
+
+    /** 受控验收触发标记；正常请求为空，页面据此区分受控分支。 */
+    public String triggerMode, acceptanceHint;
+    public List<dev.garden.demo.supervisor.pojo.dto.InstructionEvidenceDTO> instructionEvidence =
+            new ArrayList<>();
 
     /** 子会话关系与状态独立于父轮次；rootRunId 只指共享预算所有者。 */
     public String rootRunId, parentRunId;
 
     public String agentPath = "/root", agentRole = "supervisor";
+    /** 任务受理时固定的目录版本；旧任务缺字段时显示未登记。 */
+    public String agentVersion;
     public boolean accepted = true;
 
     /** 已投递的最高完成代际；入队代际独立记录，等待期间允许继续新回合。 */

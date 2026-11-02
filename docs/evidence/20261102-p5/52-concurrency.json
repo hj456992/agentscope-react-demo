@@ -1,0 +1,36 @@
+{
+  "captured": [
+    {
+      "sample": 1,
+      "text": "查询2026-11-03杭州的天气（并发样本1）\nS\nSupervisor\n处理中\n正在查询资料并整理回答…\n天气\n查询成功\n杭州\n2026-11-03\n18°\n多云\n来源 downstream-v1\n执行过程\n1 条记录\n任务与请求详情\n异步 · decf924d"
+    },
+    {
+      "sample": 2,
+      "text": "查询2026-11-03杭州的天气（并发样本2）\nS\nSupervisor\n请求未受理\n当前请求较多，请稍后再试。\n任务与请求详情"
+    },
+    {
+      "sample": 3,
+      "text": "查询2026-11-03杭州的天气（并发样本3）\nS\nSupervisor\n处理中\n正在查询资料并整理回答…\n天气\n查询成功\n杭州\n2026-11-03\n18°\n多云\n来源 downstream-v1\n执行过程\n1 条记录\n任务与请求详情\n异步 · 0a436723"
+    },
+    {
+      "metrics": "S\nSupervisor\n你的多助手工作空间\n新对话\n⌘\n验收场景\n43\n平台治理\n显式偏好\n最近对话\n1\n新对话\n\n模型由服务端管理。\n刷新后配置令牌可恢复任务。\n\n访问令牌已配置\n仅当前页面有效\nSupervisor\n/\n新对话\n示例数据\n调用模式\n异步模式\n同步模式\n令牌已配置\nSUPERVISOR WORKSPACE\n今天，想解决什么？\n\n说出你的目标，一起查询、规划、核对每一步。\n\n规划一次短途旅行\n让天气、车票和行程助手一起协作\n出发前，看看天气\n查询天气，查看来源与日期\n找到合适的车次\n查看时刻、席别与演示余票\n\n天气与车票均使用本地示例数据，适合体验与验收。\n\n输入问题\n受控触发（验收用，可选）\n天气 · 车票 · 行程\n0 / 2000\n\nEnter 发送 · Shift + Enter 换行 · 天气与车票为示例数据\n\n本地真实注册表、审批与指标\n\n平台治理\n目录\n提示词\n记忆\n指标\n告警 2\n审批 0\n审计\n\n数据来自当前实例的数据库和本地下游；提示词正文、签名密钥与令牌不会出现在本面板。\n\n任务总数\n48\n运行中\n2\n已完成\n46\n失败率\n45.7%\nP95 耗时\n27817 ms\n模型调用\n248\nPrompt tokens\n60,079\nCompletion tokens\n2,133\n工具调用\n118\n失败工具调用\n71\n限流事件\n1\n队列拒绝\n0\n待审批\n0\n已决策审批\n2\n按状态\nTIMEOUT\n1\nFAILED\n9\nCONTEXT_LIMIT\n2\nSUCCESS\n17\nPARTIAL\n3\nBUDGET_EXHAUSTED\n9\nREPLACED\n1\nCANCELLED\n4\nRUNNING\n2\n\n采集时间 2026/11/2 06:06:49；数值来自当前数据库，没有样本时保持 0。"
+    }
+  ],
+  "statuses": [
+    {
+      "sample": 3,
+      "status": 202,
+      "retryAfter": null
+    },
+    {
+      "sample": 1,
+      "status": 202,
+      "retryAfter": null
+    },
+    {
+      "sample": 2,
+      "status": 429,
+      "retryAfter": "1"
+    }
+  ]
+}

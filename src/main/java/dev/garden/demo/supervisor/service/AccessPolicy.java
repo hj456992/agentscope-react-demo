@@ -51,6 +51,11 @@ public final class AccessPolicy {
                 .orElseThrow(() -> new RunControl.Cancelled("任务身份已撤销"));
     }
 
+    /** 返回已配置身份，不返回令牌；供配置证据核对身份矩阵。 */
+    public java.util.List<IdentityDTO> identities() {
+        return java.util.List.copyOf(identities.values());
+    }
+
     public IdentityDTO authenticate(String authorization) {
         if (authorization != null && authorization.startsWith("Bearer ")) {
             byte[] supplied = authorization.substring(7).getBytes(StandardCharsets.UTF_8);

@@ -2,13 +2,21 @@ package dev.garden.demo.supervisor.service;
 
 import dev.garden.demo.supervisor.SupervisorPolicy;
 import dev.garden.demo.supervisor.pojo.dataobject.ConversationDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryCandidateDO;
 import dev.garden.demo.supervisor.pojo.dataobject.MemoryDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryVectorDO;
 import dev.garden.demo.supervisor.pojo.dto.ConversationContextDTO;
 import dev.garden.demo.supervisor.pojo.dto.EvidenceDTO;
 import dev.garden.demo.supervisor.pojo.dto.IdentityDTO;
+import dev.garden.demo.supervisor.pojo.dto.MemoryCandidateDTO;
+import dev.garden.demo.supervisor.pojo.dto.MemoryGovernanceDTO;
+import dev.garden.demo.supervisor.pojo.dto.MemoryVectorHitDTO;
 import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
 import dev.garden.demo.supervisor.pojo.dto.ResultDTO;
 import dev.garden.demo.supervisor.pojo.dto.TurnDTO;
+import dev.garden.demo.supervisor.pojo.param.MemoryCandidateDecisionParam;
+import dev.garden.demo.supervisor.pojo.param.MemoryCandidateParam;
+import dev.garden.demo.supervisor.pojo.param.MemorySearchParam;
 import dev.garden.demo.supervisor.pojo.req.MemoryReq;
 import dev.garden.demo.supervisor.pojo.res.MemoryPageRes;
 import dev.garden.demo.supervisor.pojo.res.MemoryRes;
@@ -29,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /** 会话原文与显式偏好分别保存；摘要只引用用户原文，不把模型推测升级为事实。 */
 public class ConversationService {
@@ -89,6 +98,7 @@ public class ConversationService {
         Instant now = Instant.now();
         repository.expireAllConversations(now.minus(conversationRetention).toEpochMilli());
         repository.expireMemories(now.toEpochMilli());
+        repository.purgeExpiredMemoryVectors(now.toEpochMilli());
     }
 
     @Transactional
@@ -154,7 +164,11 @@ public class ConversationService {
         }
         return new ConversationContextDTO(
                 new RequestDTO(
-                        request.sessionId(), request.question(), history, request.requestId()),
+                        request.sessionId(),
+                        request.question(),
+                        history,
+                        request.requestId(),
+                        request.acceptanceHint()),
                 requiredPermissions);
     }
 
@@ -228,13 +242,7 @@ public class ConversationService {
                 || input.value().length() > 100) {
             throw badRequest("偏好值及版本无效");
         }
-        String value = input.value().strip();
-        if (key.equals("preferredDepartureCity") && !CITIES.contains(value)) {
-            throw badRequest("请提供演示中可识别的城市名");
-        }
-        if (key.equals("preferredSeat") && !SEATS.contains(value)) {
-            throw badRequest("座席名称无效");
-        }
+        String value = validateMemoryValue(key, input.value());
         Instant now = Instant.now();
         Instant expiry =
                 input.expiresAt() == null ? now.plus(preferenceRetention) : input.expiresAt();
@@ -246,22 +254,47 @@ public class ConversationService {
         } catch (ArithmeticException error) {
             throw badRequest("有效期超出范围");
         }
+        return confirmMemory(
+                identity,
+                key,
+                value,
+                input.expectedVersion(),
+                expiry,
+                "explicit-user-confirmation",
+                now);
+    }
+
+    /**
+     * 写入或更新一条已确认偏好，并同步本地向量索引。
+     *
+     * <p>版本按墓碑递增，删除后重建不会复用旧版本；向量只保存本地哈希嵌入，不保存
+     * 原始凭据。任何异常都不会写入部分记录，方法由调用方的声明式事务保护。
+     */
+    private MemoryRes confirmMemory(
+            IdentityDTO identity,
+            String key,
+            String value,
+            int expectedVersion,
+            Instant expiry,
+            String source,
+            Instant now) {
         StoredMemory stored = readMemory(identity, key);
         int expected = stored != null && stored.active(now) ? stored.memory().version() : 0;
-        if (input.expectedVersion() != expected) {
+        if (expectedVersion != expected) {
             throw conflict();
         }
         int version = stored == null ? 1 : stored.memory().version() + 1;
-        MemoryRes memory = new MemoryRes(key, value, version, "explicit-user-confirmation", expiry);
+        MemoryRes memory = new MemoryRes(key, value, version, source, expiry);
         MemoryDO row = new MemoryDO();
         row.tenantId = identity.tenantId();
         row.userId = identity.userId();
         row.memoryKey = key;
         row.memoryValue = value;
         row.version = version;
-        row.source = memory.source();
+        row.source = source;
         row.expiresAt = expiry.toEpochMilli();
         repository.upsertMemory(row, now.toEpochMilli());
+        indexMemory(identity, key, value, version, source, now);
         return memory;
     }
 
@@ -279,8 +312,264 @@ public class ConversationService {
         if (stored.memory().version() != expectedVersion) {
             throw conflict();
         }
-        // 留下版本墓碑防止删除重建后旧版本更新通过；删除实际偏好内容。
+        // 留下版本墓碑防止删除重建后旧版本更新通过；同时删除偏好正文和向量内容。
         repository.deleteMemory(identity.tenantId(), identity.userId(), key);
+        repository.deleteMemoryVector(identity.tenantId(), identity.userId(), key);
+    }
+
+    /** 列出当前身份的记忆候选，只返回候选元数据，不写入长期偏好。 */
+    @Transactional(readOnly = true)
+    public List<MemoryCandidateDTO> candidates(IdentityDTO identity) {
+        List<MemoryCandidateDTO> result = new ArrayList<>();
+        for (MemoryCandidateDO row :
+                repository.memoryCandidates(identity.tenantId(), identity.userId())) {
+            result.add(candidate(row));
+        }
+        return result;
+    }
+
+    /**
+     * 提交记忆候选。
+     *
+     * <p>聊天不会自动创建候选；本入口只接受用户主动提交的键值，并记录来源、期望版本和
+     * 有效期。候选在批准前不进入长期偏好装配，也不写入向量索引。
+     */
+    @Transactional
+    public MemoryCandidateDTO propose(IdentityDTO identity, MemoryCandidateParam input) {
+        requireWrite(identity);
+        if (input == null || input.expectedVersion() < 0 || isBlank(input.source())) {
+            throw badRequest("候选参数无效");
+        }
+        String key = input.key();
+        validateKey(key);
+        String value = validateMemoryValue(key, input.value());
+        if (input.source().length() > 200) {
+            throw badRequest("候选来源过长");
+        }
+        Instant now = Instant.now();
+        StoredMemory stored = readMemory(identity, key);
+        int expected = stored != null && stored.active(now) ? stored.memory().version() : 0;
+        if (input.expectedVersion() != expected) {
+            throw conflict();
+        }
+        Instant expiry =
+                input.expiresAt() == null ? now.plus(preferenceRetention) : input.expiresAt();
+        if (!expiry.isAfter(now)) {
+            throw badRequest("有效期必须在未来");
+        }
+        MemoryCandidateDO row = new MemoryCandidateDO();
+        row.candidateId = UUID.randomUUID().toString();
+        row.tenantId = identity.tenantId();
+        row.userId = identity.userId();
+        row.memoryKey = key;
+        row.memoryValue = value;
+        row.source = input.source().strip();
+        row.status = "PENDING";
+        row.expectedVersion = input.expectedVersion();
+        row.requestedAt = now.toEpochMilli();
+        row.expiresAt = expiry.toEpochMilli();
+        repository.insertMemoryCandidate(row);
+        return candidate(row);
+    }
+
+    /**
+     * 审核候选；批准时写入长期偏好，拒绝时只保留候选记录。
+     *
+     * <p>审核期间的偏好版本变化会把候选标记为 REJECTED，避免覆盖用户刚确认的新值。
+     */
+    @Transactional
+    public MemoryCandidateDTO decideCandidate(
+            IdentityDTO identity, MemoryCandidateDecisionParam input) {
+        requireWrite(identity);
+        if (input == null || isBlank(input.candidateId()) || isBlank(input.decision())) {
+            throw badRequest("审核参数无效");
+        }
+        MemoryCandidateDO row = repository.memoryCandidate(input.candidateId());
+        if (row == null
+                || !row.tenantId.equals(identity.tenantId())
+                || !row.userId.equals(identity.userId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        if (!"PENDING".equals(row.status)) {
+            throw conflict();
+        }
+        String decision = input.decision().strip().toUpperCase(java.util.Locale.ROOT);
+        if (!decision.equals("APPROVE") && !decision.equals("REJECT")) {
+            throw badRequest("审核结论只能是 APPROVE 或 REJECT");
+        }
+        Instant now = Instant.now();
+        String reason = input.reason() == null ? "" : input.reason().strip();
+        if (reason.length() > 500) {
+            reason = reason.substring(0, 500);
+        }
+        if (decision.equals("REJECT")) {
+            repository.decideMemoryCandidate(
+                    row.candidateId, "REJECTED", now.toEpochMilli(), identity.userId(), reason, null);
+            return candidate(repository.memoryCandidate(row.candidateId));
+        }
+        try {
+            confirmMemory(
+                    identity,
+                    row.memoryKey,
+                    row.memoryValue,
+                    row.expectedVersion,
+                    Instant.ofEpochMilli(row.expiresAt),
+                    "reviewed-candidate:" + row.candidateId,
+                    now);
+        } catch (ResponseStatusException conflict) {
+            repository.decideMemoryCandidate(
+                    row.candidateId,
+                    "REJECTED",
+                    now.toEpochMilli(),
+                    identity.userId(),
+                    "审核期间偏好版本已变化",
+                    null);
+            throw conflict;
+        }
+        int applied = readMemory(identity, row.memoryKey).memory().version();
+        repository.decideMemoryCandidate(
+                row.candidateId,
+                "APPROVED",
+                now.toEpochMilli(),
+                identity.userId(),
+                reason,
+                applied);
+        return candidate(repository.memoryCandidate(row.candidateId));
+    }
+
+    /** 本地哈希向量检索；结果明确标注本地实现，不冒充生产向量库或语义模型。 */
+    @Transactional(readOnly = true)
+    public List<MemoryVectorHitDTO> search(IdentityDTO identity, MemorySearchParam input) {
+        if (input == null || isBlank(input.query()) || input.query().length() > 200) {
+            throw badRequest("检索词不能为空且不能超过200字");
+        }
+        int limit = input.limit() == null ? 5 : input.limit();
+        if (limit < 1 || limit > 20) {
+            throw badRequest("limit 必须在 1 到 20 之间");
+        }
+        double[] query = embedding(input.query());
+        List<MemoryVectorHitDTO> hits = new ArrayList<>();
+        for (MemoryVectorDO vector :
+                repository.memoryVectors(identity.tenantId(), identity.userId())) {
+            MemoryDO memory = repository.memory(identity.tenantId(), identity.userId(), vector.memoryKey);
+            if (memory == null || memory.deleted || memory.memoryValue == null) {
+                continue;
+            }
+            double score = cosine(query, decodeVector(vector.vectorJson));
+            if (score <= 0) {
+                continue;
+            }
+            hits.add(
+                    new MemoryVectorHitDTO(
+                            memory.memoryKey,
+                            memory.memoryValue,
+                            memory.version,
+                            memory.source,
+                            Math.round(score * 1000.0) / 1000.0,
+                            "local-hash-32",
+                            "PREFERENCE"));
+        }
+        hits.sort((left, right) -> Double.compare(right.score(), left.score()));
+        return List.copyOf(hits.subList(0, Math.min(limit, hits.size())));
+    }
+
+    /** 返回当前实例的记忆治理事实；跨副本删除与合规认证未实现时明确声明。 */
+    @Transactional(readOnly = true)
+    public MemoryGovernanceDTO governance(IdentityDTO identity) {
+        return new MemoryGovernanceDTO(
+                conversationRetention.toHours(),
+                preferenceRetention.toHours(),
+                "local-hash-32",
+                "in-process deterministic bigram hash",
+                "H2 本地数据库（单实例）",
+                "未声明跨副本删除；本实例提供墓碑并停止检索",
+                "仅本地实例存储，未声明跨地域驻留能力",
+                repository.countMemoryCandidates(identity.tenantId(), identity.userId(), "PENDING"),
+                repository.countMemoryCandidates(identity.tenantId(), identity.userId(), "APPROVED"),
+                repository.countMemoryCandidates(identity.tenantId(), identity.userId(), "REJECTED"),
+                repository.countActiveMemoryVectors(identity.tenantId(), identity.userId()),
+                repository.countMemoryTombstones(identity.tenantId(), identity.userId()));
+    }
+
+    /** 把已确认偏好写入本地向量索引；只保存嵌入和来源，不保存令牌。 */
+    private void indexMemory(
+            IdentityDTO identity,
+            String key,
+            String value,
+            int version,
+            String source,
+            Instant now) {
+        MemoryVectorDO vector = new MemoryVectorDO();
+        vector.tenantId = identity.tenantId();
+        vector.userId = identity.userId();
+        vector.memoryKey = key;
+        vector.vectorJson = Contracts.json(embedding(value));
+        vector.dimensions = 32;
+        vector.source = source;
+        vector.version = version;
+        vector.updatedAt = now.toEpochMilli();
+        repository.upsertMemoryVector(vector);
+    }
+
+    /** 确定性 32 维字符二元组哈希；同一文本总是得到同一向量。 */
+    private static double[] embedding(String text) {
+        double[] values = new double[32];
+        if (text == null || text.isBlank()) {
+            return values;
+        }
+        int[] points = text.codePoints().toArray();
+        for (int index = 0; index < points.length; index++) {
+            int left = points[index];
+            int right = index + 1 < points.length ? points[index + 1] : 0;
+            int hash = 31 * left + right;
+            values[Math.floorMod(hash, values.length)] += 1.0;
+        }
+        double norm = 0;
+        for (double value : values) {
+            norm += value * value;
+        }
+        norm = Math.sqrt(norm);
+        if (norm > 0) {
+            for (int index = 0; index < values.length; index++) {
+                values[index] = values[index] / norm;
+            }
+        }
+        return values;
+    }
+
+    private double[] decodeVector(String text) {
+        try {
+            return repository.codec().mapper().readValue(text, double[].class);
+        } catch (Exception error) {
+            throw new IllegalStateException("本地向量索引损坏", error);
+        }
+    }
+
+    private static double cosine(double[] left, double[] right) {
+        if (left.length != right.length) {
+            return 0;
+        }
+        double score = 0;
+        for (int index = 0; index < left.length; index++) {
+            score += left[index] * right[index];
+        }
+        return score;
+    }
+
+    private static MemoryCandidateDTO candidate(MemoryCandidateDO row) {
+        return new MemoryCandidateDTO(
+                row.candidateId,
+                row.memoryKey,
+                row.memoryValue,
+                row.source,
+                row.status,
+                row.expectedVersion,
+                Instant.ofEpochMilli(row.requestedAt),
+                Instant.ofEpochMilli(row.expiresAt),
+                row.decidedAt == 0 ? null : Instant.ofEpochMilli(row.decidedAt),
+                row.decidedBy,
+                row.reason,
+                row.appliedVersion);
     }
 
     private List<SavedTurn> readTurns(IdentityDTO identity, String sessionId) {
@@ -348,6 +637,21 @@ public class ConversationService {
         } catch (IllegalArgumentException error) {
             throw badRequest("分页游标无效");
         }
+    }
+
+    /** 校验并规范化偏好值；写入和候选提案共用同一规则。 */
+    private static String validateMemoryValue(String key, String raw) {
+        if (raw == null || raw.isBlank() || raw.length() > 100) {
+            throw badRequest("偏好值及版本无效");
+        }
+        String value = raw.strip();
+        if (key.equals("preferredDepartureCity") && !CITIES.contains(value)) {
+            throw badRequest("请提供演示中可识别的城市名");
+        }
+        if (key.equals("preferredSeat") && !SEATS.contains(value)) {
+            throw badRequest("座席名称无效");
+        }
+        return value;
     }
 
     private static void validateKey(String key) {

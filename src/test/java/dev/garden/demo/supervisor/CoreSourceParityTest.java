@@ -143,7 +143,7 @@ class CoreSourceParityTest {
                                     waiting.runId(),
                                     "answer-1",
                                     waiting.revision(),
-                                    Action.SUPPLEMENT,
+                                    Action.MESSAGE,
                                     "省时"))
                     .block();
             var completed = SupervisorRuntimeIntegrationTest.done(tasks, waiting.runId());

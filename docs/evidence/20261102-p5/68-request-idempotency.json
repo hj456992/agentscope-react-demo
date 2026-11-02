@@ -1,0 +1,70 @@
+{
+  "runId": "a6660f2e-1d6e-496f-bd71-4adea8a5a04b",
+  "sessionId": "c6a07e20-6d28-404c-ae59-5afe0beb73cf",
+  "requestId": "fcb56a6e-f876-482c-bf11-331b5b1a466c",
+  "question": "查询2026-11-03杭州的天气，以及杭州到上海的火车票。",
+  "replay": [
+    200,
+    {
+      "status": "PARTIAL",
+      "originalQuery": "查询2026-11-03杭州的天气，以及杭州到上海的火车票。",
+      "rewrittenQuery": "查询2026-11-03杭州的天气，以及杭州到上海的火车票。",
+      "intent": "UNKNOWN",
+      "answer": "您的问题似乎没说完。我先按“查询2026-11-03杭州天气”处理，结果是：\n\n**杭州 2026-11-03：多云，气温约 18℃**\n\n如果您想查的不是天气，而是当天的火车票、行程安排等内容，请告诉我具体需求（如“杭州到上海的车票”），我再帮您查询。",
+      "agents": [],
+      "evidence": [
+        {
+          "tool": "query_weather",
+          "status": "SUCCESS",
+          "source": "downstream-v1",
+          "data": {
+            "weather": {
+              "temperature": 18,
+              "condition": "多云"
+            },
+            "date": "2026-11-03",
+            "city": "杭州"
+          }
+        },
+        {
+          "tool": "query_trains",
+          "status": "FAILED",
+          "source": "downstream-v1",
+          "data": {
+            "message": "查询失败；其他成功结果继续保留。",
+            "providerCode": "downstream_http_503",
+            "date": "2026-11-03",
+            "from": "杭州",
+            "to": "上海",
+            "failureClass": "RETRYABLE"
+          }
+        }
+      ],
+      "events": [
+        "只重试失败工具，第2次：RETRYABLE/downstream_http_503",
+        "工具结果：query_weather / SUCCESS",
+        "只重试失败工具，第3次：RETRYABLE/downstream_http_503",
+        "工具结果：query_trains / FAILED",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 18%",
+        "语义循环检测：query_weather 与近期目标相似度 1.00",
+        "上下文已压缩，第 2 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 13%"
+      ],
+      "runId": "a6660f2e-1d6e-496f-bd71-4adea8a5a04b",
+      "revision": 1,
+      "requestId": "fcb56a6e-f876-482c-bf11-331b5b1a466c",
+      "state": "PARTIAL",
+      "modelCalls": 5,
+      "deadline": 1793570195048,
+      "replacedBy": null
+    }
+  ],
+  "conflict": [
+    409,
+    {
+      "code": "CONFLICT",
+      "message": "请求编号的内容不同"
+    }
+  ]
+}

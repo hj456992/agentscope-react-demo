@@ -1,0 +1,104 @@
+{
+  "samples": [
+    {
+      "name": "single-weather",
+      "runId": "c1d4182d-b8b2-4ae4-9efb-165e6e5788ad",
+      "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+      "state": "SUCCESS",
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "children": [],
+      "evidenceTools": [
+        "query_weather"
+      ]
+    },
+    {
+      "name": "multi-weather",
+      "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+      "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+      "state": "SUCCESS",
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          },
+          {
+            "role": "weather_agent",
+            "catalogTools": [
+              "query_weather"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "children": [
+        "weather_agent"
+      ],
+      "evidenceTools": [
+        "query_weather"
+      ]
+    },
+    {
+      "name": "same-city-business",
+      "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+      "question": "查一下杭州到杭州今天（2026-11-02）的火车票",
+      "state": "FAILED",
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "children": [],
+      "evidenceTools": [
+        "query_trains"
+      ]
+    }
+  ],
+  "note": "路由候选、过滤与选择理由可读；样本覆盖直接回答、受控多 Agent、业务规则拒绝。未建立20+统计评测集，不宣称准确率。"
+}

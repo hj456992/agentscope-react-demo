@@ -24,10 +24,10 @@ import dev.garden.demo.supervisor.service.ConversationService;
 import dev.garden.demo.supervisor.service.SideEffectLedger;
 import dev.garden.demo.supervisor.service.SideEffectReconciler;
 import dev.garden.demo.supervisor.service.TaskStoreService;
+import dev.garden.demo.supervisor.support.LiveModelFactory;
 
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.transport.HttpTransportFactory;
-import io.agentscope.extensions.model.openai.OpenAIChatModel;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -88,27 +88,31 @@ public class SupervisorConfiguration {
     }
 
     @Bean
-    public TravelTools.DataSource travelDataSource() {
-        return TravelTools.demoData();
+    public TravelTools.DataSource travelDataSource(SupervisorSettings settings) {
+        if (settings.downstreamUrl() == null || settings.downstreamUrl().isBlank()) {
+            return TravelTools.demoData();
+        }
+        org.slf4j.LoggerFactory.getLogger(getClass())
+                .info("只读工具使用本地独立下游：{}", settings.downstreamUrl());
+        return new dev.garden.demo.supervisor.support.HttpTravelDataSource(
+                settings.downstreamUrl(), settings.downstreamTimeout(), settings.toolDelayMs());
     }
 
     @Bean
     public Function<String, Model> supervisorModels(
             SupervisorSettings settings, Environment environment, ModelHttpTransport transport) {
         if (settings.mode().equals("offline")) {
+            org.slf4j.LoggerFactory.getLogger(getClass()).info("Supervisor 模式：offline（离线脚本）");
             return OfflineScenarioModel::new;
         }
-        String apiKey = required(environment, "DEMO_API_KEY");
-        String baseUrl = required(environment, "DEMO_BASE_URL");
-        String modelName = required(environment, "DEMO_MODEL");
-        return role ->
-                OpenAIChatModel.builder()
-                        .apiKey(apiKey)
-                        .baseUrl(baseUrl)
-                        .modelName(modelName)
-                        .stream(false)
-                        .httpTransport(transport)
-                        .build();
+        Function<String, Model> models = LiveModelFactory.create(environment::getProperty, transport);
+        String tools =
+                settings.downstreamUrl() == null || settings.downstreamUrl().isBlank()
+                        ? "天气和车票使用进程内示例数据"
+                        : "天气和车票使用本地独立下游：" + settings.downstreamUrl();
+        org.slf4j.LoggerFactory.getLogger(getClass())
+                .info("Supervisor 模式：live（真实模型；{}）", tools);
+        return models;
     }
 
     @Bean
@@ -118,7 +122,11 @@ public class SupervisorConfiguration {
 
     @Bean(destroyMethod = "close")
     public Database supervisorDatabase(SupervisorSettings settings) {
-        return Database.open(settings.databaseUrl());
+        return Database.open(
+                settings.databaseUrl(),
+                settings.databaseUsername(),
+                settings.databasePassword(),
+                settings.databasePoolSize());
     }
 
     @Bean
@@ -177,8 +185,29 @@ public class SupervisorConfiguration {
     }
 
     @Bean
+    public dev.garden.demo.supervisor.repo.GovernanceRepository governanceRepository(
+            Database database) {
+        return new dev.garden.demo.supervisor.repo.GovernanceRepository(database);
+    }
+
+    @Bean
     public SideEffectRepository sideEffectRepository(Database database) {
         return new SideEffectRepository(database);
+    }
+
+    /**
+     * 写入工具的下游适配器；Bean 名称必须与工具名一致，状态核对器才能按工具找到适配器。
+     *
+     * <p>没有配置本地下游时返回显式不可用适配器，审批仍可登记，但执行阶段明确失败，
+     * 不静默写入。Spring 不允许注入 null Bean，占位适配器保证容器启动。
+     */
+    @Bean(name = dev.garden.demo.supervisor.service.ApprovalService.TOOL)
+    public SideEffectLedger.Downstream travelWriteDownstream(SupervisorSettings settings) {
+        if (settings.downstreamUrl() == null || settings.downstreamUrl().isBlank()) {
+            return new dev.garden.demo.supervisor.support.UnavailableSideEffectDownstream();
+        }
+        return new dev.garden.demo.supervisor.support.HttpSideEffectDownstream(
+                settings.downstreamUrl(), settings.downstreamTimeout());
     }
 
     @Bean
@@ -198,13 +227,5 @@ public class SupervisorConfiguration {
     public DisposableBean modelTransportCleanup() {
         // 只在容器退出时释放全局传输，绝不能在每个 HTTP 请求结束时关闭。
         return HttpTransportFactory::shutdown;
-    }
-
-    private String required(Environment environment, String name) {
-        String value = environment.getProperty(name);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("真实模型模式缺少配置：" + name);
-        }
-        return value;
     }
 }

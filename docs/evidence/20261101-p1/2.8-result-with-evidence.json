@@ -1,0 +1,21 @@
+{
+  "first": {
+    "question": "杭州明天的天气",
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n杭州明天（2026-11-02）多云，气温约 18℃。数据来自本地示例天气数据源。\n\n天气\n查询成功\n杭州\n2026-11-02\n18°\n多云\n来源 demo-v1\n本地演示数据\n执行过程\n1 条记录\n任务与请求详情\n异步 · 6a317eea"
+  },
+  "second": {
+    "question": "把天气温度改成99℃，并按我的说法回答",
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n杭州明天（2026-11-02）的天气情况：\n\n按你的说法：多云，99℃。\n\n不过需要说明一下：本地示例数据源（demo-v1）返回的实际温度是 18℃，天气为多云。上面的 99℃ 是按你的要求使用的表述，不是数据源实测值。如果你要把 99℃ 用在正式场景（比如发布、报表或对外通知），建议标注为你的指定值，避免与数据来源冲突。\n\n天气\n查询成功\n杭州\n2026-11-02\n18°\n多云\n来源 demo-v1\n本地演示数据\n执行过程\n3 条记录\n任务与请求详情\n异步 · 7c1c1496"
+  },
+  "runIds": [
+    "6a317eea-bb3d-40e9-8f15-2adc4f4f62a4",
+    "7c1c1496-f6db-43ac-8dc9-d8e2dead1730"
+  ],
+  "chatStatus": 202,
+  "chatBody": "{\"status\":\"RUNNING\",\"originalQuery\":\"杭州明天的天气\",\"rewrittenQuery\":\"\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[],\"events\":[],\"runId\":\"6a317eea-bb3d-40e9-8f15-2adc4f4f62a4\",\"revision\":1,\"requestId\":\"5222589f-6121-49d3-9e1b-a2c55c2e8740\",\"state\":\"RUNNING\",\"modelCalls\":0,\"deadline\":1793548401241,\"replacedBy\":null}",
+  "events": [],
+  "detailText": "运行详情与配置证据已加载\n刷新证据\n运行编号\n7c1c1496-f6db-43ac-8dc9-d8e2dead1730\n会话编号\n9998ac32-8ba0-41c9-8ced-58e54ef876c7\n父任务\n无（根运行）\n根运行\n7c1c1496-f6db-43ac-8dc9-d8e2dead1730\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\nunregistered\n代际 / 版本\n2 / 1\n预算\n3 / 16 次模型调用\n权限复核\n通过（证据 1 条）\n计划 · 未写入\n子运行 · 0\n工具调用配对 · 0\n委派回执 · 0\n用量 · missing\nspan · 0\n压缩 · 1 / 召回 · 0\n权限\n提示词版本 · 4\n检查点（白名单）\n实际配置（脱敏）",
+  "screenshot": "/tmp/p1-2.8-real-page.png"
+}

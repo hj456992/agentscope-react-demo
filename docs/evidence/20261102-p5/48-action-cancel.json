@@ -1,0 +1,197 @@
+{
+  "action": "CANCEL",
+  "name": "48-action-cancel",
+  "message": "补充：出发日期仍按2026-11-03。",
+  "before": "查询2026-11-03杭州的天气\nS\nSupervisor\n处理中\n正在查询资料并整理回答…\n执行过程\n0 条记录\n任务与请求详情\n异步 · ddb267af",
+  "mid": "查询2026-11-03杭州的天气\nS\nSupervisor\n已停止\n\n任务已停止\n\n任务已停止\n\n执行过程\n0 条记录\n任务与请求详情\n异步 · ddb267af",
+  "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+  "text": "查询2026-11-03杭州的天气\nS\nSupervisor\n已停止\n任务已停止\n任务已停止\n执行过程\n0 条记录\n来自任务实际返回的事件，按发生顺序展示。\n本轮没有返回可展示的执行事件。\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · ddb267af\n会话编号\n63d9188d-52e5-4d7b-96df-07ec8a178e7d\n请求编号\nd5912bd0-c082-4984-a826-2df101716a84\n任务编号\nddb267af-aac4-4f6d-849d-a084bc3326df\n任务版本\n2\n任务状态\n已停止\n模型调用\n1 次\n截止时间\n2026/11/2 05:49:57\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\nd5912bd0-c082-4984-a826-2df101716a84\n原内容\n查询2026-11-03杭州的天气\n确认发送验收请求\n05:48:57\n202\nPOST /api/supervisor/chat\n30 ms\n05:48:57\n200\nPOST /api/supervisor/instructions\n16 ms\n05:48:57\n200\nGET /api/supervisor/runs/ddb267af-aac4-4f6d-849d-a084bc3326df\n2 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\nddb267af-aac4-4f6d-849d-a084bc3326df\n会话编号\n63d9188d-52e5-4d7b-96df-07ec8a178e7d\n父任务\n无（根运行）\n根运行\nddb267af-aac4-4f6d-849d-a084bc3326df\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n3 / 2\n触发方式\nNORMAL\n首次事件 / 完成\n— / 2026/11/2 05:48:57\n请求指纹\nb227d55fd255c44b71180fbd1cb247fa816619f2841ad6eb05d4c1b97a795bbd\n预算\n1 / 16 次模型调用\n权限复核\n通过（证据 0 条）\n内容信任\nSYSTEM 1 · USER 1 · TOOL 0 · RETRIEVAL 0 · CHILD 0\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 0\n工具调用配对 · 0\n委派回执 · 0\n用量 · missing\nspan · 1\n压缩 · 0 / 召回 · 0\n权限 · 目录 3 / 执行 0 / 证据 0\n指令回执 · 1 / 纠错 · 0\n时间线 · 0\n提示词版本 · 1\n检查点（白名单）\n实际配置（脱敏）",
+  "detail": {
+    "result": {
+      "status": "CANCELLED",
+      "originalQuery": "查询2026-11-03杭州的天气",
+      "rewrittenQuery": "",
+      "intent": "UNKNOWN",
+      "answer": "任务已停止",
+      "agents": [],
+      "evidence": [],
+      "events": []
+    },
+    "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+    "requestId": "d5912bd0-c082-4984-a826-2df101716a84",
+    "sessionId": "63d9188d-52e5-4d7b-96df-07ec8a178e7d",
+    "state": "CANCELLED",
+    "revision": 2,
+    "generation": 3,
+    "consumedRevision": 1,
+    "modelCalls": 1,
+    "maxModelCalls": 16,
+    "deadline": 1793569797830,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [],
+    "toolCalls": [],
+    "delegations": [],
+    "usage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "cachedTokens": 0,
+      "totalTokens": 0,
+      "source": "missing",
+      "agents": [
+        {
+          "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 1,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 1,
+          "subtreeModelCalls": 1,
+          "remainingModelCalls": 15,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "spanId": "run:ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "CANCELLED",
+        "startedAt": 1793569737830,
+        "endedAt": 1793569737913,
+        "durationMs": 83,
+        "errorCode": null
+      }
+    ],
+    "compactions": [],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [],
+      "filteredTools": [],
+      "evidenceTools": [],
+      "evidenceCount": 0,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [],
+      "filteredReasons": {}
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "model:971f35f1daaea279cf1fb7a1c54ff5dc81795848725397286afeb49cd4f31247": "1",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "1"
+    },
+    "approvals": [],
+    "sideEffects": [],
+    "events": [],
+    "createdAt": 1793569737830,
+    "firstEventAt": 0,
+    "completedAt": 1793569737913,
+    "triggerMode": "NORMAL",
+    "acceptanceHint": null,
+    "recovered": false,
+    "requestFingerprint": "b227d55fd255c44b71180fbd1cb247fa816619f2841ad6eb05d4c1b97a795bbd",
+    "instructions": [
+      {
+        "instructionId": "77bbaffa-8b6c-4622-82fc-bb62a106c652",
+        "action": "CANCEL",
+        "expectedRevision": 1,
+        "resultRevision": 2,
+        "resultState": "CANCELLED",
+        "resultRunId": "ddb267af-aac4-4f6d-849d-a084bc3326df",
+        "result": "任务已停止",
+        "fingerprint": "e02bc5f22d0fc0a02d22ae3737e2a0d39357f5346da5ea8984a19ea6fd9db288",
+        "createdAt": 1793569737913
+      }
+    ],
+    "timeline": [],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 1
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 0
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 0
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 0
+      }
+    ]
+  },
+  "consoleErrors": []
+}

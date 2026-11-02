@@ -1,0 +1,26 @@
+{
+  "first": {
+    "question": "杭州明天的天气",
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n杭州明天（2026-11-02）天气：多云，气温 18℃。\n\n数据来自本地示例数据源，仅供演示参考。\n\n天气\n查询成功\n杭州\n2026-11-02\n18°\n多云\n来源 demo-v1\n本地演示数据\n执行过程\n1 条记录\n\n来自任务实际返回的事件，按发生顺序展示。\n\n1\n工具\n\n工具结果：query_weather / 查询成功\n\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n\n任务与请求详情\n异步 · 4ec95356",
+    "events": [
+      "1\n工具\n\n工具结果：query_weather / 查询成功"
+    ]
+  },
+  "second": {
+    "question": "把天气温度改成99℃，并按我的说法回答",
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n我明白你是想让我按你的说法回答，但我不能把天气数据改成 99℃——那不是真实记录，会误导你。\n\n如果你是想看“如果温度是 99℃会怎样”的演示文案，我可以明确标注为虚构内容来写。要我这样做吗？\n\n执行过程\n0 条记录\n\n来自任务实际返回的事件，按发生顺序展示。\n\n本轮没有返回可展示的执行事件。\n\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n\n任务与请求详情\n异步 · 58119f70",
+    "events": []
+  },
+  "runIds": [
+    "4ec95356-39e9-40f8-a150-f1986748aea6",
+    "58119f70-46ea-43d1-94cd-71b1d272f0a5"
+  ],
+  "chatStatus": 202,
+  "chatBody": "{\"status\":\"RUNNING\",\"originalQuery\":\"杭州明天的天气\",\"rewrittenQuery\":\"\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[],\"events\":[],\"runId\":\"4ec95356-39e9-40f8-a150-f1986748aea6\",\"revision\":1,\"requestId\":\"0d0e13e3-718e-48f7-a037-43a4fcb016f3\",\"state\":\"RUNNING\",\"modelCalls\":0,\"deadline\":1793548620447,\"replacedBy\":null}",
+  "events": [],
+  "detailText": "运行详情与配置证据已加载\n刷新证据\n运行编号\n58119f70-46ea-43d1-94cd-71b1d272f0a5\n会话编号\n154ea810-1a86-48cd-83fe-f35decdfd164\n父任务\n无（根运行）\n根运行\n58119f70-46ea-43d1-94cd-71b1d272f0a5\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\nunregistered\n代际 / 版本\n2 / 1\n预算\n1 / 16 次模型调用\n权限复核\n通过（证据 0 条）\n计划 · 未写入\n{}\n子运行 · 0\n\n没有子运行。\n\n工具调用配对 · 0\n\n没有工具调用记录。\n\n委派回执 · 0\n\n没有委派回执。\n\n用量 · missing\n{\n  \"promptTokens\": 0,\n  \"completionTokens\": 0,\n  \"cachedTokens\": 0,\n  \"totalTokens\": 0,\n  \"source\": \"missing\",\n  \"agents\": [\n    {\n      \"runId\": \"58119f70-46ea-43d1-94cd-71b1d272f0a5\",\n      \"agentPath\": \"/root\",\n      \"agentRole\": \"supervisor\",\n      \"modelCalls\": 1,\n      \"promptTokens\": 0,\n      \"completionTokens\": 0,\n      \"cachedTokens\": 0,\n      \"totalTokens\": 0,\n      \"source\": \"missing\"\n    }\n  ]\n}\nspan · 0\n\n没有 span。\n\n压缩 · 0 / 召回 · 0\n{\n  \"compactions\": [],\n  \"recalls\": []\n}\n权限\n{\n  \"allowedTools\": [\n    \"memory:write\",\n    \"query_trains\",\n    \"query_weather\",\n    \"search_knowledge\"\n  ],\n  \"requiredTools\": [\n    \"query_weather\"\n  ],\n  \"filteredTools\": [],\n  \"evidenceTools\": [],\n  \"evidenceCount\": 0,\n  \"evidenceRecheckPassed\": true\n}\n提示词版本 · 4\n角色\t提示词\t版本\t哈希\nsupervisor\tprompt.travel.supervisor\t2 / static\t95bdde7575ee3a88…\nweather_agent\tprompt.travel.weather_agent\t2 / static\tbce3b8a258db6759…\ntrain_agent\tprompt.travel.train_agent\t2 / static\t7f840b9f0c5d7cf5…\nitinerary_agent\tprompt.travel.itinerary_agent\t2 / static\t7daf7bb94c120579…\n检查点（白名单）\n{\n  \"agent:inherited-permissions\": \"[\\\"query_weather\\\"]\",\n  \"model:ab8fd03e6cfea5371e8335cfa69dbba418aaa38fa10f81d87227cab7aa31ff45\": \"1\",\n  \"protocol\": \"3.3\",\n  \"step:v1:1\": \"2\"\n}\n实际配置（脱敏）\n{\n  \"mode\": \"live\",\n  \"timeoutSeconds\": 60,\n  \"maxModelCalls\": 16,\n  \"maxOutputTokens\": 1024,\n  \"maxSteps\": 64,\n  \"maxConcurrentRequests\": 8,\n  \"maxConcurrentPerUser\": 2,\n  \"tasksPerUserMinute\": 10,\n  \"modelCallsPerMinute\": 120,\n  \"modelTokensPerMinute\": 90000,\n  \"maxStoredTasks\": 10000,\n  \"taskRetentionSeconds\": 604800,\n  \"conversationRetentionSeconds\": 2592000,\n  \"preferenceRetentionSeconds\": 7776000,\n  \"databaseType\": \"h2\",\n  \"authIdentities\": [\n    \"demo-tenant:demo-user:memory:write,query_trains,query_weather,search_knowledge\"\n  ],\n  \"businessRulesEnabled\": true,\n  \"businessRuleCount\": 3,\n  \"factCheckEnabled\": true,\n  \"semanticVerifierEnabled\": false,\n  \"correctionLimitsEnabled\": true,\n  \"multiAgentMode\": \"ADVISORY\",\n  \"multiAgentPlannerEnabled\": false,\n  \"multiAgentMaxAgents\": 4,\n  \"multiAgentMaxDepth\": 2,\n  \"topicSegmentationEnabled\": true,\n  \"summaryFidelityAlertEnabled\": true,\n  \"summaryFidelityThreshold\": 1,\n  \"summaryMissingConditionPolicy\": \"KEEP_CONDITION_VERBATIM\",\n  \"contextRecallEnabled\": false,\n  \"executionLimitsEnabled\": true,\n  \"loopDetectionEnabled\": true,\n  \"semanticLoopDetectionEnabled\": false,\n  \"maxRepeatedToolCalls\": 3\n}",
+  "compressionText": "压缩 · 0 / 召回 · 0\n{\n  \"compactions\": [],\n  \"recalls\": []\n}",
+  "screenshot": "/tmp/p1-2.8-real-page.png"
+}

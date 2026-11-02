@@ -14,6 +14,17 @@
           PRIMARY KEY (tenant_id, user_id, tool_name, operation_id))
     </update>
 
+    <update id="createTable" databaseId="postgres">
+        CREATE TABLE IF NOT EXISTS side_effect_operations (
+          tenant_id VARCHAR(256) NOT NULL, user_id VARCHAR(256) NOT NULL,
+          tool_name VARCHAR(256) NOT NULL, operation_id VARCHAR(256) NOT NULL,
+          downstream_id VARCHAR(64) NOT NULL UNIQUE, params_hash VARCHAR(64) NOT NULL,
+          params_json TEXT NOT NULL, operation_status VARCHAR(16) NOT NULL,
+          response_text TEXT, submit_count INT NOT NULL, lookup_count INT NOT NULL,
+          next_lookup BIGINT NOT NULL, retry_allowed BOOLEAN NOT NULL,
+          PRIMARY KEY (tenant_id, user_id, tool_name, operation_id))
+    </update>
+
     <!-- 上次进程遗留的 RUNNING 只能查询，不把它当首次操作重放。 -->
     <update id="markRunningUnknown">
         UPDATE side_effect_operations SET operation_status='UNKNOWN'

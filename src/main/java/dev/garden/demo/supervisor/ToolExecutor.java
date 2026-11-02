@@ -14,7 +14,7 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /** 只读工具的实际执行入口：有界线程、持久尝试次数、有限重试、成功回放。 */
-final class ToolExecutor {
+public final class ToolExecutor {
     private static final ThreadPoolExecutor WORKERS =
             new ThreadPoolExecutor(
                     8,
@@ -50,9 +50,13 @@ final class ToolExecutor {
                             "read:" + tool + ":" + RunContext.fingerprint(new TreeMap<>(params));
                     String stored = context.control.checkpoint(key);
                     if (stored != null) {
-                        EvidenceDTO result =
+                        EvidenceDTO cached =
                                 io.agentscope.core.util.JsonUtils.getJsonCodec()
                                         .fromJson(stored, EvidenceDTO.class);
+                        Map<String, Object> data = new LinkedHashMap<>(cached.data());
+                        data.put("reused", true);
+                        EvidenceDTO result =
+                                new EvidenceDTO(cached.tool(), cached.status(), cached.source(), data);
                         context.add(result);
                         context.event("复用已完成工具：" + tool);
                         return Mono.just(result);
@@ -100,7 +104,24 @@ final class ToolExecutor {
                                                 <= 0) {
                                             return Mono.error(ex);
                                         }
-                                        context.event("只重试失败工具，第" + (attempt + 1) + "次");
+                                        String reason;
+                                        if (ex instanceof TemporaryFailure temporary) {
+                                            reason =
+                                                    "："
+                                                            + temporary.failureClass
+                                                            + (temporary.providerCode == null
+                                                                            || temporary.providerCode
+                                                                                    .isBlank()
+                                                                    ? ""
+                                                                    : "/" + temporary.providerCode);
+                                        } else {
+                                            reason = "：" + FailureClassifier.classify(ex);
+                                        }
+                                        context.event(
+                                                "只重试失败工具，第"
+                                                        + (attempt + 1)
+                                                        + "次"
+                                                        + reason);
                                         return Mono.delay(delay).then(attempt(key, action));
                                     });
                 });
@@ -119,16 +140,16 @@ final class ToolExecutor {
     }
 
     /** 传输层抛出的暂时失败；携带分类与供应商错误码，供统一重试判定使用。 */
-    static final class TemporaryFailure extends RuntimeException {
-        final Duration retryAfter;
-        final FailureClass failureClass;
-        final String providerCode;
+    public static final class TemporaryFailure extends RuntimeException {
+        public final Duration retryAfter;
+        public final FailureClass failureClass;
+        public final String providerCode;
 
-        TemporaryFailure(String message, Duration retryAfter) {
+        public TemporaryFailure(String message, Duration retryAfter) {
             this(message, retryAfter, FailureClass.RETRYABLE, "");
         }
 
-        TemporaryFailure(
+        public TemporaryFailure(
                 String message,
                 Duration retryAfter,
                 FailureClass failureClass,

@@ -250,7 +250,9 @@ class SupervisorControlTest {
         assertFalse(input.get(0).getTextContent().contains("只坐二等座"));
         assertTrue(
                 ContextBuilder.estimate(Map.of("messages", input, "tools", List.of()))
-                        <= ContextBuilder.INPUT_LIMIT);
+                        <= SupervisorPolicy.defaults()
+                                                                            .execution()
+                                                                            .contextInputLimit());
     }
 
     @Test
@@ -281,7 +283,9 @@ class SupervisorControlTest {
                         "可信规则", context.request, context.today, conversation.messages, List.of());
         assertTrue(
                 ContextBuilder.estimate(Map.of("messages", input, "tools", List.of()))
-                        <= ContextBuilder.INPUT_LIMIT);
+                        <= SupervisorPolicy.defaults()
+                                                                            .execution()
+                                                                            .contextInputLimit());
     }
 
     @Test

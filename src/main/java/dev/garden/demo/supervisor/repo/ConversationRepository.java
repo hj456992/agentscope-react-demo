@@ -1,7 +1,9 @@
 package dev.garden.demo.supervisor.repo;
 
 import dev.garden.demo.supervisor.pojo.dataobject.ConversationDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryCandidateDO;
 import dev.garden.demo.supervisor.pojo.dataobject.MemoryDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryVectorDO;
 import dev.garden.demo.supervisor.repo.mapper.ConversationMapper;
 
 import java.util.List;
@@ -25,6 +27,8 @@ public final class ConversationRepository {
         mapper.addRequiredToolsColumn();
         mapper.createConversationSessionIndex();
         mapper.createMemoriesTable();
+        mapper.createMemoryCandidatesTable();
+        mapper.createMemoryVectorsTable();
     }
 
     public Database database() {
@@ -74,5 +78,56 @@ public final class ConversationRepository {
 
     public void deleteMemory(String tenantId, String userId, String key) {
         mapper.deleteMemory(tenantId, userId, key);
+    }
+
+    public void insertMemoryCandidate(MemoryCandidateDO row) {
+        mapper.insertMemoryCandidate(row);
+    }
+
+    public MemoryCandidateDO memoryCandidate(String candidateId) {
+        return mapper.selectMemoryCandidate(candidateId);
+    }
+
+    public List<MemoryCandidateDO> memoryCandidates(String tenantId, String userId) {
+        return mapper.selectMemoryCandidates(tenantId, userId);
+    }
+
+    public int decideMemoryCandidate(
+            String candidateId,
+            String status,
+            long decidedAt,
+            String decidedBy,
+            String reason,
+            Integer appliedVersion) {
+        return mapper.decideMemoryCandidate(
+                candidateId, status, decidedAt, decidedBy, reason, appliedVersion);
+    }
+
+    public int countMemoryCandidates(String tenantId, String userId, String status) {
+        return mapper.countMemoryCandidates(tenantId, userId, status);
+    }
+
+    public void upsertMemoryVector(MemoryVectorDO vector) {
+        mapper.upsertMemoryVector(vector);
+    }
+
+    public List<MemoryVectorDO> memoryVectors(String tenantId, String userId) {
+        return mapper.selectMemoryVectors(tenantId, userId);
+    }
+
+    public void deleteMemoryVector(String tenantId, String userId, String key) {
+        mapper.deleteMemoryVector(tenantId, userId, key);
+    }
+
+    public int countActiveMemoryVectors(String tenantId, String userId) {
+        return mapper.countActiveMemoryVectors(tenantId, userId);
+    }
+
+    public int countMemoryTombstones(String tenantId, String userId) {
+        return mapper.countMemoryTombstones(tenantId, userId);
+    }
+
+    public int purgeExpiredMemoryVectors(long now) {
+        return mapper.purgeExpiredMemoryVectors(now);
     }
 }

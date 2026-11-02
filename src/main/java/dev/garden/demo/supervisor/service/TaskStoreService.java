@@ -22,6 +22,8 @@ import dev.garden.demo.supervisor.pojo.param.InstructionParam;
 import dev.garden.demo.supervisor.pojo.res.InstructionRes;
 import dev.garden.demo.supervisor.pojo.res.RunRes;
 import dev.garden.demo.supervisor.repo.TaskRepository;
+import dev.garden.demo.supervisor.support.AgentCallGraph;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +62,27 @@ public class TaskStoreService {
     public synchronized TaskDO create(
             IdentityDTO identity, RequestDTO request, Runnable capacityCheck) {
         validateRequest(request);
+        String hint = request.acceptanceHint();
+        if (hint != null && !hint.isBlank()) {
+            if (!settings.acceptanceHintsEnabled()
+                    || !dev.garden.demo.supervisor.support.AcceptanceTrigger.allowed(hint)) {
+                throw invalid();
+            }
+            hint = hint.strip().toUpperCase(java.util.Locale.ROOT);
+        } else {
+            hint = null;
+        }
+        // 后续幂等哈希、任务持久化和模型循环都读取这份归一化后的请求；
+        // 否则空白或大小写差异会绕过同一请求编号的内容一致性判断。
+        if (hint != null || request.acceptanceHint() != null) {
+            request =
+                    new RequestDTO(
+                            request.sessionId(),
+                            request.question(),
+                            request.history(),
+                            request.requestId(),
+                            hint);
+        }
         String requestId =
                 request.requestId() == null || request.requestId().isBlank()
                         ? UUID.randomUUID().toString()
@@ -86,6 +109,8 @@ public class TaskStoreService {
         }
         reserveNewTask(identity);
         TaskDO fresh = newTask(identity, request, requestId, hash);
+        fresh.acceptanceHint = hint;
+        fresh.triggerMode = hint == null ? null : "CONTROLLED";
         repository.save(fresh);
         repository.currentSession(fresh);
         return fresh;
@@ -99,6 +124,7 @@ public class TaskStoreService {
         task.identity = identity;
         task.tenantId = identity.tenantId();
         task.userId = identity.userId();
+        task.agentRole = "supervisor";
         task.sessionId = request.sessionId();
         task.requestId = requestId;
         task.requestHash = hash;
@@ -113,7 +139,8 @@ public class TaskStoreService {
                                 request.sessionId(),
                                 request.question(),
                                 request.history(),
-                                requestId));
+                                requestId,
+                                request.acceptanceHint()));
         task.request = history.request();
         // HTTP 新请求仍拥有新的 runId/预算；同一会话取消后的模型上下文必须原样接续。
         String priorId = repository.currentSession(identity, request.sessionId());
@@ -136,6 +163,38 @@ public class TaskStoreService {
         return task;
     }
 
+    /**
+     * 接收运行中任务的一条用户指令，并按 {@link Action} 分派处置方式。
+     *
+     * <p>用户输入天然是自然语言，平台不做意图识别，也不根据正文推断用户想干什么。
+     * 调用方不传动作时一律按 {@link Action#MESSAGE} 处理：把正文当作一条新的用户输入追加给
+     * 运行中的任务，是补充条件还是修改要求由模型结合上下文判断。只有会改变平台自身生命周期的
+     * 两种操作需要显式声明——{@link Action#SWITCH} 会创建替代任务并把原任务置为
+     * {@code REPLACED}，{@link Action#CANCEL} 会终止任务，都必须由用户主动发起。
+     *
+     * <p>{@code MESSAGE} 与 {@code SWITCH} 的处理顺序为：入参校验、指令编号幂等、
+     * 任务版本栅栏、任务状态与截止时间、会话归属，全部通过后才变更状态；
+     * 任何一个版本对不上都返回冲突，防止旧指令作用到新状态上。
+     *
+     * <p>{@code CANCEL} 是兜底操作，故意跳过版本、状态、截止时间和会话归属检查：
+     * 用户点停止时页面持有的版本号可能已经过期，不能因此拒绝停止。已经结束的任务重复停止
+     * 返回同一份“已停止/已结束”回执，不修改任何字段。
+     *
+     * <ul>
+     *   <li>{@code MESSAGE}：把正文追加到待消费队列，任务版本加一。
+     *   <li>{@code SWITCH}：先取得速率额度与存储容量，再创建替代任务，原任务置为
+     *       {@code REPLACED} 并通过 {@code replacedBy} 指向新任务，会话当前任务切换到新任务。
+     *   <li>{@code CANCEL}：任务置为 {@code CANCELLED}，清空待消费队列与未提交输入，
+     *       提升执行代号，使在途执行的结果无法回写。
+     * </ul>
+     *
+     * <p>每次处置都会写入指令回执与脱敏证据；同一 {@code instructionId} 重复提交同一内容时
+     * 直接返回首次回执，内容不同则返回冲突。方法整体在 {@code @Transactional} 与实例锁内执行，
+     * 因此校验、状态变更和回执落库对同一存储是原子的。
+     *
+     * @param capacityCheck 新指令需要占用新额度时回调的容量检查，由调用方提供
+     * @return 本次指令的回执，包含任务编号、版本、状态和说明
+     */
     @Transactional
     public synchronized InstructionRes applyInstruction(
             IdentityDTO identity, InstructionParam input, Runnable capacityCheck) {
@@ -143,10 +202,15 @@ public class TaskStoreService {
                 || isBlank(input.runId())
                 || isBlank(input.instructionId())
                 || input.instructionId().length() > 200
-                || input.action() == null
-                || input.expectedRevision() < 1
-                || (input.action() != Action.CANCEL && isBlank(input.message()))
                 || (input.message() != null && input.message().length() > 2000)) {
+            throw invalid();
+        }
+        // 缺省动作就是追加一条用户输入；停止是唯一不需要版本号和正文的动作。
+        Action action = input.action() == null ? Action.MESSAGE : input.action();
+        if (action != Action.CANCEL
+                && (isBlank(input.message())
+                        || input.expectedRevision() == null
+                        || input.expectedRevision() < 1)) {
             throw invalid();
         }
         String id = input.runId();
@@ -159,10 +223,32 @@ public class TaskStoreService {
             }
             return repository.decode(prior[1], InstructionRes.class);
         }
-        if (task.state.equals("CANCELLED") && input.action() == Action.CANCEL) {
-            InstructionRes repeated = new InstructionRes(id, task.revision, task.state, "任务已停止");
-            repository.instruction(id, input.instructionId(), fingerprint, repeated);
-            return repeated;
+        InstructionRes answer;
+        if (action == Action.CANCEL) {
+            // 停止不校验版本、期限和会话归属：只要任务对当前身份可见，就应该能停。
+            if (!task.state.equals("RUNNING") && !task.state.equals("NEEDS_INPUT")) {
+                InstructionRes ended =
+                        new InstructionRes(
+                                id,
+                                task.revision,
+                                task.state,
+                                task.state.equals("CANCELLED") ? "任务已停止" : "任务已结束");
+                recordInstruction(task, input, action, fingerprint, ended);
+                repository.instruction(id, input.instructionId(), fingerprint, ended);
+                return ended;
+            }
+            task.state = "CANCELLED";
+            task.generation++;
+            task.revision++;
+            task.completedAt = System.currentTimeMillis();
+            task.pending.clear();
+            task.inflightInputs.clear();
+            task.result = emptyResult(task, "CANCELLED", "任务已停止");
+            repository.save(task);
+            answer = new InstructionRes(id, task.revision, task.state, "任务已停止");
+            recordInstruction(task, input, action, fingerprint, answer);
+            repository.instruction(id, input.instructionId(), fingerprint, answer);
+            return answer;
         }
         if (task.revision != input.expectedRevision()) {
             throw conflict("任务版本已更新");
@@ -176,23 +262,7 @@ public class TaskStoreService {
         if (!id.equals(repository.currentSession(identity, task.sessionId))) {
             throw conflict("会话已开始后续任务");
         }
-        if (input.action() == Action.AUTO) {
-            InstructionRes clarification =
-                    new InstructionRes(id, task.revision, task.state, "请明确选择补充、修改、切换或停止；自动动作未执行。");
-            repository.instruction(id, input.instructionId(), fingerprint, clarification);
-            return clarification;
-        }
-        InstructionRes answer;
-        if (input.action() == Action.CANCEL) {
-            task.state = "CANCELLED";
-            task.generation++;
-            task.revision++;
-            task.pending.clear();
-            task.inflightInputs.clear();
-            task.result = emptyResult(task, "CANCELLED", "任务已停止");
-            repository.save(task);
-            answer = new InstructionRes(id, task.revision, task.state, "任务已停止");
-        } else if (input.action() == Action.SWITCH) {
+        if (action == Action.SWITCH) {
             // 新任务必须先取得用户速率额度；原执行订阅释放后才启动替代任务。
             capacityCheck.run();
             if (repository.all().size() >= settings.maxStoredTasks()) {
@@ -214,6 +284,7 @@ public class TaskStoreService {
             task.state = "REPLACED";
             task.generation++;
             task.revision++;
+            task.completedAt = System.currentTimeMillis();
             task.replacedBy = next.runId;
             task.result = emptyResult(task, "REPLACED", "已切换新任务");
             repository.save(task);
@@ -237,12 +308,39 @@ public class TaskStoreService {
             task.userInputs.add(input.message());
             task.revision++;
             task.state = "RUNNING";
+            task.completedAt = 0;
+            task.firstEventAt = 0;
             task.result = null;
             repository.save(task);
             answer = new InstructionRes(id, task.revision, task.state, "指令已排队，将在执行边界处理");
         }
+        recordInstruction(task, input, action, fingerprint, answer);
         repository.instruction(id, input.instructionId(), fingerprint, answer);
         return answer;
+    }
+
+    /** 记录一条脱敏指令回执；只保留动作、版本和指纹，不保存指令正文。 */
+    private void recordInstruction(
+            TaskDO task,
+            InstructionParam input,
+            Action action,
+            String fingerprint,
+            InstructionRes answer) {
+        if (task.instructionEvidence.size() >= 100) {
+            task.instructionEvidence.remove(0);
+        }
+        task.instructionEvidence.add(
+                new dev.garden.demo.supervisor.pojo.dto.InstructionEvidenceDTO(
+                        input.instructionId(),
+                        action.name(),
+                        input.expectedRevision() == null ? 0 : input.expectedRevision(),
+                        answer.revision(),
+                        answer.state(),
+                        answer.runId(),
+                        answer.message(),
+                        fingerprint,
+                        System.currentTimeMillis()));
+        repository.save(task);
     }
 
     @Transactional
@@ -263,6 +361,7 @@ public class TaskStoreService {
         }
         current.result = result;
         current.state = result.status().name();
+        current.completedAt = System.currentTimeMillis();
         repository.save(current);
         if (current.parentRunId == null) {
             saveConversation(current, result);
@@ -320,6 +419,7 @@ public class TaskStoreService {
                                                 ? "CANCELLED"
                                                 : "FAILED";
         task.state = status;
+        task.completedAt = System.currentTimeMillis();
         task.result = emptyResult(task, status, "任务未能完成，请查看状态后重试。");
         repository.save(task);
         notifyParent(task);
@@ -335,6 +435,7 @@ public class TaskStoreService {
         }
         current.state = "TIMEOUT";
         current.generation++;
+        current.completedAt = System.currentTimeMillis();
         current.result = emptyResult(current, "TIMEOUT", "任务已超过截止时间");
         repository.save(current);
         notifyParent(current);
@@ -442,6 +543,7 @@ public class TaskStoreService {
                 settings.modelCallsPerMinute(),
                 settings.modelTokensPerMinute());
         root.calls++;
+        task.ownCalls++;
         if (root != task) {
             task.calls++;
             repository.save(root);
@@ -474,6 +576,74 @@ public class TaskStoreService {
         repository.save(task);
     }
 
+    /**
+     * 记录一条会开启目标新回合的协作调用边。
+     *
+     * <p>图存放在整棵任务树的根任务检查点中，子任务只负责校验自己的回合仍然活动。
+     * 返回 {@code true} 表示新增这条边会形成环或超过容量，本次调用必须被拒绝；
+     * 拒绝时不修改原图。
+     */
+    @Transactional
+    public synchronized boolean recordAgentEdge(
+            String id, int generation, String caller, String callee) {
+        TaskDO task = active(id, generation);
+        if (!task.agentPath.equals(caller)) {
+            throw new IllegalArgumentException("协作调用边必须从当前会话发起");
+        }
+        String calleePath = AgentLifecycle.resolve(caller, callee);
+        TaskDO root = rootId(task).equals(task.runId) ? task : repository.get(rootId(task));
+        if (root == null) {
+            throw new RunControl.Cancelled("任务树已不存在");
+        }
+        AgentCallGraph.Decision decision =
+                AgentCallGraph.record(root.checkpoints.get(AgentCallGraph.KEY), caller, calleePath);
+        if (decision.cycle()) {
+            return true;
+        }
+        root.checkpoints.put(AgentCallGraph.KEY, decision.value());
+        repository.save(root);
+        return false;
+    }
+
+    /**
+     * 在根任务检查点上记录近期目标并执行轻量语义循环检测。
+     *
+     * <p>记录跨子会话共享，但只有当前任务仍然活动时才写入。检测本身不改变任务状态，
+     * 调用方根据返回的 {@code PROCEED}、{@code WARN} 或 {@code ASK} 决定后续动作。
+     */
+    @Transactional
+    public synchronized SemanticLoopGuard.Result recordSemanticGoal(
+            String id,
+            int generation,
+            String scope,
+            String key,
+            String text,
+            int window,
+            double threshold,
+            int maxWarnings,
+            boolean crossKey) {
+        TaskDO task = active(id, generation);
+        TaskDO root = rootId(task).equals(task.runId) ? task : repository.get(rootId(task));
+        if (root == null) {
+            throw new RunControl.Cancelled("任务树已不存在");
+        }
+        SemanticLoopGuard.Result result =
+                SemanticLoopGuard.record(
+                        root.checkpoints.get(SemanticLoopGuard.KEY),
+                        scope,
+                        key,
+                        text,
+                        window,
+                        threshold,
+                        maxWarnings,
+                        crossKey);
+        if (result.value() != null) {
+            root.checkpoints.put(SemanticLoopGuard.KEY, result.value());
+            repository.save(root);
+        }
+        return result;
+    }
+
     @Transactional
     public synchronized DrainResultDTO drainInput(String id, int generation) {
         TaskDO task = active(id, generation);
@@ -485,7 +655,9 @@ public class TaskStoreService {
         task.consumedRevision = task.revision;
         List<TurnDTO> history = new ArrayList<>(task.request.history());
         history.add(new TurnDTO(task.request.question(), "当前任务此前的用户要求"));
-        task.request = new RequestDTO(task.sessionId, text, history, task.requestId);
+        task.request =
+                new RequestDTO(
+                        task.sessionId, text, history, task.requestId, task.acceptanceHint);
         repository.save(task);
         return new DrainResultDTO(text, task.consumedRevision);
     }
@@ -494,9 +666,52 @@ public class TaskStoreService {
     public synchronized void event(String id, int generation, String event) {
         TaskDO task = active(id, generation);
         if (task.events.size() < 200) {
+            long now = System.currentTimeMillis();
+            if (task.firstEventAt == 0) {
+                task.firstEventAt = now;
+            }
             task.events.add(event.length() > 512 ? event.substring(0, 512) : event);
+            if (task.eventTimes.size() < task.events.size()) {
+                task.eventTimes.add(now);
+            }
         }
         repository.save(task);
+    }
+
+    /**
+     * 记录本实例从持久化状态接管了一次已有 RUNNING 任务。
+     *
+     * <p>只写恢复时间和检查点，不重置 generation、预算、截止时间或工具成功缓存；
+     * 页面据此区分首次启动和进程恢复。
+     */
+    @Transactional
+    public synchronized TaskDO markRecovered(String id) {
+        TaskDO task = repository.get(id);
+        if (task == null) {
+            throw new RunControl.Cancelled("任务已不存在");
+        }
+        long now = System.currentTimeMillis();
+        task.recoveredAt = now;
+        task.checkpoints.put(
+                "agent:recovered:v1",
+                repository.encode(
+                        java.util.Map.of(
+                                "generation", task.generation,
+                                "deadline", task.deadline,
+                                "calls", task.calls,
+                                "ownCalls", task.ownCalls,
+                                "recoveredAt", now)));
+        if (task.events.size() < 200) {
+            if (task.firstEventAt == 0) {
+                task.firstEventAt = now;
+            }
+            task.events.add("进程恢复接管：generation=" + task.generation);
+            if (task.eventTimes.size() < task.events.size()) {
+                task.eventTimes.add(now);
+            }
+        }
+        repository.save(task);
+        return task;
     }
 
     @Transactional(readOnly = true)
@@ -556,6 +771,21 @@ public class TaskStoreService {
         }
         repository.save(child);
         return child;
+    }
+
+    /**
+     * 固定任务使用的目录版本。
+     *
+     * <p>任务受理后不再随发布或回滚变化；版本只写入一次，重复调用不会覆盖已固定的值。
+     */
+    @Transactional
+    public synchronized void pinAgentVersion(String id, String version) {
+        TaskDO task = repository.get(id);
+        if (task == null || version == null || version.isBlank() || task.agentVersion != null) {
+            return;
+        }
+        task.agentVersion = version;
+        repository.save(task);
     }
 
     @Transactional
@@ -824,7 +1054,11 @@ public class TaskStoreService {
             }
             task.request =
                     new RequestDTO(
-                            task.sessionId, inputs.get(inputs.size() - 1), history, task.requestId);
+                            task.sessionId,
+                            inputs.get(inputs.size() - 1),
+                            history,
+                            task.requestId,
+                            task.acceptanceHint);
             task.inflightInputs.addAll(inputs);
             task.pending.clear();
             task.inputDeliveryId++;
@@ -890,7 +1124,14 @@ public class TaskStoreService {
             if (parent != null && parent.mailbox.size() + parent.inflightMailbox.size() >= 512) {
                 String event = "完成通知等待父会话邮箱空间";
                 if (!child.events.contains(event) && child.events.size() < 200) {
+                    long now = System.currentTimeMillis();
+                    if (child.firstEventAt == 0) {
+                        child.firstEventAt = now;
+                    }
                     child.events.add(event);
+                    if (child.eventTimes.size() < child.events.size()) {
+                        child.eventTimes.add(now);
+                    }
                 }
                 break;
             }
@@ -987,7 +1228,11 @@ public class TaskStoreService {
         return hash(
                 repository.encode(
                         new RequestDTO(
-                                request.sessionId(), request.question(), request.history(), null)));
+                                request.sessionId(),
+                                request.question(),
+                                request.history(),
+                                null,
+                                request.acceptanceHint())));
     }
 
     private static boolean sameIdentity(TaskDO task, IdentityDTO identity) {
@@ -1000,7 +1245,8 @@ public class TaskStoreService {
                 || request.sessionId().length() > 200
                 || isBlank(request.question())
                 || request.question().length() > 2000
-                || (request.requestId() != null && request.requestId().length() > 200)) {
+                || (request.requestId() != null && request.requestId().length() > 200)
+                || (request.acceptanceHint() != null && request.acceptanceHint().length() > 100)) {
             throw invalid();
         }
         for (TurnDTO turn : request.history())

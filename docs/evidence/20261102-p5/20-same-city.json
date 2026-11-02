@@ -1,0 +1,280 @@
+{
+  "hint": "SAME_CITY",
+  "name": "20-same-city",
+  "question": "查一下杭州到杭州今天（2026-11-02）的火车票",
+  "supplement": "请说明同城不能查询，不需要继续查询。",
+  "supplemented": false,
+  "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+  "capturedAt": "2026-11-01T21:25:14.273Z",
+  "elapsedSeconds": 5,
+  "text": "查一下杭州到杭州今天（2026-11-02）的火车票\nS\nSupervisor\n执行失败\n字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。\n火车票\n请调整条件\n杭州\n→\n杭州\n2026-11-03\n请改为不同的出发城市和到达城市。\n来源 downstream-v1\n执行过程\n3 条记录\n来自任务实际返回的事件，按发生顺序展示。\n1\n工具\n受控触发：出发地和到达地不能相同，第1次，工具=query_trains\n2\n工具\n工具纠错：查询条件不符合规则: query_trains\n3\n工具\n工具结果：query_trains / 查询条件需要调整\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · a53f8b4e\n会话编号\nde4f7115-e573-4a38-a10d-179c4985a569\n请求编号\n30bedeb6-c4f8-4c98-a0b9-0b88886c020b\n任务编号\na53f8b4e-3343-4ac6-b868-a0be4fdf64ee\n任务版本\n1\n任务状态\n执行失败\n模型调用\n1 次\n截止时间\n2026/11/2 05:26:09\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\n30bedeb6-c4f8-4c98-a0b9-0b88886c020b\n原内容\n查一下杭州到杭州今天（2026-11-02）的火车票\n确认发送验收请求\n05:25:09\n202\nPOST /api/supervisor/chat\n100 ms\n05:25:10\n200\nGET /api/supervisor/runs/a53f8b4e-3343-4ac6-b868-a0be4fdf64ee\n13 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\na53f8b4e-3343-4ac6-b868-a0be4fdf64ee\n会话编号\nde4f7115-e573-4a38-a10d-179c4985a569\n父任务\n无（根运行）\n根运行\na53f8b4e-3343-4ac6-b868-a0be4fdf64ee\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n2 / 1\n触发方式\nCONTROLLED · SAME_CITY\n首次事件 / 完成\n2026/11/2 05:25:09 / 2026/11/2 05:25:09\n请求指纹\n2eafc0479a2a15b1d3b191a485036f6a662683238bf93627389ef5c5ee33dc16\n预算\n1 / 16 次模型调用\n权限复核\n通过（证据 1 条）\n内容信任\nSYSTEM 1 · USER 1 · TOOL 1 · RETRIEVAL 1 · CHILD 0\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 0\n工具调用配对 · 1\n委派回执 · 0\n用量 · missing\nspan · 2\n压缩 · 0 / 召回 · 0\n权限 · 目录 3 / 执行 1 / 证据 1\n指令回执 · 0 / 纠错 · 1\n时间线 · 3\n提示词版本 · 1\n检查点（白名单）\n实际配置（脱敏）",
+  "detail": {
+    "result": {
+      "status": "FAILED",
+      "originalQuery": "查一下杭州到杭州今天（2026-11-02）的火车票",
+      "rewrittenQuery": "查一下杭州到杭州今天（2026-11-02）的火车票",
+      "intent": "UNKNOWN",
+      "answer": "字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。",
+      "agents": [],
+      "evidence": [
+        {
+          "tool": "query_trains",
+          "status": "INVALID_INPUT",
+          "source": "downstream-v1",
+          "data": {
+            "date": "2026-11-03",
+            "suggestion": "请改为不同的出发城市和到达城市。",
+            "errorCode": "BUSINESS_RULE_VIOLATION",
+            "reason": "字段 from 与 to 不能相同",
+            "message": "字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。",
+            "field": "to",
+            "from": "杭州",
+            "ruleId": "SAME_CITY",
+            "to": "杭州"
+          }
+        }
+      ],
+      "events": [
+        "受控触发：SAME_CITY，第1次，工具=query_trains",
+        "工具纠错：BUSINESS_RULE_VIOLATION: query_trains",
+        "工具结果：query_trains / INVALID_INPUT"
+      ]
+    },
+    "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+    "requestId": "30bedeb6-c4f8-4c98-a0b9-0b88886c020b",
+    "sessionId": "de4f7115-e573-4a38-a10d-179c4985a569",
+    "state": "FAILED",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 1,
+    "maxModelCalls": 16,
+    "deadline": 1793568369660,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [],
+    "toolCalls": [
+      {
+        "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "agentPath": "/root",
+        "callId": "acceptance-1-8d0292be-a33c-419f-b19c-f4d6f7ef5181",
+        "tool": "query_trains",
+        "argumentFingerprint": "609ccd70349d9af8aac00ce62eb2f241d7f7eca84a99c6048294f1e30a0b6821",
+        "status": "INVALID_INPUT",
+        "startedAt": 1793568309773,
+        "endedAt": 1793568309823,
+        "durationMs": 50,
+        "resultBytes": 413,
+        "resultSummary": "Error: {\"tool\":\"query_trains\",\"status\":\"INVALID_INPUT\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"suggestion\":\"请改为不同的出发城市和到达城市。\",\"errorCode\":\"BUSINESS_RULE_VIOLATION\",\"reason\":\"字段 from 与 to 不能相同\",\"message\":\"字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。\",\"field\":\"to\",\"from\":\"杭州\",\"ruleId\":\"SAME_CITY\",\"to\":\"杭州\"}}",
+        "operationId": "acceptance-1-8d0292be-a33c-419f-b19c-f4d6f7ef5181",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [],
+    "usage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "cachedTokens": 0,
+      "totalTokens": 0,
+      "source": "missing",
+      "agents": [
+        {
+          "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 1,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 1,
+          "subtreeModelCalls": 1,
+          "remainingModelCalls": 15,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "spanId": "run:a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "FAILED",
+        "startedAt": 1793568309660,
+        "endedAt": 1793568309831,
+        "durationMs": 171,
+        "errorCode": null
+      },
+      {
+        "traceId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "spanId": "tool:a53f8b4e-3343-4ac6-b868-a0be4fdf64ee:acceptance-1-8d0292be-a33c-419f-b19c-f4d6f7ef5181",
+        "parentSpanId": "run:a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "kind": "TOOL",
+        "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "agentPath": "/root",
+        "name": "query_trains",
+        "status": "COMPLETED",
+        "startedAt": 1793568309758,
+        "endedAt": 1793568309825,
+        "durationMs": 67,
+        "errorCode": "COMPLETED"
+      }
+    ],
+    "compactions": [],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [
+        "query_trains"
+      ],
+      "filteredTools": [],
+      "evidenceTools": [
+        "query_trains"
+      ],
+      "evidenceCount": 1,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "query_trains"
+      ],
+      "filteredReasons": {}
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"hint\":\"SAME_CITY\",\"tool\":\"query_trains\",\"ordinal\":1}",
+      "correction:v1:total": "1",
+      "correction:v1:type:BUSINESS_RULE_VIOLATION:query_trains": "1",
+      "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_trains\",\"tokens\":\"da at te e2 20 02 26 61 11 10 03 3f fr ro om m杭 杭州 州t to o杭\",\"sample\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"to\\\":\\\"杭州\\\"}\",\"warnings\":0}]",
+      "loop:v1:tool-calls": "{\"query_trains:609ccd70349d9af8aac00ce62eb2f241d7f7eca84a99c6048294f1e30a0b6821\":1}",
+      "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查一下杭州到杭州今天（2026-11-02）的火车票\",\"rewrittenQuery\":\"查一下杭州到杭州今天（2026-11-02）的火车票\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_trains\",\"status\":\"INVALID_INPUT\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"suggestion\":\"请改为不同的出发城市和到达城市。\",\"errorCode\":\"BUSINESS_RULE_VIOLATION\",\"reason\":\"字段 from 与 to 不能相同\",\"message\":\"字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。\",\"field\":\"to\",\"from\":\"杭州\",\"ruleId\":\"SAME_CITY\",\"to\":\"杭州\"}}],\"events\":[\"受控触发：SAME_CI…",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "2",
+      "toolcall:v1:acceptance-1-8d0292be-a33c-419f-b19c-f4d6f7ef5181": "{\"callId\":\"acceptance-1-8d0292be-a33c-419f-b19c-f4d6f7ef5181\",\"tool\":\"query_trains\",\"argumentFingerprint\":\"609ccd70349d9af8aac00ce62eb2f241d7f7eca84a99c6048294f1e30a0b6821\",\"startedAt\":1793568309773,\"status\":\"INVALID_INPUT\",\"endedAt\":1793568309823,\"resultBytes\":413,\"resultSummary\":\"Error: {\\\"tool\\\":\\\"query_trains\\\",\\\"status\\\":\\\"INVALID_INPUT\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"date\\\":\\\"2026-11-03\\\",\\\"suggestion\\\":\\\"请改为不同的出发城市和到达城市。\\\",\\\"errorCode\\\":\\\"BUSINESS_RULE_VIOLATION\\\",\\\"reason\\\":\\\"…"
+    },
+    "approvals": [],
+    "sideEffects": [],
+    "events": [
+      "受控触发：SAME_CITY，第1次，工具=query_trains",
+      "工具纠错：BUSINESS_RULE_VIOLATION: query_trains",
+      "工具结果：query_trains / INVALID_INPUT"
+    ],
+    "createdAt": 1793568309660,
+    "firstEventAt": 1793568309757,
+    "completedAt": 1793568309831,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "SAME_CITY",
+    "recovered": false,
+    "requestFingerprint": "2eafc0479a2a15b1d3b191a485036f6a662683238bf93627389ef5c5ee33dc16",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793568309757,
+        "text": "受控触发：SAME_CITY，第1次，工具=query_trains"
+      },
+      {
+        "sequence": 2,
+        "at": 1793568309817,
+        "text": "工具纠错：BUSINESS_RULE_VIOLATION: query_trains"
+      },
+      {
+        "sequence": 3,
+        "at": 1793568309821,
+        "text": "工具结果：query_trains / INVALID_INPUT"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [
+      {
+        "type": "BUSINESS_RULE_VIOLATION",
+        "tool": "query_trains",
+        "count": 1
+      }
+    ],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 1
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 1
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 1
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 0
+      }
+    ]
+  },
+  "consoleErrors": []
+}

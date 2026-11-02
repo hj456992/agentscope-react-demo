@@ -1,0 +1,435 @@
+{
+  "hint": "INVALID_SCHEMA_2",
+  "name": "25-invalid-schema-2",
+  "question": "查询杭州2026-11-03的天气",
+  "supplement": "日期是2026-11-03，请按工具定义重试。",
+  "supplemented": false,
+  "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+  "capturedAt": "2026-11-01T21:32:44.608Z",
+  "elapsedSeconds": 20,
+  "text": "查询杭州2026-11-03的天气\nS\nSupervisor\n查询成功\n这里的天气查询工具此前已经因参数问题被暂停使用，我也没有权限绕过这个限制，因此无法直接给出 2026-11-03 杭州天气的可靠数据。\n先说明已确认的情况：\n此前 query_weather 在只传城市、未传日期的情况下连续报错，随后被系统暂停，本会话不能再用它查询。\n我不会编造温度、降水等具体数值。\n可以考虑的替代办法：\n你直接告诉我日期格式要求（如果之前的失败是因为缺少日期字段），但由于工具已暂停，这轮仍然查不了。\n在新会话中重新发起天气查询，这样工具状态会重置，届时请把「杭州」和「2026-11-03」一次性完整提供。\n你也可以自行查看天气应用或气象网站获取准确预报。\n需要我现在就帮你查一下 2026-11-03 杭州相关的火车票或行程信息吗？如果需要，我可以直接查询。\n执行过程\n15 条记录\n来自任务实际返回的事件，按发生顺序展示。\n1\n工具\n受控触发：查询参数需要调整_2，第1次，工具=query_weather\n2\n工具\n工具纠错：查询参数需要调整: query_weather\n3\n上下文\n上下文已压缩，第 1 个替换窗口\n4\n上下文\n摘要忠实度：保留率 100%，压缩率 4%\n5\n工具\n受控触发：查询参数需要调整_2，第2次，工具=query_weather\n6\n工具\n工具纠错：查询参数需要调整: query_weather\n7\n工具\n工具已暂停：query_weather\n8\n上下文\n上下文已压缩，第 2 个替换窗口\n9\n上下文\n摘要忠实度：保留率 100%，压缩率 6%\n10\n运行\n多Agent决策：运行策略提示，parallelism=1，estimatedTokens=256，latencySavingMs=0\n11\n上下文\n上下文已压缩，第 3 个替换窗口\n12\n上下文\n摘要忠实度：保留率 100%，压缩率 19%\n13\n运行\n多Agent决策：运行策略提示，parallelism=1，estimatedTokens=256，latencySavingMs=0\n14\n上下文\n上下文已压缩，第 4 个替换窗口\n15\n上下文\n摘要忠实度：保留率 100%，压缩率 18%\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · a96d0dda\n会话编号\n1c1aa3f2-d179-4c3b-ad0d-e3f3d77cb660\n请求编号\n1afbe8c7-fd82-41fb-94a3-b72e20d6ce7c\n任务编号\na96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n任务版本\n1\n任务状态\n查询成功\n模型调用\n9 次\n截止时间\n2026/11/2 05:33:24\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\n1afbe8c7-fd82-41fb-94a3-b72e20d6ce7c\n原内容\n查询杭州2026-11-03的天气\n确认发送验收请求\n05:32:24\n202\nPOST /api/supervisor/chat\n16 ms\n05:32:25\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n9 ms\n05:32:26\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n5 ms\n05:32:27\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n6 ms\n05:32:28\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n8 ms\n05:32:29\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n3 ms\n05:32:30\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n9 ms\n05:32:31\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n11 ms\n05:32:32\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n5 ms\n05:32:33\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n10 ms\n05:32:34\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n6 ms\n05:32:35\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n10 ms\n05:32:36\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n11 ms\n05:32:37\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n10 ms\n05:32:38\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n10 ms\n05:32:39\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n11 ms\n05:32:40\n200\nGET /api/supervisor/runs/a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n9 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\na96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\n会话编号\n1c1aa3f2-d179-4c3b-ad0d-e3f3d77cb660\n父任务\n无（根运行）\n根运行\na96d0dda-d9a4-4639-a4b1-43bb7c40ca0c\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n2 / 1\n触发方式\nCONTROLLED · INVALID_SCHEMA_2\n首次事件 / 完成\n2026/11/2 05:32:24 / 2026/11/2 05:32:40\n请求指纹\n4b6febf061fe73f78c5681c1d5f1aaa801532d9d1da5deffc9bbe56ed308ee93\n预算\n9 / 16 次模型调用\n权限复核\n通过（证据 0 条）\n内容信任\nSYSTEM 9 · USER 1 · TOOL 0 · RETRIEVAL 2 · CHILD 0\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 0\n工具调用配对 · 4\n委派回执 · 0\n用量 · provider\nspan · 2\n压缩 · 1 / 召回 · 0\n权限 · 目录 3 / 执行 2 / 证据 0\n指令回执 · 0 / 纠错 · 2\n时间线 · 15\n提示词版本 · 1\n检查点（白名单）\n实际配置（脱敏）",
+  "detail": {
+    "result": {
+      "status": "SUCCESS",
+      "originalQuery": "查询杭州2026-11-03的天气",
+      "rewrittenQuery": "查询杭州2026-11-03的天气",
+      "intent": "UNKNOWN",
+      "answer": "这里的天气查询工具此前已经因参数问题被暂停使用，我也没有权限绕过这个限制，因此无法直接给出 2026-11-03 杭州天气的可靠数据。\n\n先说明已确认的情况：\n- 此前 `query_weather` 在只传城市、未传日期的情况下连续报错，随后被系统暂停，本会话不能再用它查询。\n- 我不会编造温度、降水等具体数值。\n\n可以考虑的替代办法：\n1. 你直接告诉我日期格式要求（如果之前的失败是因为缺少日期字段），但由于工具已暂停，这轮仍然查不了。\n2. 在新会话中重新发起天气查询，这样工具状态会重置，届时请把「杭州」和「2026-11-03」一次性完整提供。\n3. 你也可以自行查看天气应用或气象网站获取准确预报。\n\n需要我现在就帮你查一下 2026-11-03 杭州相关的火车票或行程信息吗？如果需要，我可以直接查询。",
+      "agents": [],
+      "evidence": [],
+      "events": [
+        "受控触发：INVALID_SCHEMA_2，第1次，工具=query_weather",
+        "工具纠错：INVALID_SCHEMA: query_weather",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 4%",
+        "受控触发：INVALID_SCHEMA_2，第2次，工具=query_weather",
+        "工具纠错：INVALID_SCHEMA: query_weather",
+        "工具已暂停：query_weather",
+        "上下文已压缩，第 2 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 6%",
+        "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+        "上下文已压缩，第 3 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 19%",
+        "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+        "上下文已压缩，第 4 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 18%"
+      ]
+    },
+    "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+    "requestId": "1afbe8c7-fd82-41fb-94a3-b72e20d6ce7c",
+    "sessionId": "1c1aa3f2-d179-4c3b-ad0d-e3f3d77cb660",
+    "state": "SUCCESS",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 9,
+    "maxModelCalls": 16,
+    "deadline": 1793568804587,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [],
+    "toolCalls": [
+      {
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "callId": "acceptance-1-01dfa7b1-e14a-4417-80e0-3174da26eec0",
+        "tool": "query_weather",
+        "argumentFingerprint": "b0a5847f82f94583fbd532d09a5d4573961cc93dacd8e3f40631bdfcf79230b5",
+        "status": "FAILED",
+        "startedAt": 1793568744601,
+        "endedAt": 1793568744611,
+        "durationMs": 10,
+        "resultBytes": 51,
+        "resultSummary": "Error: INVALID_SCHEMA：请按工具定义修正。",
+        "operationId": "acceptance-1-01dfa7b1-e14a-4417-80e0-3174da26eec0",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      },
+      {
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "callId": "acceptance-2-651ed736-a39d-453c-8537-45b0da7dca5b",
+        "tool": "query_weather",
+        "argumentFingerprint": "b0a5847f82f94583fbd532d09a5d4573961cc93dacd8e3f40631bdfcf79230b5",
+        "status": "FAILED",
+        "startedAt": 1793568746989,
+        "endedAt": 1793568746994,
+        "durationMs": 5,
+        "resultBytes": 100,
+        "resultSummary": "Error: 参数连续不合法，已暂停使用该工具；请改用其他能力或向用户澄清。",
+        "operationId": "acceptance-2-651ed736-a39d-453c-8537-45b0da7dca5b",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      },
+      {
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "callId": "call_00_RogSa5s7GqYOWXq2IvI54496",
+        "tool": "spawn_agent",
+        "argumentFingerprint": "4e4483362014993eeca19cda5c4eb0842d369e636b1b8d7f6178ad7110b8efb1",
+        "status": "FAILED",
+        "startedAt": 1793568750949,
+        "endedAt": 1793568750954,
+        "durationMs": 5,
+        "resultBytes": 82,
+        "resultSummary": "Error: task_name 只能包含小写字母、数字、下划线，且不能为 root",
+        "operationId": "call_00_RogSa5s7GqYOWXq2IvI54496",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      },
+      {
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "callId": "call_00_1Fzs78QEpGd5hHbpTuxW0106",
+        "tool": "spawn_agent",
+        "argumentFingerprint": "4d0b125b6d0b72e2009b2ac5b3c171716f7553b9448a7104abc479d40d4def7d",
+        "status": "FAILED",
+        "startedAt": 1793568755130,
+        "endedAt": 1793568755139,
+        "durationMs": 9,
+        "resultBytes": 82,
+        "resultSummary": "Error: task_name 只能包含小写字母、数字、下划线，且不能为 root",
+        "operationId": "call_00_1Fzs78QEpGd5hHbpTuxW0106",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [],
+    "usage": {
+      "promptTokens": 1821,
+      "completionTokens": 204,
+      "cachedTokens": 1536,
+      "totalTokens": 2025,
+      "source": "provider",
+      "agents": [
+        {
+          "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 9,
+          "promptTokens": 1821,
+          "completionTokens": 204,
+          "cachedTokens": 1536,
+          "totalTokens": 2025,
+          "source": "provider",
+          "ownModelCalls": 9,
+          "subtreeModelCalls": 9,
+          "remainingModelCalls": 7,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "spanId": "run:a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "SUCCESS",
+        "startedAt": 1793568744587,
+        "endedAt": 1793568760126,
+        "durationMs": 15539,
+        "errorCode": null
+      },
+      {
+        "traceId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "spanId": "model:a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c:3",
+        "parentSpanId": "run:a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "kind": "MODEL",
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "name": "model:ASSISTANT",
+        "status": "COMPLETED",
+        "startedAt": 1793568760110,
+        "endedAt": 1793568761950,
+        "durationMs": 1840,
+        "errorCode": null
+      }
+    ],
+    "compactions": [
+      {
+        "runId": "a96d0dda-d9a4-4639-a4b1-43bb7c40ca0c",
+        "agentPath": "/root",
+        "generation": 4,
+        "summaryBytes": 2012,
+        "summary": "# 交接摘要\n\n## 任务\n用户请求：查询杭州 **2026-11-03** 的天气。\n\n## 当前进度与关键事实\n1. **此前模型**曾调用 `query_weather`，仅传 `city: \"杭州\"` 未传日期；再次调用（同样仅传城市）返回 `Error: 参数连续不合法，已暂停使用该工具`。因此 `query_weather` 对当前会话**已不可用**，不得再用相同或近似参数重试。\n2. **本模型**决定创建独立子 Agent 处理该查询，调用 `spawn_agent`：\n   - `agent_type: weather_agent`\n   - `task_name: 杭州天气查询_2026-11-03`（含中文和连字符）\n   - `message`: 请求查询杭州 2026-11-03 天气，返回温度、天气状况、降水/风力，并说明数据源是否为示例数据\n   - **结果：报错** `Error: task_name 只能包含小写字母、数字、下划线，且不能为 root`\n\n## 约束与注意事项\n- 子 Agent 的 `task_name` 必须**只能包含小写字母、数字、下划线**，不能为 `root`。\n- 天气、车票、行程为演示角色，**数据均为示例数据**，回答中应说明来源为示例，不编造具体实况。\n- 工具报错（LOOP_DETECTED / BUSINESS_RULE_VIOLATION / INVALID_INPUT）后立即停止该工具，不得近似参数重试；INVALID_SCHEMA 最多修正一次。\n- 上下文时区 Asia/Shanghai，today = 2026-11-02。\n\n## 下一步\n1. 修正 `task_name` 后**仅重新调用一次** `spawn_agent`，例如：\n   - `agent_type: weather_agent`\n   - `task_name: hangzhou_weather_2026_11_03`\n   - `message`: 同上（城市杭州，日期 2026-11-03，要点 + 说明示例数据）\n2. 拿到子 Agent 返回标识后，用 `wait_agent` 等待结果。\n3. 若 `spawn_agent` 再次返回 INVALID_SCHEMA/失败，**不再重试**，直接告知用户当前无法完成查询（可说明工具参数校验受限），或改用其他可用方式（如 `request_user_input` 澄清，但用户信息已充分，不建议）。\n4. 汇总结果时明确标注：数据为示例数据，非实时天气。",
+        "events": [
+          "上下文已压缩，第 1 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 4%",
+          "上下文已压缩，第 2 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 6%",
+          "上下文已压缩，第 3 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 19%",
+          "上下文已压缩，第 4 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 18%"
+        ]
+      }
+    ],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [],
+      "filteredTools": [],
+      "evidenceTools": [],
+      "evidenceCount": 0,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "query_weather",
+        "spawn_agent"
+      ],
+      "filteredReasons": {
+        "spawn_agent": "执行记录中的工具当前身份不可见"
+      }
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"ordinal\":2,\"tool\":\"query_weather\",\"hint\":\"INVALID_SCHEMA_2\"}",
+      "correction:v1:disabled": "query_weather",
+      "correction:v1:streak:query_weather": "2",
+      "correction:v1:total": "2",
+      "correction:v1:type:INVALID_SCHEMA:query_weather": "2",
+      "model:29a008b8b6f733d5575707230d39e0abeae7fc3bf6e425ac5ed558841662eec4": "1",
+      "model:36e78e9df714b7978714fda355f175af34c8491174dfb9d50dc247f66e1a037b": "1",
+      "model:40f06dd1b26da550cd8a462d4e24976639851bf07591ee8f7389ad5ceea37b39": "1",
+      "model:8c906cbc465afc069c8acf1735c6fbfed7037cf1c0ea95e0956f97859299d57a": "1",
+      "model:8d5301a8f8b6a9461d522b2171ccb24c38a588000a123a05f54b52d9a6d4b9c3": "1",
+      "model:cced6eb7960f2a1b1b20ddc8f91ca7a718fbff1e1a16a4a70177214fc1419e91": "1",
+      "model:f8862f044f5d6a09e691f28abda374019c0b4c6a5a0664365e10c753bf23c3e7": "1",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "10",
+      "toolcall:v1:acceptance-1-01dfa7b1-e14a-4417-80e0-3174da26eec0": "{\"callId\":\"acceptance-1-01dfa7b1-e14a-4417-80e0-3174da26eec0\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"b0a5847f82f94583fbd532d09a5d4573961cc93dacd8e3f40631bdfcf79230b5\",\"startedAt\":1793568744601,\"status\":\"FAILED\",\"endedAt\":1793568744611,\"resultBytes\":51,\"resultSummary\":\"Error: INVALID_SCHEMA：请按工具定义修正。\",\"reused\":false}",
+      "toolcall:v1:acceptance-2-651ed736-a39d-453c-8537-45b0da7dca5b": "{\"callId\":\"acceptance-2-651ed736-a39d-453c-8537-45b0da7dca5b\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"b0a5847f82f94583fbd532d09a5d4573961cc93dacd8e3f40631bdfcf79230b5\",\"startedAt\":1793568746989,\"status\":\"FAILED\",\"endedAt\":1793568746994,\"resultBytes\":100,\"resultSummary\":\"Error: 参数连续不合法，已暂停使用该工具；请改用其他能力或向用户澄清。\",\"reused\":false}",
+      "toolcall:v1:call_00_1Fzs78QEpGd5hHbpTuxW0106": "{\"callId\":\"call_00_1Fzs78QEpGd5hHbpTuxW0106\",\"tool\":\"spawn_agent\",\"argumentFingerprint\":\"4d0b125b6d0b72e2009b2ac5b3c171716f7553b9448a7104abc479d40d4def7d\",\"startedAt\":1793568755130,\"status\":\"FAILED\",\"endedAt\":1793568755139,\"resultBytes\":82,\"resultSummary\":\"Error: task_name 只能包含小写字母、数字、下划线，且不能为 root\",\"reused\":false}",
+      "toolcall:v1:call_00_RogSa5s7GqYOWXq2IvI54496": "{\"callId\":\"call_00_RogSa5s7GqYOWXq2IvI54496\",\"tool\":\"spawn_agent\",\"argumentFingerprint\":\"4e4483362014993eeca19cda5c4eb0842d369e636b1b8d7f6178ad7110b8efb1\",\"startedAt\":1793568750949,\"status\":\"FAILED\",\"endedAt\":1793568750954,\"resultBytes\":82,\"resultSummary\":\"Error: task_name 只能包含小写字母、数字、下划线，且不能为 root\",\"reused\":false}"
+    },
+    "approvals": [],
+    "sideEffects": [],
+    "events": [
+      "受控触发：INVALID_SCHEMA_2，第1次，工具=query_weather",
+      "工具纠错：INVALID_SCHEMA: query_weather",
+      "上下文已压缩，第 1 个替换窗口",
+      "摘要忠实度：保留率 100%，压缩率 4%",
+      "受控触发：INVALID_SCHEMA_2，第2次，工具=query_weather",
+      "工具纠错：INVALID_SCHEMA: query_weather",
+      "工具已暂停：query_weather",
+      "上下文已压缩，第 2 个替换窗口",
+      "摘要忠实度：保留率 100%，压缩率 6%",
+      "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+      "上下文已压缩，第 3 个替换窗口",
+      "摘要忠实度：保留率 100%，压缩率 19%",
+      "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+      "上下文已压缩，第 4 个替换窗口",
+      "摘要忠实度：保留率 100%，压缩率 18%"
+    ],
+    "createdAt": 1793568744587,
+    "firstEventAt": 1793568744599,
+    "completedAt": 1793568760126,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "INVALID_SCHEMA_2",
+    "recovered": false,
+    "requestFingerprint": "4b6febf061fe73f78c5681c1d5f1aaa801532d9d1da5deffc9bbe56ed308ee93",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793568744599,
+        "text": "受控触发：INVALID_SCHEMA_2，第1次，工具=query_weather"
+      },
+      {
+        "sequence": 2,
+        "at": 1793568744610,
+        "text": "工具纠错：INVALID_SCHEMA: query_weather"
+      },
+      {
+        "sequence": 3,
+        "at": 1793568746983,
+        "text": "上下文已压缩，第 1 个替换窗口"
+      },
+      {
+        "sequence": 4,
+        "at": 1793568746984,
+        "text": "摘要忠实度：保留率 100%，压缩率 4%"
+      },
+      {
+        "sequence": 5,
+        "at": 1793568746986,
+        "text": "受控触发：INVALID_SCHEMA_2，第2次，工具=query_weather"
+      },
+      {
+        "sequence": 6,
+        "at": 1793568746993,
+        "text": "工具纠错：INVALID_SCHEMA: query_weather"
+      },
+      {
+        "sequence": 7,
+        "at": 1793568746993,
+        "text": "工具已暂停：query_weather"
+      },
+      {
+        "sequence": 8,
+        "at": 1793568749544,
+        "text": "上下文已压缩，第 2 个替换窗口"
+      },
+      {
+        "sequence": 9,
+        "at": 1793568749546,
+        "text": "摘要忠实度：保留率 100%，压缩率 6%"
+      },
+      {
+        "sequence": 10,
+        "at": 1793568750954,
+        "text": "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+      },
+      {
+        "sequence": 11,
+        "at": 1793568754122,
+        "text": "上下文已压缩，第 3 个替换窗口"
+      },
+      {
+        "sequence": 12,
+        "at": 1793568754123,
+        "text": "摘要忠实度：保留率 100%，压缩率 19%"
+      },
+      {
+        "sequence": 13,
+        "at": 1793568755135,
+        "text": "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+      },
+      {
+        "sequence": 14,
+        "at": 1793568758265,
+        "text": "上下文已压缩，第 4 个替换窗口"
+      },
+      {
+        "sequence": 15,
+        "at": 1793568758266,
+        "text": "摘要忠实度：保留率 100%，压缩率 18%"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [
+      {
+        "type": "DISABLED",
+        "tool": "query_weather",
+        "count": 1
+      },
+      {
+        "type": "INVALID_SCHEMA",
+        "tool": "query_weather",
+        "count": 2
+      }
+    ],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 9
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 0
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 2
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 0
+      }
+    ]
+  },
+  "consoleErrors": []
+}

@@ -47,7 +47,10 @@ class SupervisorConfigurationTest {
                         () -> {
                             try (var ignored =
                                     new WebTestSupport(
-                                            null, "--supervisor.mode=live", "--DEMO_API_KEY=")) {}
+                                            null,
+                                            "--supervisor.mode=live",
+                                            "--DEMO_API_KEY=",
+                                            "--DEEPSEEK_API_KEY=")) {}
                         });
         assertTrue(rootMessage(error).contains("DEMO_API_KEY"), rootMessage(error));
     }

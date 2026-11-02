@@ -1,6 +1,7 @@
 package dev.garden.demo.supervisor;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import java.time.*;
 import java.util.*;
@@ -10,6 +11,24 @@ public interface RunControl {
     /** 角色只选择提示词和工具能力，不改变模型循环。 */
     default String agentRole() {
         return "supervisor";
+    }
+
+    /**
+     * 返回角色当前固定的提示词定义。
+     *
+     * <p>持久任务由提示词注册表实现；CLI 和旧测试实现退回进程内静态目录。
+     */
+    default PromptDefinitionDTO prompt(String role) {
+        return dev.garden.demo.supervisor.support.PromptCatalog.definition(role);
+    }
+
+    /**
+     * 写入工具入口：登记审批或在批准后执行一次外部写入。
+     *
+     * <p>旧控制实现没有审批和账本，默认拒绝，避免在无治理组件的运行路径上静默写外部系统。
+     */
+    default BookingOutcomeDTO book(String operationId, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException("审批与外部写入不可用");
     }
 
     /** 每次运行共享同一份策略；旧控制实现默认关闭新增能力。 */
@@ -64,6 +83,42 @@ public interface RunControl {
 
     default List<AgentMessageDTO> drainMailbox() {
         return List.of();
+    }
+
+    /**
+     * 记录一条会开启目标新回合的协作调用边。
+     *
+     * <p>{@code caller} 必须是当前会话路径，{@code callee} 可以是绝对路径或相对引用。
+     * 返回 {@code true} 表示新增这条边会形成环或超过调用图容量，调用方必须拒绝本次协作。
+     * 旧控制实现默认不记录，保持既有调用行为。
+     */
+    default boolean recordAgentEdge(String caller, String callee) {
+        return false;
+    }
+
+    /**
+     * 记录一次近期目标并返回语义循环检测结论。
+     *
+     * <p>记录写入根任务的共享检查点，因此不同子会话比较的是同一段目标历史。
+     * 旧控制实现默认返回继续执行，不改变既有调用行为。
+     *
+     * @param scope 目标类型，例如 {@code agent} 或 {@code tool}
+     * @param key 目标标识，例如子会话路径或工具名
+     * @param text 模型生成的目标文本或规范化工具参数
+     * @param window 保留的近期目标数量
+     * @param threshold 相似度阈值
+     * @param maxWarnings 允许返回提醒的次数
+     * @param crossKey 是否跨同类目标比较
+     */
+    default SemanticLoopGuard.Result recordSemanticGoal(
+            String scope,
+            String key,
+            String text,
+            int window,
+            double threshold,
+            int maxWarnings,
+            boolean crossKey) {
+        return SemanticLoopGuard.Result.proceed(null);
     }
 
     /** 保留每一条真实用户输入边界；兼容旧控制实现时只包装其单条输出。 */

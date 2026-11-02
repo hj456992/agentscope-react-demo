@@ -41,7 +41,14 @@ public final class SupervisorCrashProcess {
                 base.conversationRetention(),
                 base.preferenceRetention(),
                 base.databaseUrl(),
-                base.authTokens());
+                base.databaseUsername(),
+                base.databasePassword(),
+                base.databasePoolSize(),
+                base.authTokens(),
+                base.acceptanceHintsEnabled(),
+                base.downstreamUrl(),
+                base.downstreamTimeout(),
+                base.toolDelayMs());
     }
 
     static TravelTools.DataSource source(Path calls, boolean crash) {

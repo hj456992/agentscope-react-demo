@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class MultiAgentThresholdTest {
     private static final SupervisorPolicy.MultiAgentPolicy POLICY =
             new SupervisorPolicy.MultiAgentPolicy(
-                    SupervisorPolicy.MultiAgentPolicy.Mode.ENFORCE, 2, 4, 2, 2.0, 500);
+                    SupervisorPolicy.MultiAgentPolicy.Mode.ENFORCE, 2, 4, 2, 2.0, 500, false, 8);
 
     @Test
     void twoIndependentSubtasksWithBoundedCostAreAllowed() {

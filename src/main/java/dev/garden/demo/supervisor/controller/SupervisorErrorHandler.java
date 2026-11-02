@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
 /** 对外只返回可理解的错误，不回显内部异常、堆栈和模型凭据。 */
 @RestControllerAdvice
 public class SupervisorErrorHandler {
@@ -34,7 +36,12 @@ public class SupervisorErrorHandler {
                                         ? "请求内容、任务版本或状态发生冲突。"
                                         : statusError.getReason());
                 case 413 -> response(413, "REQUEST_TOO_LARGE", "待处理指令合计超过 2000 字符，请等待当前补充处理后再提交。");
-                case 429 -> response(429, "BUSY", "当前处理任务较多，请稍后重试。");
+                case 429 ->
+                        response(
+                                429,
+                                "BUSY",
+                                "当前处理任务较多，请稍后重试。",
+                                Map.of("Retry-After", "1"));
                 case 415 -> response(415, "UNSUPPORTED_MEDIA_TYPE", "请使用 application/json 提交请求。");
                 default -> response(status, "REQUEST_ERROR", "请求无法处理，请核对请求路径和方法。");
             };
@@ -53,6 +60,13 @@ public class SupervisorErrorHandler {
     }
 
     private ResponseEntity<ErrorRes> response(int status, String code, String message) {
-        return ResponseEntity.status(status).body(new ErrorRes(code, message));
+        return response(status, code, message, Map.of());
+    }
+
+    private ResponseEntity<ErrorRes> response(
+            int status, String code, String message, Map<String, String> headers) {
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(status);
+        headers.forEach(builder::header);
+        return builder.body(new ErrorRes(code, message));
     }
 }

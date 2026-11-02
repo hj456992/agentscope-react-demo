@@ -23,4 +23,27 @@ public enum FailureClass {
     public boolean retryable() {
         return retryable;
     }
+
+    /** 按 HTTP 状态映射失败类别；供应商与本地工具故障共用同一套判定。 */
+    public static FailureClass fromStatus(int status) {
+        if (status == 408) {
+            return TIMEOUT;
+        }
+        if (status == 429) {
+            return RATE_LIMITED;
+        }
+        if (status == 401 || status == 403) {
+            return AUTH;
+        }
+        if (status == 400 || status == 422) {
+            return INPUT_INVALID;
+        }
+        if (status == 404) {
+            return NOT_FOUND;
+        }
+        if (status >= 500 && status < 600) {
+            return RETRYABLE;
+        }
+        return UNKNOWN;
+    }
 }

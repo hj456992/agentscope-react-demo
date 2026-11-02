@@ -50,7 +50,14 @@ class TaskRuntimeTest {
                 Duration.ofDays(30),
                 Duration.ofDays(90),
                 url,
-                "test=t:u:query_weather");
+                "sa",
+                "",
+                16,
+                "test=t:u:query_weather",
+                false,
+                "",
+                Duration.ofSeconds(5),
+                0);
     }
 
     private TestRepository repo(String url) {
@@ -113,7 +120,7 @@ class TaskRuntimeTest {
                             started.runId(),
                             "instruction",
                             1,
-                            Action.REVISE,
+                            Action.MESSAGE,
                             "上海后天天气");
             var reply = service.instruct(identity, change).block();
             assertEquals(started.runId(), reply.runId());
@@ -465,7 +472,7 @@ class TaskRuntimeTest {
                                                                     first,
                                                                     "late",
                                                                     1,
-                                                                    Action.SUPPLEMENT,
+                                                                    Action.MESSAGE,
                                                                     "上海后天天气"))
                                                     .block())
                             .getStatusCode()
@@ -530,7 +537,7 @@ class TaskRuntimeTest {
             service.instruct(
                             identity,
                             new InstructionParam(
-                                    id, "one", 1, Action.SUPPLEMENT, "甲".repeat(1200)))
+                                    id, "one", 1, Action.MESSAGE, "甲".repeat(1200)))
                     .block();
             ResponseStatusException rejected =
                     assertThrows(
@@ -542,7 +549,7 @@ class TaskRuntimeTest {
                                                             id,
                                                             "two",
                                                             2,
-                                                            Action.SUPPLEMENT,
+                                                            Action.MESSAGE,
                                                             "乙".repeat(1200)))
                                             .block());
             assertEquals(413, rejected.getStatusCode().value());
@@ -594,7 +601,7 @@ class TaskRuntimeTest {
     }
 
     @Test
-    void staleInstructionAndAmbiguousAutoCannotMutateTask() {
+    void omittedActionAppendsInputAndStaleMessageIsRejected() {
         String url = "jdbc:h2:mem:" + UUID.randomUUID();
         try (var repo = repo(url);
                 var service =
@@ -607,23 +614,69 @@ class TaskRuntimeTest {
                     service.instruct(
                                     identity,
                                     new InstructionParam(
-                                            started.runId(), "auto", 1, Action.AUTO, "换一下"))
+                                            started.runId(), "message", 1, null, "换一下"))
                             .block();
-            assertEquals(1, reply.revision());
-            assertEquals(0, service.get(identity, started.runId()).block().modelCalls());
-            assertThrows(
-                    ResponseStatusException.class,
-                    () ->
-                            service.instruct(
-                                            identity,
-                                            new InstructionParam(
-                                                    started.runId(),
-                                                    "stale",
-                                                    2,
-                                                    Action.CANCEL,
-                                                    null))
-                                    .block());
-            assertEquals("RUNNING", service.get(identity, started.runId()).block().state());
+            assertEquals(2, reply.revision());
+            assertEquals("RUNNING", reply.state());
+            assertEquals(List.of("换一下"), repo.get(started.runId()).pending);
+            assertEquals(
+                    409,
+                    assertThrows(
+                                    ResponseStatusException.class,
+                                    () ->
+                                            service.instruct(
+                                                            identity,
+                                                            new InstructionParam(
+                                                                    started.runId(),
+                                                                    "stale",
+                                                                    1,
+                                                                    Action.MESSAGE,
+                                                                    "再换一次"))
+                                                    .block())
+                            .getStatusCode()
+                            .value());
+            assertEquals(List.of("换一下"), repo.get(started.runId()).pending);
+        }
+    }
+
+    @Test
+    void cancelIgnoresStaleRevisionAndRepeatsIdempotently() {
+        String url = "jdbc:h2:mem:" + UUID.randomUUID();
+        try (var repo = repo(url);
+                var service =
+                        TestServices.taskService(
+                                repo,
+                                settings(url, 3),
+                                (request, control) -> Mono.never())) {
+            var started = service.submit(identity, request("session", "request"), true).block();
+            // 页面持有的版本号已经过期，停止仍然必须生效。
+            var stopped =
+                    service.instruct(
+                                    identity,
+                                    new InstructionParam(
+                                            started.runId(), "stop", 99, Action.CANCEL, null))
+                            .block();
+            assertEquals("CANCELLED", stopped.state());
+            var revision = stopped.revision();
+            // 同一指令编号重放返回首次回执。
+            var replay =
+                    service.instruct(
+                                    identity,
+                                    new InstructionParam(
+                                            started.runId(), "stop", 99, Action.CANCEL, null))
+                            .block();
+            assertEquals(revision, replay.revision());
+            assertEquals("CANCELLED", replay.state());
+            // 新指令编号再停一次，同样返回停止回执，不修改版本。
+            var repeat =
+                    service.instruct(
+                                    identity,
+                                    new InstructionParam(
+                                            started.runId(), "stop-2", null, Action.CANCEL, null))
+                            .block();
+            assertEquals(revision, repeat.revision());
+            assertEquals("CANCELLED", repeat.state());
+            assertEquals("CANCELLED", service.get(identity, started.runId()).block().state());
         }
     }
 }

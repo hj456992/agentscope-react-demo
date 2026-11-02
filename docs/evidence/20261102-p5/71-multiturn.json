@@ -1,0 +1,952 @@
+{
+  "first": {
+    "q": "查询上海2026-11-03的天气",
+    "text": "查询上海2026-11-03的天气\nS\nSupervisor\n查询成功\n上海 2026-11-03 的天气：晴，气温 22°C。\n（以上为本地示例数据。）\n天气\n查询成功\n上海\n2026-11-03\n22°\n晴\n来源 downstream-v1\n执行过程\n3 条记录\n任务与请求详情\n异步 · 91287a14",
+    "detail": {
+      "result": {
+        "status": "SUCCESS",
+        "originalQuery": "查询上海2026-11-03的天气",
+        "rewrittenQuery": "查询上海2026-11-03的天气",
+        "intent": "UNKNOWN",
+        "answer": "上海 2026-11-03 的天气：晴，气温 22°C。\n\n（以上为本地示例数据。）",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_weather",
+            "status": "SUCCESS",
+            "source": "downstream-v1",
+            "data": {
+              "weather": {
+                "temperature": 22,
+                "condition": "晴"
+              },
+              "date": "2026-11-03",
+              "city": "上海"
+            }
+          }
+        ],
+        "events": [
+          "工具结果：query_weather / SUCCESS",
+          "上下文已压缩，第 1 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 8%"
+        ]
+      },
+      "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+      "requestId": "7c2a1c26-4e34-4633-853c-0d15b6f1b4ce",
+      "sessionId": "66b93c7a-0e71-4bf9-a31b-fd1d294fe5ff",
+      "state": "SUCCESS",
+      "revision": 1,
+      "generation": 2,
+      "consumedRevision": 1,
+      "modelCalls": 3,
+      "maxModelCalls": 16,
+      "deadline": 1793570364223,
+      "replacedBy": null,
+      "parentRunId": null,
+      "rootRunId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+      "agentPath": "/root",
+      "agentRole": "supervisor",
+      "agentVersion": "1",
+      "accepted": true,
+      "plan": {},
+      "children": [],
+      "toolCalls": [
+        {
+          "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "agentPath": "/root",
+          "callId": "call_00_DNPjXjcAVz6ZQNWmlpk01520",
+          "tool": "query_weather",
+          "argumentFingerprint": "12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a",
+          "status": "SUCCESS",
+          "startedAt": 1793570304906,
+          "endedAt": 1793570304920,
+          "durationMs": 14,
+          "resultBytes": 160,
+          "resultSummary": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-03\",\"city\":\"上海\"}}",
+          "operationId": "call_00_DNPjXjcAVz6ZQNWmlpk01520",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        }
+      ],
+      "delegations": [],
+      "usage": {
+        "promptTokens": 1828,
+        "completionTokens": 27,
+        "cachedTokens": 1664,
+        "totalTokens": 1855,
+        "source": "provider",
+        "agents": [
+          {
+            "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+            "agentPath": "/root",
+            "agentRole": "supervisor",
+            "modelCalls": 3,
+            "promptTokens": 1828,
+            "completionTokens": 27,
+            "cachedTokens": 1664,
+            "totalTokens": 1855,
+            "source": "provider",
+            "ownModelCalls": 3,
+            "subtreeModelCalls": 3,
+            "remainingModelCalls": 13,
+            "sharedBudget": true
+          }
+        ]
+      },
+      "spans": [
+        {
+          "traceId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "spanId": "run:91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "parentSpanId": null,
+          "kind": "RUN",
+          "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "agentPath": "/root",
+          "name": "run",
+          "status": "SUCCESS",
+          "startedAt": 1793570304223,
+          "endedAt": 1793570307572,
+          "durationMs": 3349,
+          "errorCode": null
+        },
+        {
+          "traceId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "spanId": "model:91287a14-91b7-4eed-a639-1c59c8a86cb6:3",
+          "parentSpanId": "run:91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "kind": "MODEL",
+          "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793570307557,
+          "endedAt": 1793570308343,
+          "durationMs": 786,
+          "errorCode": null
+        }
+      ],
+      "compactions": [
+        {
+          "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6",
+          "agentPath": "/root",
+          "generation": 1,
+          "summaryBytes": 892,
+          "summary": "## 对话交接摘要\n\n### 当前进度\n- 用户提出一项任务：查询上海在 **2026-11-03** 的天气。\n- 已调用 `query_weather`，参数为：city=上海，date=2026-11-03，调用成功。\n- 返回结果（来源 downstream-v1，示例数据）：\n  - 城市：上海\n  - 日期：2026-11-03\n  - 天气：晴\n  - 气温：22℃\n\n### 关键决策\n- 这是单任务请求，因此直接使用工具查询，没有创建子 Agent，也没有调用 plan_agents。\n- 没有重复调用工具。\n\n### 上下文与约束\n- 当前日期为 2026-11-02，时区为 Asia/Shanghai。\n- 天气、车票、行程属于演示角色，数据均为示例，不得编造工具事实。\n- 最终回答由主 Agent 生成。\n\n### 待完成\n- 用中文向用户简洁报告天气查询结果，包括 2026-11-03 上海天气晴、约 22℃，并可说明数据为示例。\n- 无需再调用工具。",
+          "events": [
+            "上下文已压缩，第 1 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 8%"
+          ]
+        }
+      ],
+      "recalls": [],
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_weather"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_weather"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_weather"
+        ],
+        "filteredReasons": {}
+      },
+      "promptVersions": [
+        {
+          "role": "supervisor",
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "source": "registry"
+        }
+      ],
+      "checkpoints": {
+        "attempt:read:query_weather:e5edc330dfcf5cf5565819c06fc444ced8a5eb35d9c0e3308fa8c6d05d0ed08e": "1",
+        "correction:v1:streak:query_weather": "0",
+        "evidence:v1:latest": "query_weather city=上海 date=2026-11-03 temperature=22 condition=晴",
+        "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_weather\",\"tokens\":\"ci it ty y上 上海 海d da at te e2 20 02 26 61 11 10 03\",\"sample\":\"{\\\"city\\\":\\\"上海\\\",\\\"date\\\":\\\"2026-11-03\\\"}\",\"warnings\":0}]",
+        "loop:v1:tool-calls": "{\"query_weather:12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a\":1}",
+        "model:19d9d7e299d44232bb641425d18fc9e8015fb263342d190725ff47e47eda3a14": "1",
+        "model:841f3795bbef2785f8181ee420186c66818d6ae8bbea1ba00370e889fc0f3298": "1",
+        "model:c97ceaf24f3ae72d7b15b848e2199f5cd7e68d7757c0c4a91405daeb95c3ad0d": "1",
+        "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查询上海2026-11-03的天气\",\"rewrittenQuery\":\"查询上海2026-11-03的天气\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-03\",\"city\":\"上海\"}}],\"events\":[]}",
+        "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+        "protocol": "3.3",
+        "read:query_weather:e5edc330dfcf5cf5565819c06fc444ced8a5eb35d9c0e3308fa8c6d05d0ed08e": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-03\",\"city\":\"上海\"}}",
+        "step:v1:1": "4",
+        "toolcall:v1:call_00_DNPjXjcAVz6ZQNWmlpk01520": "{\"callId\":\"call_00_DNPjXjcAVz6ZQNWmlpk01520\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a\",\"startedAt\":1793570304906,\"status\":\"SUCCESS\",\"endedAt\":1793570304920,\"resultBytes\":160,\"resultSummary\":\"{\\\"tool\\\":\\\"query_weather\\\",\\\"status\\\":\\\"SUCCESS\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"weather\\\":{\\\"temperature\\\":22,\\\"condition\\\":\\\"晴\\\"},\\\"date\\\":\\\"2026-11-03\\\",\\\"city\\\":\\\"上海\\\"}}\",\"reused\":false}"
+      },
+      "approvals": [],
+      "sideEffects": [],
+      "events": [
+        "工具结果：query_weather / SUCCESS",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 8%"
+      ],
+      "createdAt": 1793570304223,
+      "firstEventAt": 1793570304919,
+      "completedAt": 1793570307572,
+      "triggerMode": "NORMAL",
+      "acceptanceHint": null,
+      "recovered": false,
+      "requestFingerprint": "2c23af51a2521cf84eea0e636960bba831e28619238b726b08dcf988a2e9a915",
+      "instructions": [],
+      "timeline": [
+        {
+          "sequence": 1,
+          "at": 1793570304919,
+          "text": "工具结果：query_weather / SUCCESS"
+        },
+        {
+          "sequence": 2,
+          "at": 1793570306765,
+          "text": "上下文已压缩，第 1 个替换窗口"
+        },
+        {
+          "sequence": 3,
+          "at": 1793570306767,
+          "text": "摘要忠实度：保留率 100%，压缩率 8%"
+        }
+      ],
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "corrections": [],
+      "contentTrust": [
+        {
+          "level": "SYSTEM",
+          "source": "系统提示与固定参考上下文",
+          "handling": "平台指令；不能由用户或工具内容改写",
+          "count": 3
+        },
+        {
+          "level": "USER",
+          "source": "当前用户输入及用户确认的偏好",
+          "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+          "count": 1
+        },
+        {
+          "level": "TOOL",
+          "source": "工具结果消息",
+          "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+          "count": 0
+        },
+        {
+          "level": "RETRIEVAL",
+          "source": "历史、压缩摘要、检索资料与客户端补充历史",
+          "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+          "count": 2
+        },
+        {
+          "level": "CHILD",
+          "source": "子 Agent 通知与协作工具结果",
+          "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+          "count": 0
+        }
+      ]
+    },
+    "runId": "91287a14-91b7-4eed-a639-1c59c8a86cb6"
+  },
+  "second": {
+    "q": "改查杭州2026-11-04的天气",
+    "text": "改查杭州2026-11-04的天气\nS\nSupervisor\n查询成功\n杭州 2026-11-04 的天气：多云，气温约 18℃。\n（这是本地示例数据。）\n天气\n查询成功\n杭州\n2026-11-04\n18°\n多云\n来源 downstream-v1\n执行过程\n8 条记录\n任务与请求详情\n异步 · dfa99c07",
+    "detail": {
+      "result": {
+        "status": "SUCCESS",
+        "originalQuery": "改查杭州2026-11-04的天气",
+        "rewrittenQuery": "改查杭州2026-11-04的天气",
+        "intent": "UNKNOWN",
+        "answer": "杭州 2026-11-04 的天气：**多云，气温约 18℃**。\n\n（这是本地示例数据。）",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_weather",
+            "status": "SUCCESS",
+            "source": "downstream-v1",
+            "data": {
+              "weather": {
+                "temperature": 18,
+                "condition": "多云"
+              },
+              "date": "2026-11-04",
+              "city": "杭州"
+            }
+          }
+        ],
+        "events": [
+          "上下文已压缩，第 1 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 2%",
+          "工具结果：query_weather / SUCCESS",
+          "上下文已压缩，第 2 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 13%",
+          "语义循环检测：query_weather 与近期目标相似度 1.00",
+          "上下文已压缩，第 3 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 13%"
+        ]
+      },
+      "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+      "requestId": "aaea1c0b-493d-4609-a5ed-43f1b6efddae",
+      "sessionId": "66b93c7a-0e71-4bf9-a31b-fd1d294fe5ff",
+      "state": "SUCCESS",
+      "revision": 1,
+      "generation": 2,
+      "consumedRevision": 1,
+      "modelCalls": 6,
+      "maxModelCalls": 16,
+      "deadline": 1793570369194,
+      "replacedBy": null,
+      "parentRunId": null,
+      "rootRunId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+      "agentPath": "/root",
+      "agentRole": "supervisor",
+      "agentVersion": "1",
+      "accepted": true,
+      "plan": {},
+      "children": [],
+      "toolCalls": [
+        {
+          "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "agentPath": "/root",
+          "callId": "call_00_rBtaCAEs0CrCRsB0PMlN5882",
+          "tool": "query_weather",
+          "argumentFingerprint": "e1a914fc1611865f8afefc5ca9b9c00312b02c67f2dc1cd0883f871f4977dc6d",
+          "status": "SUCCESS",
+          "startedAt": 1793570312239,
+          "endedAt": 1793570312254,
+          "durationMs": 15,
+          "resultBytes": 163,
+          "resultSummary": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":18,\"condition\":\"多云\"},\"date\":\"2026-11-04\",\"city\":\"杭州\"}}",
+          "operationId": "call_00_rBtaCAEs0CrCRsB0PMlN5882",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        },
+        {
+          "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "agentPath": "/root",
+          "callId": "call_00_dnc5grzULpvYUM1aZwV70131",
+          "tool": "query_weather",
+          "argumentFingerprint": "e1a914fc1611865f8afefc5ca9b9c00312b02c67f2dc1cd0883f871f4977dc6d",
+          "status": "FAILED",
+          "startedAt": 1793570314217,
+          "endedAt": 1793570314222,
+          "durationMs": 5,
+          "resultBytes": 127,
+          "resultSummary": "Error: LOOP_DETECTED：该工具目标与近期调用高度相似（相似度 1.00），请改变查询条件或直接回答。",
+          "operationId": "call_00_dnc5grzULpvYUM1aZwV70131",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        }
+      ],
+      "delegations": [],
+      "usage": {
+        "promptTokens": 1829,
+        "completionTokens": 28,
+        "cachedTokens": 1664,
+        "totalTokens": 1857,
+        "source": "provider",
+        "agents": [
+          {
+            "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+            "agentPath": "/root",
+            "agentRole": "supervisor",
+            "modelCalls": 6,
+            "promptTokens": 1829,
+            "completionTokens": 28,
+            "cachedTokens": 1664,
+            "totalTokens": 1857,
+            "source": "provider",
+            "ownModelCalls": 6,
+            "subtreeModelCalls": 6,
+            "remainingModelCalls": 10,
+            "sharedBudget": true
+          }
+        ]
+      },
+      "spans": [
+        {
+          "traceId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "spanId": "run:dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "parentSpanId": null,
+          "kind": "RUN",
+          "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "agentPath": "/root",
+          "name": "run",
+          "status": "SUCCESS",
+          "startedAt": 1793570309194,
+          "endedAt": 1793570316720,
+          "durationMs": 7526,
+          "errorCode": null
+        },
+        {
+          "traceId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "spanId": "model:dfa99c07-1116-46ac-8fa0-60f6ed5c8b69:3",
+          "parentSpanId": "run:dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "kind": "MODEL",
+          "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793570316709,
+          "endedAt": 1793570317254,
+          "durationMs": 545,
+          "errorCode": null
+        }
+      ],
+      "compactions": [
+        {
+          "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69",
+          "agentPath": "/root",
+          "generation": 3,
+          "summaryBytes": 1124,
+          "summary": "## 交接摘要\n\n### 任务\n用户要求查询杭州 2026-11-04 的天气（由之前的日期改成 2026-11-04）。\n\n### 当前进度\n- 已有有效天气数据（来自上一次成功调用）：`city=杭州`、`date=2026-11-04`、`temperature=18`、`condition=多云`\n- 再次调用 `query_weather` 返回 `LOOP_DETECTED`（相似度 1.00），说明重复查询被拦截。\n- 根据规则，这属于“立即停止调用该工具、直接解释或回答”的情形，不能用相同或近似参数重试。\n\n### 关键约束\n- 工具返回 `LOOP_DETECTED`、`BUSINESS_RULE_VIOLATION` 或 `INVALID_INPUT` 时，立即停止调用该工具，不得重试相同或近似参数。\n- 不得编造工具事实；只能使用已有工具返回的数据。\n- 最终回答由主 Agent 生成。\n\n### 下一步\n1. 不再调用 `query_weather`。\n2. 直接向用户回复已获得的天气结果：杭州 2026-11-04 天气多云，气温约 18℃。\n3. 如有必要，可简要说明数据为示例数据，或者省略。\n\n### 参考数据\n```json\n{\"city\":\"杭州\",\"date\":\"2026-11-04\",\"temperature\":18,\"condition\":\"多云\"}\n```",
+          "events": [
+            "上下文已压缩，第 1 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 2%",
+            "上下文已压缩，第 2 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 13%",
+            "上下文已压缩，第 3 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 13%"
+          ]
+        }
+      ],
+      "recalls": [],
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_weather"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_weather"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_weather"
+        ],
+        "filteredReasons": {}
+      },
+      "promptVersions": [
+        {
+          "role": "supervisor",
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "source": "registry"
+        }
+      ],
+      "checkpoints": {
+        "agent:inherited-permissions": "[\"query_weather\"]",
+        "attempt:read:query_weather:5794d7a7988ca3a4dfdd15c6f870f1fd4b125730cb9426a4ecd4b56a823fff3a": "1",
+        "correction:v1:streak:query_weather": "0",
+        "evidence:v1:latest": "query_weather city=杭州 date=2026-11-04 temperature=18 condition=多云",
+        "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_weather\",\"tokens\":\"ci it ty y杭 杭州 州d da at te e2 20 02 26 61 11 10 04\",\"sample\":\"{\\\"city\\\":\\\"杭州\\\",\\\"date\\\":\\\"2026-11-04\\\"}\",\"warnings\":1}]",
+        "loop:v1:tool-calls": "{\"query_weather:e1a914fc1611865f8afefc5ca9b9c00312b02c67f2dc1cd0883f871f4977dc6d\":2}",
+        "model:5d2fbb99154f0dbf72f56aca4e536488f0026f1c1f2472190278c8dfd7c5b06e": "1",
+        "model:90891a795db1b159b13cb890f202e792855ed99b56d9153d647d0ccb5830c3d9": "1",
+        "model:bc556563302b84d08f95e986fa0cff72ea3cbe951f2e4d17c815488ce0112b3c": "1",
+        "model:c69f7388e923c94c456299f81e7d9a5eaed4607ed12fa3b954531a5493944419": "1",
+        "model:dffa02a05ae7a66052d6dee2962e65e41374f10b049ea91ef32a31d792dbc758": "1",
+        "model:f94a5d8107380d64a22b36c2dc6c72be0b7a2c7c1c31eea32ca528771185bcde": "1",
+        "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"改查杭州2026-11-04的天气\",\"rewrittenQuery\":\"改查杭州2026-11-04的天气\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":18,\"condition\":\"多云\"},\"date\":\"2026-11-04\",\"city\":\"杭州\"}}],\"events\":[\"上下文已压缩，第 1 个替换窗口\",\"摘要忠实度：保留率 100%，压缩率 2%\"]}",
+        "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+        "protocol": "3.3",
+        "read:query_weather:5794d7a7988ca3a4dfdd15c6f870f1fd4b125730cb9426a4ecd4b56a823fff3a": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":18,\"condition\":\"多云\"},\"date\":\"2026-11-04\",\"city\":\"杭州\"}}",
+        "step:v1:1": "6",
+        "toolcall:v1:call_00_dnc5grzULpvYUM1aZwV70131": "{\"callId\":\"call_00_dnc5grzULpvYUM1aZwV70131\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"e1a914fc1611865f8afefc5ca9b9c00312b02c67f2dc1cd0883f871f4977dc6d\",\"startedAt\":1793570314217,\"status\":\"FAILED\",\"endedAt\":1793570314222,\"resultBytes\":127,\"resultSummary\":\"Error: LOOP_DETECTED：该工具目标与近期调用高度相似（相似度 1.00），请改变查询条件或直接回答。\",\"reused\":false}",
+        "toolcall:v1:call_00_rBtaCAEs0CrCRsB0PMlN5882": "{\"callId\":\"call_00_rBtaCAEs0CrCRsB0PMlN5882\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"e1a914fc1611865f8afefc5ca9b9c00312b02c67f2dc1cd0883f871f4977dc6d\",\"startedAt\":1793570312239,\"status\":\"SUCCESS\",\"endedAt\":1793570312254,\"resultBytes\":163,\"resultSummary\":\"{\\\"tool\\\":\\\"query_weather\\\",\\\"status\\\":\\\"SUCCESS\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"weather\\\":{\\\"temperature\\\":18,\\\"condition\\\":\\\"多云\\\"},\\\"date\\\":\\\"2026-11-04\\\",\\\"city\\\":\\\"杭州\\\"}}\",\"reused\":false}"
+      },
+      "approvals": [],
+      "sideEffects": [],
+      "events": [
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 2%",
+        "工具结果：query_weather / SUCCESS",
+        "上下文已压缩，第 2 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 13%",
+        "语义循环检测：query_weather 与近期目标相似度 1.00",
+        "上下文已压缩，第 3 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 13%"
+      ],
+      "createdAt": 1793570309194,
+      "firstEventAt": 1793570311462,
+      "completedAt": 1793570316720,
+      "triggerMode": "NORMAL",
+      "acceptanceHint": null,
+      "recovered": false,
+      "requestFingerprint": "bcee61b3b6086b8417454e31fc432d3723ad00874e71bdfaaef2cc07536836ee",
+      "instructions": [],
+      "timeline": [
+        {
+          "sequence": 1,
+          "at": 1793570311462,
+          "text": "上下文已压缩，第 1 个替换窗口"
+        },
+        {
+          "sequence": 2,
+          "at": 1793570311466,
+          "text": "摘要忠实度：保留率 100%，压缩率 2%"
+        },
+        {
+          "sequence": 3,
+          "at": 1793570312252,
+          "text": "工具结果：query_weather / SUCCESS"
+        },
+        {
+          "sequence": 4,
+          "at": 1793570313570,
+          "text": "上下文已压缩，第 2 个替换窗口"
+        },
+        {
+          "sequence": 5,
+          "at": 1793570313575,
+          "text": "摘要忠实度：保留率 100%，压缩率 13%"
+        },
+        {
+          "sequence": 6,
+          "at": 1793570314221,
+          "text": "语义循环检测：query_weather 与近期目标相似度 1.00"
+        },
+        {
+          "sequence": 7,
+          "at": 1793570316160,
+          "text": "上下文已压缩，第 3 个替换窗口"
+        },
+        {
+          "sequence": 8,
+          "at": 1793570316161,
+          "text": "摘要忠实度：保留率 100%，压缩率 13%"
+        }
+      ],
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "corrections": [],
+      "contentTrust": [
+        {
+          "level": "SYSTEM",
+          "source": "系统提示与固定参考上下文",
+          "handling": "平台指令；不能由用户或工具内容改写",
+          "count": 6
+        },
+        {
+          "level": "USER",
+          "source": "当前用户输入及用户确认的偏好",
+          "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+          "count": 1
+        },
+        {
+          "level": "TOOL",
+          "source": "工具结果消息",
+          "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+          "count": 0
+        },
+        {
+          "level": "RETRIEVAL",
+          "source": "历史、压缩摘要、检索资料与客户端补充历史",
+          "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+          "count": 2
+        },
+        {
+          "level": "CHILD",
+          "source": "子 Agent 通知与协作工具结果",
+          "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+          "count": 0
+        }
+      ]
+    },
+    "runId": "dfa99c07-1116-46ac-8fa0-60f6ed5c8b69"
+  },
+  "third": {
+    "q": "查询上海2026-11-04的天气",
+    "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+    "text": "查询上海2026-11-04的天气\nS\nSupervisor\n查询成功\n上海 2026-11-04 的天气：晴，气温 22℃。\n天气\n查询成功\n上海\n2026-11-04\n22°\n晴\n来源 downstream-v1\n执行过程\n6 条记录\n来自任务实际返回的事件，按发生顺序展示。\n1\n工具\n工具结果：query_weather / 查询成功\n2\n上下文\n上下文已压缩，第 1 个替换窗口\n3\n上下文\n摘要忠实度：保留率 100%，压缩率 7%\n4\n工具\n语义循环检测：query_weather 与近期目标相似度 1.00\n5\n上下文\n上下文已压缩，第 2 个替换窗口\n6\n上下文\n摘要忠实度：保留率 100%，压缩率 13%\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · 6f9053e0\n会话编号\ne624617f-aeb3-44aa-a750-443cb4d20ae2\n请求编号\n4357c873-e731-4816-ab30-e3cec829d5a7\n任务编号\n6f9053e0-279f-47b3-bd53-980f7a364970\n任务版本\n1\n任务状态\n查询成功\n模型调用\n5 次\n截止时间\n2026/11/2 06:04:21\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\n4357c873-e731-4816-ab30-e3cec829d5a7\n原内容\n查询上海2026-11-04的天气\n确认发送验收请求\n06:03:21\n202\nPOST /api/supervisor/chat\n24 ms\n06:03:22\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n7 ms\n06:03:23\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n5 ms\n06:03:24\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n2 ms\n06:03:25\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n7 ms\n06:03:26\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n10 ms\n06:03:27\n200\nGET /api/supervisor/runs/6f9053e0-279f-47b3-bd53-980f7a364970\n5 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\n6f9053e0-279f-47b3-bd53-980f7a364970\n会话编号\ne624617f-aeb3-44aa-a750-443cb4d20ae2\n父任务\n无（根运行）\n根运行\n6f9053e0-279f-47b3-bd53-980f7a364970\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n2 / 1\n触发方式\nNORMAL\n首次事件 / 完成\n2026/11/2 06:03:22 / 2026/11/2 06:03:27\n请求指纹\nd5280bf2f229627cb22d4aded76008b5cbb11f8febb6dd0312723ef23a3ebf83\n预算\n5 / 16 次模型调用\n权限复核\n通过（证据 1 条）\n内容信任\nSYSTEM 5 · USER 1 · TOOL 0 · RETRIEVAL 2 · CHILD 0\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 0\n工具调用配对 · 2\n委派回执 · 0\n用量 · provider\nspan · 2\n压缩 · 1 / 召回 · 0\n权限 · 目录 3 / 执行 1 / 证据 1\n指令回执 · 0 / 纠错 · 0\n时间线 · 6\n提示词版本 · 1\n检查点（白名单）\n实际配置（脱敏）",
+    "detail": {
+      "result": {
+        "status": "SUCCESS",
+        "originalQuery": "查询上海2026-11-04的天气",
+        "rewrittenQuery": "查询上海2026-11-04的天气",
+        "intent": "UNKNOWN",
+        "answer": "上海 2026-11-04 的天气：晴，气温 22℃。",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_weather",
+            "status": "SUCCESS",
+            "source": "downstream-v1",
+            "data": {
+              "weather": {
+                "temperature": 22,
+                "condition": "晴"
+              },
+              "date": "2026-11-04",
+              "city": "上海"
+            }
+          }
+        ],
+        "events": [
+          "工具结果：query_weather / SUCCESS",
+          "上下文已压缩，第 1 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 7%",
+          "语义循环检测：query_weather 与近期目标相似度 1.00",
+          "上下文已压缩，第 2 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 13%"
+        ]
+      },
+      "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+      "requestId": "4357c873-e731-4816-ab30-e3cec829d5a7",
+      "sessionId": "e624617f-aeb3-44aa-a750-443cb4d20ae2",
+      "state": "SUCCESS",
+      "revision": 1,
+      "generation": 2,
+      "consumedRevision": 1,
+      "modelCalls": 5,
+      "maxModelCalls": 16,
+      "deadline": 1793570661843,
+      "replacedBy": null,
+      "parentRunId": null,
+      "rootRunId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+      "agentPath": "/root",
+      "agentRole": "supervisor",
+      "agentVersion": "1",
+      "accepted": true,
+      "plan": {},
+      "children": [],
+      "toolCalls": [
+        {
+          "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "agentPath": "/root",
+          "callId": "call_00_kz5V62ns2meJO93VSSQz1858",
+          "tool": "query_weather",
+          "argumentFingerprint": "5dce6258e5fb0c8e14cfaf28adc4480da1e60a2eafebe5447dbcb042fc20e643",
+          "status": "SUCCESS",
+          "startedAt": 1793570602541,
+          "endedAt": 1793570602575,
+          "durationMs": 34,
+          "resultBytes": 160,
+          "resultSummary": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-04\",\"city\":\"上海\"}}",
+          "operationId": "call_00_kz5V62ns2meJO93VSSQz1858",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        },
+        {
+          "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "agentPath": "/root",
+          "callId": "call_00_dcYcrpVS6QDZJl7bH5Ca5888",
+          "tool": "query_weather",
+          "argumentFingerprint": "5dce6258e5fb0c8e14cfaf28adc4480da1e60a2eafebe5447dbcb042fc20e643",
+          "status": "FAILED",
+          "startedAt": 1793570604793,
+          "endedAt": 1793570604795,
+          "durationMs": 2,
+          "resultBytes": 127,
+          "resultSummary": "Error: LOOP_DETECTED：该工具目标与近期调用高度相似（相似度 1.00），请改变查询条件或直接回答。",
+          "operationId": "call_00_dcYcrpVS6QDZJl7bH5Ca5888",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        }
+      ],
+      "delegations": [],
+      "usage": {
+        "promptTokens": 1828,
+        "completionTokens": 19,
+        "cachedTokens": 1664,
+        "totalTokens": 1847,
+        "source": "provider",
+        "agents": [
+          {
+            "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+            "agentPath": "/root",
+            "agentRole": "supervisor",
+            "modelCalls": 5,
+            "promptTokens": 1828,
+            "completionTokens": 19,
+            "cachedTokens": 1664,
+            "totalTokens": 1847,
+            "source": "provider",
+            "ownModelCalls": 5,
+            "subtreeModelCalls": 5,
+            "remainingModelCalls": 11,
+            "sharedBudget": true
+          }
+        ]
+      },
+      "spans": [
+        {
+          "traceId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "spanId": "run:6f9053e0-279f-47b3-bd53-980f7a364970",
+          "parentSpanId": null,
+          "kind": "RUN",
+          "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "agentPath": "/root",
+          "name": "run",
+          "status": "SUCCESS",
+          "startedAt": 1793570601843,
+          "endedAt": 1793570607351,
+          "durationMs": 5508,
+          "errorCode": null
+        },
+        {
+          "traceId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "spanId": "model:6f9053e0-279f-47b3-bd53-980f7a364970:3",
+          "parentSpanId": "run:6f9053e0-279f-47b3-bd53-980f7a364970",
+          "kind": "MODEL",
+          "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793570607341,
+          "endedAt": 1793570607990,
+          "durationMs": 649,
+          "errorCode": null
+        }
+      ],
+      "compactions": [
+        {
+          "runId": "6f9053e0-279f-47b3-bd53-980f7a364970",
+          "agentPath": "/root",
+          "generation": 2,
+          "summaryBytes": 1099,
+          "summary": "## 交接摘要\n\n### 用户请求\n查询上海 2026-11-04 的天气。\n\n### 当前进度\n- 已有的成功查询结果（由前一个模型生成，结果仅包含数据）：`query_weather city=上海 date=2026-11-04 → temperature=22, condition=晴`\n- 我再次调用 `query_weather`，并使用相同的参数（上海 / 2026-11-04），该调用返回 **LOOP_DETECTED**（相似度 1.00）。\n- 按规则，不得用相同或近似参数重试。任务实际上是查询天气，已经在首次查询中成功。\n\n### 关键约束\n- 工具返回 LOOP_DETECTED 时，应立即停止调用该工具，直接解释结果或询问，不得重试。\n- 不编造工具事实；最终回答由主 Agent 生成。\n- 本任务为单一查询，无需子 Agent。\n\n### 尚待完成\n1. 直接向用户作答：上海 2026-11-04 天气为 **晴，气温 22°C**。\n2. 可顺带说明该数据来自已完成的一次查询（示例数据）。\n3. 不要再调用 `query_weather`。\n\n### 关键数据\n| 字段 | 值 |\n|---|---|\n| 城市 | 上海 |\n| 日期 | 2026-11-04 |\n| 气温 | 22°C |\n| 天气 | 晴 |",
+          "events": [
+            "上下文已压缩，第 1 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 7%",
+            "上下文已压缩，第 2 个替换窗口",
+            "摘要忠实度：保留率 100%，压缩率 13%"
+          ]
+        }
+      ],
+      "recalls": [],
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_weather"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_weather"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_weather"
+        ],
+        "filteredReasons": {}
+      },
+      "promptVersions": [
+        {
+          "role": "supervisor",
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "source": "registry"
+        }
+      ],
+      "checkpoints": {
+        "attempt:read:query_weather:5b86aaee4546bceb6fd9606d7104bdc0ea9d246722f336b9d033719b542b4cef": "1",
+        "correction:v1:streak:query_weather": "0",
+        "evidence:v1:latest": "query_weather city=上海 date=2026-11-04 temperature=22 condition=晴",
+        "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_weather\",\"tokens\":\"ci it ty y上 上海 海d da at te e2 20 02 26 61 11 10 04\",\"sample\":\"{\\\"city\\\":\\\"上海\\\",\\\"date\\\":\\\"2026-11-04\\\"}\",\"warnings\":1}]",
+        "loop:v1:tool-calls": "{\"query_weather:5dce6258e5fb0c8e14cfaf28adc4480da1e60a2eafebe5447dbcb042fc20e643\":2}",
+        "model:1a6d1b1484bf20c0b14ec7d0fd631db9703d62ad572c45cc93bfe61c9519660b": "1",
+        "model:9e67deb879988079775e7276e64ddcfc1d21711ab38432750d154908a7e362ee": "1",
+        "model:ec1f0f677beeacf35b2736fd69d1dcd65cc5fb4b09a472afd677075176b4a2e1": "1",
+        "model:ecb0d38405d3d7d922afc6ada919da1c38dcbbac44e8d600eb4a4a8554ada6e3": "1",
+        "model:f8fff8ab0c0fc8f2a7a7f49f87e0572f9cee1627e9396dcd32dc8aed5de3a958": "1",
+        "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查询上海2026-11-04的天气\",\"rewrittenQuery\":\"查询上海2026-11-04的天气\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-04\",\"city\":\"上海\"}}],\"events\":[]}",
+        "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+        "protocol": "3.3",
+        "read:query_weather:5b86aaee4546bceb6fd9606d7104bdc0ea9d246722f336b9d033719b542b4cef": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"weather\":{\"temperature\":22,\"condition\":\"晴\"},\"date\":\"2026-11-04\",\"city\":\"上海\"}}",
+        "step:v1:1": "6",
+        "toolcall:v1:call_00_dcYcrpVS6QDZJl7bH5Ca5888": "{\"callId\":\"call_00_dcYcrpVS6QDZJl7bH5Ca5888\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"5dce6258e5fb0c8e14cfaf28adc4480da1e60a2eafebe5447dbcb042fc20e643\",\"startedAt\":1793570604793,\"status\":\"FAILED\",\"endedAt\":1793570604795,\"resultBytes\":127,\"resultSummary\":\"Error: LOOP_DETECTED：该工具目标与近期调用高度相似（相似度 1.00），请改变查询条件或直接回答。\",\"reused\":false}",
+        "toolcall:v1:call_00_kz5V62ns2meJO93VSSQz1858": "{\"callId\":\"call_00_kz5V62ns2meJO93VSSQz1858\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"5dce6258e5fb0c8e14cfaf28adc4480da1e60a2eafebe5447dbcb042fc20e643\",\"startedAt\":1793570602541,\"status\":\"SUCCESS\",\"endedAt\":1793570602575,\"resultBytes\":160,\"resultSummary\":\"{\\\"tool\\\":\\\"query_weather\\\",\\\"status\\\":\\\"SUCCESS\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"weather\\\":{\\\"temperature\\\":22,\\\"condition\\\":\\\"晴\\\"},\\\"date\\\":\\\"2026-11-04\\\",\\\"city\\\":\\\"上海\\\"}}\",\"reused\":false}"
+      },
+      "approvals": [],
+      "sideEffects": [],
+      "events": [
+        "工具结果：query_weather / SUCCESS",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 7%",
+        "语义循环检测：query_weather 与近期目标相似度 1.00",
+        "上下文已压缩，第 2 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 13%"
+      ],
+      "createdAt": 1793570601843,
+      "firstEventAt": 1793570602572,
+      "completedAt": 1793570607351,
+      "triggerMode": "NORMAL",
+      "acceptanceHint": null,
+      "recovered": false,
+      "requestFingerprint": "d5280bf2f229627cb22d4aded76008b5cbb11f8febb6dd0312723ef23a3ebf83",
+      "instructions": [],
+      "timeline": [
+        {
+          "sequence": 1,
+          "at": 1793570602572,
+          "text": "工具结果：query_weather / SUCCESS"
+        },
+        {
+          "sequence": 2,
+          "at": 1793570603922,
+          "text": "上下文已压缩，第 1 个替换窗口"
+        },
+        {
+          "sequence": 3,
+          "at": 1793570603924,
+          "text": "摘要忠实度：保留率 100%，压缩率 7%"
+        },
+        {
+          "sequence": 4,
+          "at": 1793570604795,
+          "text": "语义循环检测：query_weather 与近期目标相似度 1.00"
+        },
+        {
+          "sequence": 5,
+          "at": 1793570606686,
+          "text": "上下文已压缩，第 2 个替换窗口"
+        },
+        {
+          "sequence": 6,
+          "at": 1793570606688,
+          "text": "摘要忠实度：保留率 100%，压缩率 13%"
+        }
+      ],
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "corrections": [],
+      "contentTrust": [
+        {
+          "level": "SYSTEM",
+          "source": "系统提示与固定参考上下文",
+          "handling": "平台指令；不能由用户或工具内容改写",
+          "count": 5
+        },
+        {
+          "level": "USER",
+          "source": "当前用户输入及用户确认的偏好",
+          "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+          "count": 1
+        },
+        {
+          "level": "TOOL",
+          "source": "工具结果消息",
+          "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+          "count": 0
+        },
+        {
+          "level": "RETRIEVAL",
+          "source": "历史、压缩摘要、检索资料与客户端补充历史",
+          "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+          "count": 2
+        },
+        {
+          "level": "CHILD",
+          "source": "子 Agent 通知与协作工具结果",
+          "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+          "count": 0
+        }
+      ]
+    }
+  },
+  "consoleErrors": [],
+  "note": "前两轮同一会话（sessionId=66b93c7a...），第三轮为新建会话；第三轮单独执行上海天气，未继承杭州条件。第二次改查杭州后，回答与证据只含杭州。"
+}

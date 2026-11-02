@@ -85,7 +85,7 @@ final class LoopConversation {
                                 Msg.builder()
                                         .role(MsgRole.ASSISTANT)
                                         .textContent(turn.answer())
-                                        .build());
+                                                .build());
                     }
                 }
             }
@@ -116,7 +116,7 @@ final class LoopConversation {
                                     Msg.builder()
                                             .role(MsgRole.ASSISTANT)
                                             .textContent(turn.answer())
-                                            .build());
+                                                        .build());
                         }
                     }
                 }
@@ -285,6 +285,21 @@ final class LoopConversation {
     }
 
     static Msg user(String text) {
-        return Msg.builder().role(MsgRole.USER).textContent(text).build();
+        return Msg.builder()
+                .role(MsgRole.USER)
+                .textContent(text)
+                .build();
+    }
+
+    /** 历史检索资料标为 RETRIEVAL，当前用户输入标为 USER；标签不授予权限。 */
+    private static String userTrust(String text) {
+        if (text != null
+                && (text.contains("客户端补充历史")
+                        || text.contains("上一话题已归档")
+                        || text.contains("服务端历史原文摘要")
+                        || text.contains("用户明确确认的当前有效偏好"))) {
+            return "RETRIEVAL";
+        }
+        return "USER";
     }
 }

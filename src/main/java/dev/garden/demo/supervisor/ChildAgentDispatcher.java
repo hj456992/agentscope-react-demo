@@ -3,6 +3,7 @@ package dev.garden.demo.supervisor;
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.tool.*;
@@ -127,7 +128,8 @@ final class ChildAgentDispatcher {
                 .map(this::result)
                 .onErrorResume(
                         error -> {
-                            if (error instanceof RunControl.Cancelled
+                            if (error instanceof CorrectionExhausted
+                                    || error instanceof RunControl.Cancelled
                                     || error instanceof RunControl.DeadlineExceeded
                                     || error instanceof RunControl.BudgetExceeded
                                     || error instanceof RunControl.ContextLimit) {
@@ -177,6 +179,7 @@ final class ChildAgentDispatcher {
                                         "MULTI_AGENT_LIMIT：子会话深度或活动数量达到上限，未创建新会话。"));
                     }
                 }
+                String taskName = Objects.toString(args.get("task_name"), "");
                 String fork = Objects.toString(args.get("fork_turns"), "all");
                 Map<String, String> inherited =
                         fork.equals("all")
@@ -186,18 +189,20 @@ final class ChildAgentDispatcher {
                                         "agent:inherited-permissions",
                                         json(context.requiredPermissions()))
                                 : Map.of();
+                String callee = AgentLifecycle.childPath(context.control.agentPath(), taskName);
+                guardAgentEdge(callee);
+                guardSemanticGoal(callee, message);
                 yield context.control.spawnAgent(
-                        operationId,
-                        (String) args.get("task_name"),
-                        message,
-                        role,
-                        fork,
-                        inherited);
+                        operationId, taskName, message, role, fork, inherited);
             }
-            case "followup_task" ->
-                    context.control
-                            .sendMessage(operationId, target, message, true)
-                            .thenReturn(Map.of("accepted", true));
+            case "followup_task" -> {
+                String callee = AgentLifecycle.resolve(context.control.agentPath(), target);
+                guardAgentEdge(callee);
+                guardSemanticGoal(callee, message);
+                yield context.control
+                        .sendMessage(operationId, target, message, true)
+                        .thenReturn(Map.of("accepted", true));
+            }
             case "send_message" ->
                     context.control
                             .sendMessage(operationId, target, message, false)
@@ -211,6 +216,53 @@ final class ChildAgentDispatcher {
                             ((Number) args.getOrDefault("timeout_ms", 30000)).longValue());
             default -> Mono.error(new IllegalArgumentException("TOOL_NOT_FOUND"));
         };
+    }
+
+    /**
+     * 拒绝会形成回边的协作调用。
+     *
+     * <p>只对 {@code spawn_agent} 和 {@code followup_task} 生效，因为只有这两种调用会开启
+     * 目标的新回合；{@code send_message} 只写入邮箱，由邮箱容量和模型预算兜底。
+     * 检测开关关闭时不读取、也不写入调用图。
+     */
+    /**
+     * 拒绝与近期协作目标语义高度相似的派发。
+     *
+     * <p>先提醒一次，让模型改变任务描述；达到阈值次数后转为 {@code NEEDS_INPUT}，
+     * 由用户确认是否继续。检测本身不直接判失败，最终仍受预算、总步数和期限约束。
+     */
+    private void guardSemanticGoal(String callee, String message) {
+        SemanticLoopGuard.Result result = context.checkSemanticAgentGoal(callee, message);
+        if (result.decision() == SemanticLoopGuard.Decision.WARN) {
+            String text =
+                    "LOOP_DETECTED：协作目标与近期目标高度相似（相似度 "
+                            + String.format(java.util.Locale.ROOT, "%.2f", result.similarity())
+                            + "），请改变任务描述或直接使用已有结果。";
+            context.event(text);
+            throw new IllegalArgumentException(text);
+        }
+        if (result.decision() == SemanticLoopGuard.Decision.ASK) {
+            throw new CorrectionExhausted(
+                    Status.NEEDS_INPUT,
+                    "检测到重复的相似协作目标，已暂停派发。请确认是否继续、调整任务或结束当前需求。");
+        }
+    }
+
+    private void guardAgentEdge(String callee) {
+        if (!context.control.policy().loop().agentCycleDetectionEnabled()) {
+            return;
+        }
+        String caller = context.control.agentPath();
+        if (context.control.recordAgentEdge(caller, callee)) {
+            String message =
+                    "LOOP_DETECTED：协作调用 "
+                            + caller
+                            + " -> "
+                            + callee
+                            + " 会形成环或超过调用图容量，已拒绝。";
+            context.event(message);
+            throw new IllegalArgumentException(message);
+        }
     }
 
     /**

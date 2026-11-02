@@ -20,6 +20,25 @@ import java.util.*;
 
 class KnowledgeTest {
     @Test
+    void parseRejectsFileWithoutRequiredMetadata() {
+        IllegalStateException error =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> KnowledgeService.parse("# 标题\n正文\n---\n内容"));
+        assertTrue(error.getMessage().contains("id"), error.getMessage());
+    }
+
+    @Test
+    void parseReadsExternalFileWithFrontMatter() {
+        KnowledgeService.Document document =
+                KnowledgeService.parse(
+                        "---\nid: custom\nversion: 2026-11-02\nexpires: 2099-01-01\n"
+                                + "keywords: 行程,规划\n---\n# 标题\n正文内容");
+        assertEquals("custom", document.id());
+        assertEquals("正文内容", document.quote());
+    }
+
+    @Test
     void itineraryMustRetrieveVersionedSourceInsteadOfInventingPolicy() {
         ResultDTO result =
                 Supervisor.offline(

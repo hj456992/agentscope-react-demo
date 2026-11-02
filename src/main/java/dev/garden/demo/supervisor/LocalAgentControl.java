@@ -1,6 +1,8 @@
 package dev.garden.demo.supervisor;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.support.AgentCallGraph;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -156,6 +158,65 @@ final class LocalAgentControl implements RunControl {
     }
 
     public void event(String event) {}
+
+    public boolean recordAgentEdge(String caller, String callee) {
+        synchronized (tree) {
+            checkActive();
+            if (!node.path.equals(caller)) {
+                throw new IllegalArgumentException("协作调用边必须从当前会话发起");
+            }
+            Node root = tree.nodes.get("/root");
+            if (root == null) {
+                throw new IllegalStateException("任务树缺少根会话");
+            }
+            // 图存放在根会话的检查点中，父子会话和重启恢复读取同一份。
+            String calleePath = AgentLifecycle.resolve(caller, callee);
+            AgentCallGraph.Decision decision =
+                    AgentCallGraph.record(root.checkpoints.get(AgentCallGraph.KEY), caller, calleePath);
+            if (decision.cycle()) {
+                return true;
+            }
+            root.checkpoints.put(AgentCallGraph.KEY, decision.value());
+            return false;
+        }
+    }
+
+    /**
+     * 在根会话检查点上记录近期目标并执行轻量语义循环检测。
+     *
+     * <p>目标记录跨父子会话共享；检测开关和阈值由调用方传入，方法本身只负责
+     * 读写检查点，不改变任务状态。
+     */
+    public SemanticLoopGuard.Result recordSemanticGoal(
+            String scope,
+            String key,
+            String text,
+            int window,
+            double threshold,
+            int maxWarnings,
+            boolean crossKey) {
+        synchronized (tree) {
+            checkActive();
+            Node root = tree.nodes.get("/root");
+            if (root == null) {
+                throw new IllegalStateException("任务树缺少根会话");
+            }
+            SemanticLoopGuard.Result result =
+                    SemanticLoopGuard.record(
+                            root.checkpoints.get(SemanticLoopGuard.KEY),
+                            scope,
+                            key,
+                            text,
+                            window,
+                            threshold,
+                            maxWarnings,
+                            crossKey);
+            if (result.value() != null) {
+                root.checkpoints.put(SemanticLoopGuard.KEY, result.value());
+            }
+            return result;
+        }
+    }
 
     public Mono<AgentSnapshotDTO> spawnAgent(
             String taskName,

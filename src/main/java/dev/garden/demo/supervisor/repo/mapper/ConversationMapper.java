@@ -1,7 +1,9 @@
 package dev.garden.demo.supervisor.repo.mapper;
 
 import dev.garden.demo.supervisor.pojo.dataobject.ConversationDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryCandidateDO;
 import dev.garden.demo.supervisor.pojo.dataobject.MemoryDO;
+import dev.garden.demo.supervisor.pojo.dataobject.MemoryVectorDO;
 
 import org.apache.ibatis.annotations.Param;
 
@@ -16,6 +18,10 @@ public interface ConversationMapper {
     void createConversationSessionIndex();
 
     void createMemoriesTable();
+
+    void createMemoryCandidatesTable();
+
+    void createMemoryVectorsTable();
 
     int expireAllConversations(@Param("oldest") long oldest);
 
@@ -56,4 +62,42 @@ public interface ConversationMapper {
             @Param("tenantId") String tenantId,
             @Param("userId") String userId,
             @Param("memoryKey") String memoryKey);
+
+    int insertMemoryCandidate(MemoryCandidateDO row);
+
+    MemoryCandidateDO selectMemoryCandidate(@Param("candidateId") String candidateId);
+
+    List<MemoryCandidateDO> selectMemoryCandidates(
+            @Param("tenantId") String tenantId, @Param("userId") String userId);
+
+    int decideMemoryCandidate(
+            @Param("candidateId") String candidateId,
+            @Param("status") String status,
+            @Param("decidedAt") long decidedAt,
+            @Param("decidedBy") String decidedBy,
+            @Param("reason") String reason,
+            @Param("appliedVersion") Integer appliedVersion);
+
+    int countMemoryCandidates(
+            @Param("tenantId") String tenantId,
+            @Param("userId") String userId,
+            @Param("status") String status);
+
+    int upsertMemoryVector(MemoryVectorDO vector);
+
+    List<MemoryVectorDO> selectMemoryVectors(
+            @Param("tenantId") String tenantId, @Param("userId") String userId);
+
+    int deleteMemoryVector(
+            @Param("tenantId") String tenantId,
+            @Param("userId") String userId,
+            @Param("memoryKey") String memoryKey);
+
+    int countActiveMemoryVectors(
+            @Param("tenantId") String tenantId, @Param("userId") String userId);
+
+    int countMemoryTombstones(
+            @Param("tenantId") String tenantId, @Param("userId") String userId);
+
+    int purgeExpiredMemoryVectors(@Param("now") long now);
 }

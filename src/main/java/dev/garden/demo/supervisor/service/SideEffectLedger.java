@@ -39,6 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class SideEffectLedger {
 
     public interface Downstream {
+        /** 是否具备真实下游；未配置下游的实例必须明确失败，不静默伪装写入成功。 */
+        default boolean available() {
+            return true;
+        }
+
         boolean supportsIdempotency();
 
         SideEffectOutcomeDTO submit(String operationId, Map<String, Object> parameters)
@@ -126,6 +131,33 @@ public final class SideEffectLedger {
         synchronized (lock) {
             Row row = find(key);
             return row == null ? null : row.result();
+        }
+    }
+
+    /**
+     * 返回账本证据：参数指纹、状态、尝试次数和下游响应摘要。
+     *
+     * <p>调用方必须持有该工具权限；没有记录返回 null。账本表没有单独的更新时间列，
+     * {@code updatedAt} 固定为 0，页面以任务时间和审批决策时间为准。
+     */
+    public dev.garden.demo.supervisor.pojo.dto.SideEffectEvidenceDTO evidence(
+            IdentityDTO identity, String tool, String operationId) {
+        Key key = authorizedKey(identity, tool, operationId);
+        synchronized (lock) {
+            Row row = find(key);
+            if (row == null) {
+                return null;
+            }
+            return new dev.garden.demo.supervisor.pojo.dto.SideEffectEvidenceDTO(
+                    key.tool,
+                    key.operation,
+                    row.status.name(),
+                    row.hash,
+                    0,
+                    row.submitCount + row.lookupCount,
+                    row.submitCount,
+                    row.lookupCount,
+                    row.response);
         }
     }
 

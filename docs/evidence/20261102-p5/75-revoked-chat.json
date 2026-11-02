@@ -1,0 +1,9 @@
+{
+  "responses": [
+    {
+      "url": "http://127.0.0.1:8096/api/supervisor/chat",
+      "status": 401
+    }
+  ],
+  "body": "S\nSupervisor\n你的多助手工作空间\n新对话\n⌘\n验收场景\n43\n平台治理\n显式偏好\n最近对话\n1\n待恢复的会话\n模型由服务端管理。\n刷新后配置令牌可恢复任务。\n配置访问令牌\n连接本地 Supervisor\nSupervisor\n/\n待恢复的会话\n示例数据\n调用模式\n异步模式\n同步模式\n配置令牌\nS\nSupervisor\n请求未受理\n认证未通过，请重新配置有效的访问令牌。\n任务与请求详情\n输入问题\n受控触发（验收用，可选）\n天气 · 车票 · 行程\n17 / 2000\nEnter 发送 · Shift + Enter 换行 · 天气与车票为示例数据"
+}

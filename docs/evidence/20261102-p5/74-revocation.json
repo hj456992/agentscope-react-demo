@@ -1,0 +1,13 @@
+{
+  "runId": "b4a3861b-ed15-4c39-ba88-48e16df9b904",
+  "limitedAfterRevocation": {
+    "status": 401,
+    "body": "{\"code\":\"UNAUTHORIZED\",\"message\":\"请提供有效身份令牌。\"}"
+  },
+  "demoAfterRevocation": {
+    "status": 404,
+    "body": "{\"code\":\"NOT_FOUND\",\"message\":\"记录不存在。\"}"
+  },
+  "page": "{\"body\":\"S\\nSupervisor\\n你的多助手工作空间\\n新对话\\n⌘\\n验收场景\\n43\\n平台治理\\n显式偏好\\n最近对话\\n1\\n新对话\\n模型由服务端管理。\\n刷新后配置令牌可恢复任务。\\n访问令牌已配置\\n仅当前页面有效\\nSupervisor\\n/\\n新对话\\n示例数据\\n调用模式\\n异步模式\\n同步模式\\n令牌已配置\\nSUPERVISOR WORKSPACE\\n今天，想解决什么？\\n说出你的目标，一起查询、规划、核对每一步。\\n规划一次短途旅行\\n让天气、车票和行程助手一起协作\\n出发前，看看天气\\n查询天气，查看来源与日期\\n找到合适的车次\\n查看时刻、席别与演示余票\\n天气与车票均使用本地示例数据，适合体验与验收。\\n输入问题\\n受控触发（验收用，可选）\\n天气 · 车票 · 行程\\n0 / 2000\\nEnter 发送 · Shift + Enter 换行 · 天气与车票为示例数据\"}",
+  "pageError": ""
+}

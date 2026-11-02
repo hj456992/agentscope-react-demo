@@ -14,6 +14,7 @@ import dev.garden.demo.supervisor.pojo.dto.ResultDTO;
 import dev.garden.demo.supervisor.pojo.param.InstructionParam;
 import dev.garden.demo.supervisor.pojo.res.InstructionRes;
 import dev.garden.demo.supervisor.pojo.res.RunRes;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,9 @@ public final class TaskService implements AutoCloseable {
     private final SupervisorSettings settings;
     private final AccessPolicy accessPolicy;
     private final SupervisorPolicy policy;
+    private final PromptRegistryService promptRegistry;
+    private final AgentCatalogService agentCatalog;
+    private final ApprovalService approvals;
     private final BiFunction<RequestDTO, RunControl, Mono<ResultDTO>> runner;
     private final Scheduler scheduler = Schedulers.newBoundedElastic(12, 256, "supervisor-runtime");
     private final Map<String, OwnedRun> owned = new HashMap<>();
@@ -80,12 +84,18 @@ public final class TaskService implements AutoCloseable {
             SupervisorSettings settings,
             BiFunction<RequestDTO, RunControl, Mono<ResultDTO>> runner,
             AccessPolicy accessPolicy,
-            SupervisorPolicy policy) {
+            SupervisorPolicy policy,
+            PromptRegistryService promptRegistry,
+            AgentCatalogService agentCatalog,
+            ApprovalService approvals) {
         this.store = store;
         this.settings = settings;
         this.runner = runner;
         this.accessPolicy = accessPolicy;
         this.policy = java.util.Objects.requireNonNull(policy);
+        this.promptRegistry = promptRegistry;
+        this.agentCatalog = agentCatalog;
+        this.approvals = approvals;
         recovery.scheduleWithFixedDelay(
                 () -> {
                     if (!closed) {
@@ -148,6 +158,11 @@ public final class TaskService implements AutoCloseable {
         // 第三个参数是容量回调：它会在存储层的事务里执行，并发满了直接抛 429，
         // 这样“检查并发”和“落库”之间不会被别的请求插队。
         TaskDO task = store.create(identity, request, () -> checkCapacity(identity));
+        // 受理时固定目录版本；后续发布或回滚只影响新任务。
+        if (agentCatalog != null) {
+            store.pinAgentVersion(task.runId, agentCatalog.versionFor(task.agentRole));
+            task.agentVersion = store.get(task.runId).agentVersion;
+        }
         // 只有两种情况才启动：任务确实在 RUNNING，而且本实例手里还没有它的执行订阅。
         // 幂等重放拿到的旧任务可能早就在跑了（owned 里已有），再 start 一次会跑两遍。
         if (task.state.equals("RUNNING") && !owned.containsKey(task.runId)) {
@@ -219,12 +234,20 @@ public final class TaskService implements AutoCloseable {
      * 只会成功启动一次——已关闭或已有归属时直接返回，避免重复执行。 结束时无论成功、失败还是取消，{@code doFinally} 都会释放归属， 之后恢复扫描可以重新接手。
      */
     private void start(TaskDO requested) {
+        start(requested, false);
+    }
+
+    private void start(TaskDO requested, boolean recovered) {
         // 两种情况不启动：服务已经关了，或者这个 runId 已经有执行订阅了。
         // recover() 每秒扫一次，可能和 create() 抢同一个任务，这里就是防止重复启动的检查。
         if (closed || owned.containsKey(requested.runId)) {
             return;
         }
-        TaskDO task = store.claimExecution(requested.runId);
+        TaskDO claimed = store.claimExecution(requested.runId);
+        if (recovered) {
+            claimed = store.markRecovered(claimed.runId);
+        }
+        final TaskDO task = claimed;
         // 先登记归属：OwnedRun 记录身份（并发额度统计要用），
         // subscription 是可替换的订阅句柄，停止任务和关闭服务都靠它取消。
         OwnedRun ownership = new OwnedRun(task.identity, task.parentRunId != null);
@@ -343,7 +366,7 @@ public final class TaskService implements AutoCloseable {
                     && (task.parentRunId == null
                             ? hasCapacity(task.identity)
                             : hasChildCapacity(task))) {
-                start(task);
+                start(task, true);
             }
         }
         store.retryPendingNotifications();
@@ -398,6 +421,11 @@ public final class TaskService implements AutoCloseable {
                                                         role,
                                                         forkTurns,
                                                         inherited);
+                                        if (agentCatalog != null) {
+                                            store.pinAgentVersion(
+                                                    prepared.runId,
+                                                    agentCatalog.versionFor(prepared.agentRole));
+                                        }
                                         if (admission.get() == -1) {
                                             store.discardChild(prepared.runId);
                                             return;
@@ -471,6 +499,20 @@ public final class TaskService implements AutoCloseable {
             return role;
         }
 
+        public dev.garden.demo.supervisor.pojo.dto.PromptDefinitionDTO prompt(String promptRole) {
+            return promptRegistry == null
+                    ? RunControl.super.prompt(promptRole)
+                    : promptRegistry.active(promptRole);
+        }
+
+        public dev.garden.demo.supervisor.pojo.dto.BookingOutcomeDTO book(
+                String operationId, Map<String, Object> parameters) {
+            if (approvals == null) {
+                throw new UnsupportedOperationException("审批与外部写入不可用");
+            }
+            return approvals.booking(id, identity, operationId, parameters);
+        }
+
         public SupervisorPolicy policy() {
             return policy;
         }
@@ -481,6 +523,36 @@ public final class TaskService implements AutoCloseable {
 
         public String turnId() {
             return logicalTurnId;
+        }
+
+        public boolean recordAgentEdge(String caller, String callee) {
+            synchronized (TaskService.this) {
+                checkActive();
+                return store.recordAgentEdge(id, generation, caller, callee);
+            }
+        }
+
+        public SemanticLoopGuard.Result recordSemanticGoal(
+                String scope,
+                String key,
+                String text,
+                int window,
+                double threshold,
+                int maxWarnings,
+                boolean crossKey) {
+            synchronized (TaskService.this) {
+                checkActive();
+                return store.recordSemanticGoal(
+                        id,
+                        generation,
+                        scope,
+                        key,
+                        text,
+                        window,
+                        threshold,
+                        maxWarnings,
+                        crossKey);
+            }
         }
 
         public Mono<AgentSnapshotDTO> spawnAgent(

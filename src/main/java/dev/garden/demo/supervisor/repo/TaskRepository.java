@@ -1,5 +1,7 @@
 package dev.garden.demo.supervisor.repo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import dev.garden.demo.supervisor.RunControl;
 import dev.garden.demo.supervisor.pojo.dataobject.InstructionDO;
 import dev.garden.demo.supervisor.pojo.dataobject.QuotaWindowDO;
@@ -47,6 +49,20 @@ public final class TaskRepository {
     public TaskDO get(String id) {
         String payload = mapper.selectPayload(id);
         return payload == null ? null : decode(payload, TaskDO.class);
+    }
+
+    /**
+     * 把检查点中的 JSON 解析为只读树。
+     *
+     * <p>模型会话快照包含 AgentScope 的非公开消息结构，运行详情只读取其中的
+     * 公共字段（角色、时间戳、用量、工具内容块），因此不把整份快照反序列化成生产类型。
+     */
+    public JsonNode tree(String value) {
+        try {
+            return codec.mapper().readTree(value);
+        } catch (Exception error) {
+            throw new IllegalStateException("记录损坏", error);
+        }
     }
 
     public List<TaskDO> all() {

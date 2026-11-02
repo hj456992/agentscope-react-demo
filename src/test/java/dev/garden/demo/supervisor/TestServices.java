@@ -76,7 +76,10 @@ final class TestServices {
                 settings,
                 runner,
                 accessPolicy,
-                SupervisorPolicy.defaults());
+                SupervisorPolicy.defaults(),
+                null,
+                null,
+                null);
     }
 
     static TaskService taskService(

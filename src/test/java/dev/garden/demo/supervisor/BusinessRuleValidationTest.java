@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class BusinessRuleValidationTest {
     private static final SupervisorPolicy POLICY =
             SupervisorPolicy.defaults()
-                    .withBusiness(new SupervisorPolicy.BusinessPolicy(true, 30));
+                    .withBusiness(SupervisorPolicy.BusinessPolicy.enabled(30));
 
     @Test
     void pastDateReturnsBusinessViolationWithoutReadingTheDataSource() {

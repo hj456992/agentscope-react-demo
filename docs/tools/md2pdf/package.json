@@ -1,0 +1,11 @@
+{
+  "name": "garden-md2pdf",
+  "private": true,
+  "type": "module",
+  "description": "把 docs 下的 Markdown 渲染成带目录样式、表格和 Mermaid 图的 PDF",
+  "dependencies": {
+    "marked": "^18.1.2",
+    "mermaid": "^12.2.0",
+    "puppeteer-core": "^25.16.0"
+  }
+}

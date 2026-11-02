@@ -1,0 +1,261 @@
+{
+  "hint": "BOOK_TICKET",
+  "name": "42-book-ticket",
+  "question": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。",
+  "supplement": "请继续。",
+  "supplemented": false,
+  "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+  "capturedAt": "2026-11-01T21:42:53.838Z",
+  "elapsedSeconds": 5,
+  "text": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。\nS\nSupervisor\n查询成功\n订单已提交并登记人工审批，当前状态为 PENDING_APPROVAL。审批编号：133c17b6-6045-47b2-9855-f9612fc95cbd。请在“平台治理 → 审批”中批准或拒绝；批准后才会通过本地独立下游创建示例订单。\n执行过程\n2 条记录\n来自任务实际返回的事件，按发生顺序展示。\n1\n工具\n受控触发：运行策略提示，第1次，工具=book_ticket\n2\n工具\n写入工具审批状态：运行策略提示\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · a50221b6\n会话编号\n0754bb04-fa7e-48ff-b53f-0064b3ab6433\n请求编号\n4be52648-80c1-408b-8208-4f7ea96ed142\n任务编号\na50221b6-1aaf-4891-9c3a-4b5247a774b8\n任务版本\n1\n任务状态\n查询成功\n模型调用\n1 次\n截止时间\n2026/11/2 05:43:49\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\n4be52648-80c1-408b-8208-4f7ea96ed142\n原内容\n帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。\n确认发送验收请求\n05:42:49\n202\nPOST /api/supervisor/chat\n31 ms\n05:42:50\n200\nGET /api/supervisor/runs/a50221b6-1aaf-4891-9c3a-4b5247a774b8\n6 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\na50221b6-1aaf-4891-9c3a-4b5247a774b8\n会话编号\n0754bb04-fa7e-48ff-b53f-0064b3ab6433\n父任务\n无（根运行）\n根运行\na50221b6-1aaf-4891-9c3a-4b5247a774b8\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n2 / 1\n触发方式\nCONTROLLED · BOOK_TICKET\n首次事件 / 完成\n2026/11/2 05:42:49 / 2026/11/2 05:42:49\n请求指纹\n6079d81c7bafaf3f8d74aa542c2b0cbf74095b2badc6b3dbdd7a7dc65063765e\n预算\n1 / 16 次模型调用\n权限复核\n通过（证据 0 条）\n内容信任\nSYSTEM 1 · USER 1 · TOOL 1 · RETRIEVAL 1 · CHILD 0\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 0\n工具调用配对 · 1\n委派回执 · 0\n用量 · missing\nspan · 2\n压缩 · 0 / 召回 · 0\n权限 · 目录 3 / 执行 1 / 证据 0\n指令回执 · 0 / 纠错 · 0\n时间线 · 2\n提示词版本 · 1\n检查点（白名单）\n实际配置（脱敏）",
+  "detail": {
+    "result": {
+      "status": "SUCCESS",
+      "originalQuery": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。",
+      "rewrittenQuery": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。",
+      "intent": "UNKNOWN",
+      "answer": "订单已提交并登记人工审批，当前状态为 PENDING_APPROVAL。审批编号：133c17b6-6045-47b2-9855-f9612fc95cbd。请在“平台治理 → 审批”中批准或拒绝；批准后才会通过本地独立下游创建示例订单。",
+      "agents": [],
+      "evidence": [],
+      "events": [
+        "受控触发：BOOK_TICKET，第1次，工具=book_ticket",
+        "写入工具审批状态：PENDING_APPROVAL"
+      ]
+    },
+    "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+    "requestId": "4be52648-80c1-408b-8208-4f7ea96ed142",
+    "sessionId": "0754bb04-fa7e-48ff-b53f-0064b3ab6433",
+    "state": "SUCCESS",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 1,
+    "maxModelCalls": 16,
+    "deadline": 1793569429135,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [],
+    "toolCalls": [
+      {
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "callId": "acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "tool": "book_ticket",
+        "argumentFingerprint": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+        "status": "PENDING_APPROVAL",
+        "startedAt": 1793569369163,
+        "endedAt": 1793569369170,
+        "durationMs": 7,
+        "resultBytes": 218,
+        "resultSummary": "{\"status\":\"PENDING_APPROVAL\",\"approvalId\":\"133c17b6-6045-47b2-9855-f9612fc95cbd\",\"operationId\":\"book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c\",\"response\":null,\"message\":\"需要人工审批后才能下单\"}",
+        "operationId": "acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [],
+    "usage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "cachedTokens": 0,
+      "totalTokens": 0,
+      "source": "missing",
+      "agents": [
+        {
+          "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 1,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 1,
+          "subtreeModelCalls": 1,
+          "remainingModelCalls": 15,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "spanId": "run:a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "SUCCESS",
+        "startedAt": 1793569369135,
+        "endedAt": 1793569369173,
+        "durationMs": 38,
+        "errorCode": null
+      },
+      {
+        "traceId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "spanId": "tool:a50221b6-1aaf-4891-9c3a-4b5247a774b8:acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "parentSpanId": "run:a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "kind": "TOOL",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "name": "book_ticket",
+        "status": "PENDING_APPROVAL",
+        "startedAt": 1793569369157,
+        "endedAt": 1793569369171,
+        "durationMs": 14,
+        "errorCode": "PENDING_APPROVAL"
+      }
+    ],
+    "compactions": [],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [],
+      "filteredTools": [],
+      "evidenceTools": [],
+      "evidenceCount": 0,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "book_ticket"
+      ],
+      "filteredReasons": {}
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"ordinal\":1,\"tool\":\"book_ticket\",\"hint\":\"BOOK_TICKET\"}",
+      "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"book_ticket\",\"tokens\":\"da at te e2 20 02 26 61 11 10 03 3f fr ro om m杭 杭州 州p pa as ss se en ng ge er r张 张三 三t to o上 上海 海t tr ra ai in nn nu um mb be rg g7 75 50 01\",\"sample\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\",\"warnings\":0}]",
+      "loop:v1:tool-calls": "{\"book_ticket:58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109\":1}",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "2",
+      "toolcall:v1:acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e": "{\"callId\":\"acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e\",\"tool\":\"book_ticket\",\"argumentFingerprint\":\"58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109\",\"startedAt\":1793569369163,\"status\":\"PENDING_APPROVAL\",\"endedAt\":1793569369170,\"resultBytes\":218,\"resultSummary\":\"{\\\"status\\\":\\\"PENDING_APPROVAL\\\",\\\"approvalId\\\":\\\"133c17b6-6045-47b2-9855-f9612fc95cbd\\\",\\\"operationId\\\":\\\"book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c\\\",\\\"response\\\":null,\\\"message\\\":\\\"需要人工审批后才能下单\\\"}\"…"
+    },
+    "approvals": [
+      {
+        "approvalId": "133c17b6-6045-47b2-9855-f9612fc95cbd",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "toolName": "book_ticket",
+        "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+        "requestHash": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+        "status": "PENDING",
+        "requestedBy": "user",
+        "requiredPermission": "approve_book_ticket",
+        "requestedAt": 1793569369167,
+        "expiresAt": 1793569969167,
+        "decidedBy": null,
+        "decidedAt": null,
+        "reason": null,
+        "operationStatus": null,
+        "operationResponse": null
+      }
+    ],
+    "sideEffects": [],
+    "events": [
+      "受控触发：BOOK_TICKET，第1次，工具=book_ticket",
+      "写入工具审批状态：PENDING_APPROVAL"
+    ],
+    "createdAt": 1793569369135,
+    "firstEventAt": 1793569369157,
+    "completedAt": 1793569369173,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "BOOK_TICKET",
+    "recovered": false,
+    "requestFingerprint": "6079d81c7bafaf3f8d74aa542c2b0cbf74095b2badc6b3dbdd7a7dc65063765e",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793569369157,
+        "text": "受控触发：BOOK_TICKET，第1次，工具=book_ticket"
+      },
+      {
+        "sequence": 2,
+        "at": 1793569369168,
+        "text": "写入工具审批状态：PENDING_APPROVAL"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 1
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 1
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 1
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 0
+      }
+    ]
+  },
+  "consoleErrors": []
+}

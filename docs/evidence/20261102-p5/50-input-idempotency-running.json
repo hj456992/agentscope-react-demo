@@ -1,0 +1,82 @@
+{
+  "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+  "chat": [
+    202,
+    {
+      "status": "RUNNING",
+      "originalQuery": "查询2026-11-03杭州的天气",
+      "rewrittenQuery": "",
+      "intent": "UNKNOWN",
+      "answer": "任务执行中",
+      "agents": [],
+      "evidence": [],
+      "events": [],
+      "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+      "revision": 1,
+      "requestId": "p5-idem-chat-1",
+      "state": "RUNNING",
+      "modelCalls": 0,
+      "deadline": 1793569813856,
+      "replacedBy": null
+    }
+  ],
+  "supplement": {
+    "first": [
+      202,
+      {
+        "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+        "revision": 2,
+        "state": "RUNNING",
+        "message": "指令已排队，将在执行边界处理"
+      }
+    ],
+    "replay": [
+      202,
+      {
+        "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+        "revision": 2,
+        "state": "RUNNING",
+        "message": "指令已排队，将在执行边界处理"
+      }
+    ],
+    "conflict": [
+      409,
+      {
+        "code": "CONFLICT",
+        "message": "指令编号的内容不同"
+      }
+    ],
+    "stale": [
+      400,
+      {
+        "code": "INVALID_REQUEST",
+        "message": "请检查 JSON 格式、会话编号、问题长度和历史字段。"
+      }
+    ]
+  },
+  "final": [
+    200,
+    {
+      "status": "RUNNING",
+      "originalQuery": "补充：仍然只要杭州。",
+      "rewrittenQuery": "",
+      "intent": "UNKNOWN",
+      "answer": "任务执行中",
+      "agents": [],
+      "evidence": [],
+      "events": [
+        "工具结果：query_weather / SUCCESS",
+        "新指令已加入当前会话",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 10%"
+      ],
+      "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+      "revision": 2,
+      "requestId": "p5-idem-chat-1",
+      "state": "RUNNING",
+      "modelCalls": 4,
+      "deadline": 1793569813856,
+      "replacedBy": null
+    }
+  ]
+}

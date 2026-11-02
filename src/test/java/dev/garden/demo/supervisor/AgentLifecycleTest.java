@@ -46,7 +46,14 @@ class AgentLifecycleTest {
                 Duration.ofDays(30),
                 Duration.ofDays(90),
                 url,
-                "");
+                "sa",
+                "",
+                16,
+                "",
+                false,
+                "",
+                Duration.ofSeconds(5),
+                0);
     }
 
     @Test
@@ -270,7 +277,10 @@ class AgentLifecycleTest {
                                 return Mono.never();
                             },
                             null,
-                            SupervisorPolicy.defaults())) {
+                            SupervisorPolicy.defaults(),
+                            null,
+                            null,
+                            null)) {
                 service.submit(
                                 IdentityDTO.local(),
                                 new RequestDTO("cancel-spawn", "delegate", List.of(), "once"),
@@ -323,11 +333,11 @@ class AgentLifecycleTest {
                             () -> {});
             store.applyInstruction(
                     IdentityDTO.local(),
-                    new InstructionParam(task.runId, "one", 1, Action.SUPPLEMENT, "answer one"),
+                    new InstructionParam(task.runId, "one", 1, Action.MESSAGE, "answer one"),
                     () -> {});
             store.applyInstruction(
                     IdentityDTO.local(),
-                    new InstructionParam(task.runId, "two", 2, Action.SUPPLEMENT, "answer two"),
+                    new InstructionParam(task.runId, "two", 2, Action.MESSAGE, "answer two"),
                     () -> {});
             var delivered = store.drainInputs(task.runId, task.generation);
             assertEquals(List.of("answer one", "answer two"), delivered.inputs());

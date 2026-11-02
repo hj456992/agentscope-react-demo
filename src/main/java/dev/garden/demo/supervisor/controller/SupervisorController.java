@@ -4,12 +4,22 @@ import dev.garden.demo.supervisor.pojo.dto.Action;
 import dev.garden.demo.supervisor.pojo.dto.RequestContextDTO;
 import dev.garden.demo.supervisor.pojo.param.ChatParam;
 import dev.garden.demo.supervisor.pojo.param.InstructionParam;
+import dev.garden.demo.supervisor.pojo.param.MemoryCandidateDecisionParam;
+import dev.garden.demo.supervisor.pojo.param.MemoryCandidateParam;
+import dev.garden.demo.supervisor.pojo.param.MemorySearchParam;
 import dev.garden.demo.supervisor.pojo.req.MemoryReq;
+import dev.garden.demo.supervisor.pojo.res.ConfigRes;
 import dev.garden.demo.supervisor.pojo.res.InstructionRes;
+import dev.garden.demo.supervisor.pojo.dto.MemoryCandidateDTO;
+import dev.garden.demo.supervisor.pojo.dto.MemoryGovernanceDTO;
+import dev.garden.demo.supervisor.pojo.dto.MemoryVectorHitDTO;
 import dev.garden.demo.supervisor.pojo.res.MemoryPageRes;
 import dev.garden.demo.supervisor.pojo.res.MemoryRes;
+import dev.garden.demo.supervisor.pojo.res.RunDetailRes;
 import dev.garden.demo.supervisor.pojo.res.RunRes;
+import dev.garden.demo.supervisor.service.ConfigService;
 import dev.garden.demo.supervisor.service.ConversationService;
+import dev.garden.demo.supervisor.service.RunDetailService;
 import dev.garden.demo.supervisor.service.TaskService;
 
 import org.springframework.http.HttpStatus;
@@ -25,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -38,10 +50,23 @@ import reactor.core.scheduler.Schedulers;
 public class SupervisorController {
     private final TaskService tasks;
     private final ConversationService conversations;
+    private final RunDetailService details;
+    private final ConfigService config;
 
-    public SupervisorController(TaskService tasks, ConversationService conversations) {
+    /**
+     * 唯一构造器：任务入口、记忆入口、运行详情和配置证据都由容器注入。
+     *
+     * <p>运行详情只读，不参与任务状态机；配置证据只读取启动时绑定的配置对象。
+     */
+    public SupervisorController(
+            TaskService tasks,
+            ConversationService conversations,
+            RunDetailService details,
+            ConfigService config) {
         this.tasks = tasks;
         this.conversations = conversations;
+        this.details = details;
+        this.config = config;
     }
 
     /**
@@ -104,6 +129,100 @@ public class SupervisorController {
         return context().flatMap(ctx -> tasks.get(ctx.identity(), runId));
     }
 
+    /**
+     * 读取运行详情证据。
+     *
+     * <p>返回计划、父子运行、工具配对、委派回执、用量、span、压缩、召回、权限和
+     * 检查点；不返回完整模型会话、召回原文、令牌或下游凭据。
+     */
+    @GetMapping("/runs/{runId}/detail")
+    public Mono<RunDetailRes> detail(@PathVariable("runId") String runId) {
+        return detailOf(runId);
+    }
+
+    /**
+     * 与 {@link #detail(String)} 相同的运行详情，使用技术方案中的通用详情命名。
+     *
+     * <p>保留两个路径只是为了兼容既有文档与本次验收计划；读取逻辑和权限完全一致。
+     */
+    @GetMapping("/runs/detail/{runId}")
+    public Mono<RunDetailRes> detailAlias(@PathVariable("runId") String runId) {
+        return detailOf(runId);
+    }
+
+    private Mono<RunDetailRes> detailOf(String runId) {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(() -> details.detail(ctx.identity(), runId))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    /** 返回当前实例的脱敏配置证据，用于验收记录固定实际运行参数。 */
+    @GetMapping("/config")
+    public Mono<ConfigRes> config() {
+        return Mono.fromCallable(config::config).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    /** 列出当前身份的记忆候选；只读，不自动写入长期偏好。 */
+    @GetMapping("/memories/candidates")
+    public Mono<List<MemoryCandidateDTO>> memoryCandidates() {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(() -> conversations.candidates(ctx.identity()))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    /** 提交记忆候选；审核通过前不参与偏好装配。 */
+    @PostMapping(
+            value = "/memories/candidates",
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<MemoryCandidateDTO> proposeMemoryCandidate(
+            @RequestBody MemoryCandidateParam param) {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(() -> conversations.propose(ctx.identity(), param))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    /** 审核记忆候选；批准后才写入长期偏好和本地向量索引。 */
+    @PostMapping(
+            value = "/memories/candidates/decisions",
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<MemoryCandidateDTO> decideMemoryCandidate(
+            @RequestBody MemoryCandidateDecisionParam param) {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(
+                                                () ->
+                                                        conversations.decideCandidate(
+                                                                ctx.identity(), param))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    /** 本地哈希向量检索；页面明确显示 embedding=local-hash-32。 */
+    @PostMapping(value = "/memories/search", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<List<MemoryVectorHitDTO>> searchMemories(@RequestBody MemorySearchParam param) {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(() -> conversations.search(ctx.identity(), param))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    /** 记忆治理事实：保留期、本地嵌入、存储边界和墓碑数量。 */
+    @GetMapping("/memories/governance")
+    public Mono<MemoryGovernanceDTO> memoryGovernance() {
+        return context()
+                .flatMap(
+                        ctx ->
+                                Mono.fromCallable(() -> conversations.governance(ctx.identity()))
+                                        .subscribeOn(Schedulers.boundedElastic()));
+    }
+
     @PostMapping(value = "/instructions", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<InstructionRes>> instruct(@RequestBody InstructionParam param) {
         return context()
@@ -111,10 +230,7 @@ public class SupervisorController {
                 .map(
                         reply ->
                                 ResponseEntity.status(
-                                                param.action() == Action.CANCEL
-                                                                || param.action() == Action.AUTO
-                                                        ? 200
-                                                        : 202)
+                                                param.action() == Action.CANCEL ? 200 : 202)
                                         .body(reply));
     }
 

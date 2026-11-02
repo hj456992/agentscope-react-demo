@@ -81,7 +81,7 @@ public record RunRes(
 |---|---|
 | `runId` | 任务号，后续 `GET /runs/{runId}` 和指令接口都用它 |
 | `state` | 任务状态：`RUNNING` / `DONE` / `FAILED` / `TIMEOUT` / `NEEDS_INPUT` / `CANCELLED` / `REPLACED` |
-| `revision` | 任务版本，提交指令（`/instructions`）时要带上期望值 |
+| `revision` | 任务版本；追加输入和切换指令要带上期望值，停止（`CANCEL`）不需要 |
 | `modelCalls` | 已消耗的模型调用次数 |
 | `deadline` | 绝对截止时间（epoch 毫秒），默认创建后 60 秒 |
 | `replacedBy` | 被哪个新任务取代（仅 `REPLACED` 时有值） |
@@ -431,3 +431,10 @@ t=5000    任务 DONE，结果落库
 - `docs/技术方案.md`：各接口的处理流程设计
 - `docs/如何理解Mono.md`：Mono 的组装/订阅/兑现模型
 - `docs/Reactor上下文说明.md`：Reactor context 与 `deferContextual`
+
+
+## 前端消费说明（2026-10-30）
+
+本地验收页位于根路径，源码见 frontend/。前端请求始终使用同源 `/api/supervisor/chat`，history 发送空数组，由服务端持久历史承接上下文；每轮保持 sessionId 并生成稳定 requestId。异步受理后按 runId 串行查询；同步 502/504 仍按 RunRes 解析。停止、补充与切换调用原 instructions 接口；补充和切换按最新 revision 提交，停止不校验 revision；InstructionRes 不是完整回答。
+
+本文上方状态示例不构成穷举。当前 TaskStoreService.commitResult 使用 result.status().name() 写入 state，所以正常结束可能返回 SUCCESS、NO_DATA、PARTIAL、BUDGET_EXHAUSTED 等已有 Status 值。调用方应只把 RUNNING 当作自动轮询状态，把 NEEDS_INPUT 当作等待用户输入，其他返回状态显示对应实际结果，不等待一个固定 DONE 值。

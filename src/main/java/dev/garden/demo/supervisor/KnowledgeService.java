@@ -25,8 +25,27 @@ final class KnowledgeService {
             int line) {}
 
     private final Document document;
+    private final String location;
 
+    /**
+     * 加载本地资料。
+     *
+     * <p>默认读取 classpath 示例；设置环境变量 {@code SUPERVISOR_KNOWLEDGE_FILE} 时读取
+     * 指定本地文件，用于验证“可编辑检索内容被当作数据”的信任边界。文件缺失时明确报错，
+     * 不静默回退到默认资料。
+     */
     KnowledgeService() {
+        String configured = System.getenv("SUPERVISOR_KNOWLEDGE_FILE");
+        if (configured != null && !configured.isBlank()) {
+            java.nio.file.Path path = java.nio.file.Path.of(configured.strip());
+            try {
+                document = parse(java.nio.file.Files.readString(path, StandardCharsets.UTF_8));
+            } catch (IOException ex) {
+                throw new UncheckedIOException("无法读取 SUPERVISOR_KNOWLEDGE_FILE", ex);
+            }
+            location = path.toAbsolutePath().toString();
+            return;
+        }
         try (InputStream stream = getClass().getResourceAsStream("/supervisor/travel-guide.md")) {
             if (stream == null) {
                 throw new IllegalStateException("缺少示例资料");
@@ -35,6 +54,7 @@ final class KnowledgeService {
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
+        location = "classpath:/supervisor/travel-guide.md";
     }
 
     static Document parse(String text) {
@@ -55,6 +75,16 @@ final class KnowledgeService {
         while (start < lines.length && (lines[start].startsWith("#") || lines[start].isBlank()))
             start++;
         String quote = String.join("\n", Arrays.copyOfRange(lines, start, lines.length)).strip();
+        // 资料文件来自外部配置，缺字段时在这里明确报错；
+        // 不能等到检索时把空值写进证据并引发空指针，让调用看起来像被取消。
+        for (String key : List.of("id", "version", "expires", "keywords")) {
+            if (meta.get(key) == null || meta.get(key).isBlank()) {
+                throw new IllegalStateException("资料文件缺少必需字段：" + key);
+            }
+        }
+        if (quote.isBlank()) {
+            throw new IllegalStateException("资料文件缺少正文内容");
+        }
         return new Document(
                 meta.get("id"),
                 meta.get("version"),
@@ -73,21 +103,18 @@ final class KnowledgeService {
                 || document.keywords().stream().noneMatch(query::contains)) {
             return new EvidenceDTO("search_knowledge", Status.NO_DATA, "local-markdown", Map.of());
         }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("documentId", document.id());
+        data.put("version", document.version());
+        data.put("expiresAt", document.expires().toString());
+        data.put("line", document.line());
+        data.put("quote", document.quote());
+        data.put("trustLevel", "RETRIEVAL");
         return new EvidenceDTO(
                 "search_knowledge",
                 Status.SUCCESS,
-                "classpath:/supervisor/travel-guide.md",
-                Map.of(
-                        "documentId",
-                        document.id(),
-                        "version",
-                        document.version(),
-                        "expiresAt",
-                        document.expires().toString(),
-                        "line",
-                        document.line(),
-                        "quote",
-                        document.quote()));
+                location,
+                data);
     }
 
     AgentTool tool(RunContext context) {

@@ -98,6 +98,12 @@ class CorrectionBudgetTest {
                             List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
                         return Flux.defer(
                                 () -> {
+                                    // 工具表扩大后第三次模型边界会先触发上下文压缩；
+                                    // 压缩请求不是一次工具尝试，返回摘要而不计入调用次数。
+                                    if (compaction(messages)) {
+                                        return Flux.just(
+                                                text("已完成必要查询，仍需继续核对能力。"));
+                                    }
                                     calls.incrementAndGet();
                                     return Flux.just(tool("not_registered", Map.of()));
                                 });
@@ -119,7 +125,7 @@ class CorrectionBudgetTest {
         assertEquals(Status.FAILED, result.status());
         assertEquals(3, calls.get());
         assertEquals(0, reads.get());
-        assertTrue(result.answer().contains("能力暂时不可用"));
+        assertTrue(result.answer().contains("能力暂时不可用"), result.status() + " / " + result.answer() + " / " + result.events());
     }
 
     @Test
@@ -188,6 +194,14 @@ class CorrectionBudgetTest {
                 return List.of();
             }
         };
+    }
+
+    private static boolean compaction(List<Msg> messages) {
+        if (messages.isEmpty()) {
+            return false;
+        }
+        String text = messages.get(messages.size() - 1).getTextContent();
+        return text != null && text.contains("CONTEXT CHECKPOINT COMPACTION");
     }
 
     private static ChatResponse tool(String name, Map<String, Object> input) {

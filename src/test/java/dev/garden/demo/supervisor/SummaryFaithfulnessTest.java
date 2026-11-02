@@ -39,7 +39,8 @@ class SummaryFaithfulnessTest {
         assertTrue(report.missing().contains("2026-10-30"));
         assertTrue(report.missing().contains("二等座"));
         assertTrue(report.missing().contains("553元"));
-        assertEquals(4.0 / 7.0, report.retention(), 0.0001);
+        assertFalse(report.missing().contains("北京到上海"));
+        assertEquals(5.0 / 8.0, report.retention(), 0.0001);
     }
 
     @Test
@@ -57,7 +58,7 @@ class SummaryFaithfulnessTest {
         List<String> tokens =
                 SummaryFaithfulness.criticalTokens(
                         List.of("北京到上海，北京出发", "上海天气18℃，明天18℃"));
-        assertEquals(List.of("北京", "上海", "18℃"), tokens);
+        assertEquals(List.of("北京", "上海", "北京到上海", "18℃"), tokens);
     }
 
     @Test

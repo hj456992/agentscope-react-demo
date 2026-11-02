@@ -1,0 +1,99 @@
+{
+  "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+  "checks": {
+    "demo-token": {
+      "status": 200,
+      "body": {
+        "status": "FAILED",
+        "originalQuery": "查一下杭州到杭州今天（2026-11-02）的火车票",
+        "rewrittenQuery": "查一下杭州到杭州今天（2026-11-02）的火车票",
+        "intent": "UNKNOWN",
+        "answer": "字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_trains",
+            "status": "INVALID_INPUT",
+            "source": "downstream-v1",
+            "data": {
+              "ruleId": "SAME_CITY",
+              "from": "杭州",
+              "field": "to",
+              "message": "字段 from 与 to 不能相同。请改为不同的出发城市和到达城市。",
+              "reason": "字段 from 与 to 不能相同",
+              "errorCode": "BUSINESS_RULE_VIOLATION",
+              "suggestion": "请改为不同的出发城市和到达城市。",
+              "date": "2026-11-03",
+              "to": "杭州"
+            }
+          }
+        ],
+        "events": [
+          "受控触发：SAME_CITY，第1次，工具=query_trains",
+          "工具纠错：BUSINESS_RULE_VIOLATION: query_trains",
+          "工具结果：query_trains / INVALID_INPUT"
+        ],
+        "runId": "a53f8b4e-3343-4ac6-b868-a0be4fdf64ee",
+        "revision": 1,
+        "requestId": "30bedeb6-c4f8-4c98-a0b9-0b88886c020b",
+        "state": "FAILED",
+        "modelCalls": 1,
+        "deadline": 1793568369660,
+        "replacedBy": null
+      }
+    },
+    "limited-token": {
+      "status": 404,
+      "body": {
+        "code": "NOT_FOUND",
+        "message": "记录不存在。"
+      }
+    },
+    "other-token": {
+      "status": 404,
+      "body": {
+        "code": "NOT_FOUND",
+        "message": "记录不存在。"
+      }
+    },
+    "foreign-token": {
+      "status": 404,
+      "body": {
+        "code": "NOT_FOUND",
+        "message": "记录不存在。"
+      }
+    },
+    "demoDetail": {
+      "status": 200,
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_trains"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_trains"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_trains"
+        ],
+        "filteredReasons": {}
+      },
+      "requestId": "30bedeb6-c4f8-4c98-a0b9-0b88886c020b",
+      "sessionId": "de4f7115-e573-4a38-a10d-179c4985a569"
+    }
+  }
+}

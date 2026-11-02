@@ -1,0 +1,12 @@
+{
+  "runId": "27f75c90-3cdb-4afb-bae8-812a4dfa6ec5",
+  "state": "RUNNING",
+  "revision": 2,
+  "stale": [
+    409,
+    {
+      "code": "CONFLICT",
+      "message": "任务版本已更新"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ Java 17 + Maven + AgentScope Java 2.0.1，与当前 DSH 项目使用的 SDK 版�
 
 `dev.garden.demo.supervisor` 当前为 v3.5：固定 Codex 提交的 MultiAgent V2 与本地模型摘要路径。主子会话共用显式模型—工具循环；创建子会话返回独立身份，通过邮箱、followup、wait/list、interrupt协作。父结束或取消不撤回已接受子会话，任务树仍共享期限和调用额度。
 
-模型原始终答直接交付，询问保留原问题和调用编号，收到真实答案后恢复；上下文超窗由模型生成摘要并持久替换历史。删除固定改写/意图前置阶段、固定终答模板及必经第二个答案模型。知识检索与AnswerVerifier组件仍可独立复用，但当前不是核心自动事实保证。Spring Boot、H2、MyBatis、事务分层、鉴权、偏好和副作用账本继续保留。
+模型原始终答直接交付，询问保留原问题和调用编号，收到真实答案后恢复；上下文超窗由模型生成摘要并持久替换历史。删除固定改写/意图前置阶段、固定终答模板及必经第二个答案模型。知识检索与AnswerVerifier组件仍可独立复用，但当前不是核心自动事实保证。Spring Boot、PostgreSQL（本地回归测试使用 H2）、MyBatis、事务分层、鉴权、偏好和副作用账本继续保留。
 
 v3.5 在此基础上补齐七项运行策略，均可在 `supervisor.policy.*` 单独关闭：
 
@@ -26,12 +26,17 @@ v3.5 在此基础上补齐七项运行策略，均可在 `supervisor.policy.*` �
 
 当前模型接口是Chat Completions，未覆盖Codex全部Responses、remote compact、后台压缩与V2可选运行配置。逐函数依据及尚未一致处见源码映射，不以旅行演示场景解释核心差异。
 ```sh
-mvn -q package
+mvn -q -DskipTests package
+# 启动前通过环境配置 DEEPSEEK_API_KEY，或配置 DEMO_API_KEY / DEMO_BASE_URL / DEMO_MODEL。
 export SUPERVISOR_AUTH_TOKENS='demo-token=demo-tenant:demo-user:query_weather,query_trains,search_knowledge,memory:write'
+# 共享库连接：地址、账号、密码和连接池全部由环境变量提供。
+export SUPERVISOR_DATABASE_URL='jdbc:postgresql://127.0.0.1:5432/supervisor'
+export SUPERVISOR_DATABASE_USERNAME='supervisor'
+export SUPERVISOR_DATABASE_PASSWORD='请替换为实际密码'
 bash run-supervisor-server.sh
 ```
 
-默认监听 `127.0.0.1:8080`，使用本地 H2、离线模型与示例数据。令牌需自行替换。本地HTTP、持久化恢复和核心协作有对应测试；当前执行结果以实施记录为准。
+默认监听 `127.0.0.1:8080`，使用 PostgreSQL 和真实模型，天气和车票仍为示例数据。数据库地址默认指向 `jdbc:postgresql://127.0.0.1:5432/supervisor`，目标数据库需预先创建，账号需要建表权限；启动时自动建表，表结构升级由后续迁移脚本接管。本地回归测试仍使用 H2 内存库，不读取上述连接配置。默认读取环境中的 `DEEPSEEK_API_KEY`，使用 `https://api.deepseek.com` 的 `deepseek-flash`；`DEMO_API_KEY`、`DEMO_BASE_URL`、`DEMO_MODEL` 可分别覆盖。缺少模型凭据时拒绝启动，不自动回退离线。只有显式 `SUPERVISOR_MODE=offline` 或 CLI 的 `--offline` 才使用离线脚本。令牌需自行替换。本地HTTP、持久化恢复和核心协作有对应测试；当前执行结果以实施记录为准。
 
 七项策略默认值见 `src/main/resources/application.yml` 的 `supervisor.policy.*`：业务校验、事实校验、纠错上限、话题切分、摘要告警开启，语义校验关闭，多 Agent 为 `ADVISORY`。每项都有独立开关，可单独回退。YAML 1.1 会把未加引号的 `OFF` 解析成布尔 `false`，因此 `multi-agent-mode` 必须写成 `"OFF"`。完整配置表见使用说明。
 
@@ -42,7 +47,7 @@ MAVEN_OPTS=-Dfile.encoding=UTF-8 mvn -q -DargLine=-Dfile.encoding=UTF-8 test
 mvn -q -Dtest=SupervisorSocketIT test
 ```
 
-2026-10-29 全量结果为 **256 项通过**，失败、错误、跳过均为 0，分别以阶段 B 关闭配置和安全开启配置运行两次，日志见 `/tmp/full2.log`、`/tmp/full3.log`，明细见[实施记录](docs/实施记录.md)。
+2026-11-02 全量结果为 **362 项通过**，失败、错误、跳过均为 0（本地回归使用 H2 内存库）；PostgreSQL 启动与读写冒烟另在临时实例上验证。2026-10-29 的分阶段结果见[实施记录](docs/实施记录.md)。
 
 - [完整实现说明：16 项处理、流程图、接口和运行方式](docs/Supervisor使用说明.md)
 - [2026-10-28 分层、POJO、事务与 MyBatis 重构对照](docs/重构对照说明.md)
@@ -50,7 +55,7 @@ mvn -q -Dtest=SupervisorSocketIT test
 - [已批准技术方案](docs/技术方案.md)
 - [验收用例](docs/验收用例.md) · [执行结果](docs/实施记录.md)
 
-CLI 仍可运行 `bash run-supervisor.sh --offline '杭州明天的天气'`。换机器后克隆本仓库，用 Java 17 和 Maven 运行即可；真实模型 Key 和本地数据库需要自行配置。下面是原乘法示例说明。
+Supervisor CLI 默认真实模型：`bash run-supervisor.sh '杭州明天的天气'`；显式 `--offline` 才运行离线脚本。换机器后克隆本仓库，用 Java 17 和 Maven 运行即可；真实模型 Key 和本地数据库需要自行配置。下面是原乘法示例说明。
 
 ## 先跑起来
 
@@ -126,6 +131,6 @@ Function Calling 是模型表达工具调用的机制；ReActAgent 在这个机�
 
 这里的 `ReAct` 是 Reasoning + Acting，与前端 React 无关。演示日志展示工具调用及其结果，不要求或展示模型的私有思维链。
 
-`block` 只用于 CLI 入口，不应照搬到 WebFlux 事件线程；原乘法CLI示例没有SSE、会话持久化或集群取消链路（Supervisor的H2持久化见前述文档）。关闭全局 HTTP 传输也只发生在独立 CLI 退出时。
+`block` 只用于 CLI 入口，不应照搬到 WebFlux 事件线程；原乘法CLI示例没有SSE、会话持久化或集群取消链路（Supervisor的PostgreSQL持久化见前述文档）。关闭全局 HTTP 传输也只发生在独立 CLI 退出时。
 
 参考：[AgentScope Java Agent 文档](https://github.com/agentscope-ai/agentscope-java/blob/main/docs/v2/en/docs/building-blocks/agent.md)、[工具文档](https://github.com/agentscope-ai/agentscope-java/blob/main/docs/v2/zh/docs/building-blocks/tool.md)。本示例 API 以本机 2.0.1 源码包及实际构建结果为准。

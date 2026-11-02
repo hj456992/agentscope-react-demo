@@ -1,0 +1,511 @@
+{
+  "hint": "SPAWN_CHILD",
+  "name": "85-b2-multi",
+  "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+  "supplement": "请继续。",
+  "supplemented": false,
+  "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+  "capturedAt": "2026-11-01T22:13:37.707Z",
+  "elapsedSeconds": 10,
+  "text": "查询杭州2026-11-03的天气，并给出简要出行建议\nS\nSupervisor\n查询成功\n杭州 2026-11-03 天气及出行建议：\n天气情况\n天气：多云\n气温：18℃\n数据来源：天气查询工具，查询成功\n简要出行建议\n适合出行：多云天气，无降雨提示，18℃ 属于舒适区间，常规户外活动（步行、游览、通勤）都合适。\n穿衣建议：建议穿长袖加薄外套或针织衫，方便穿脱；早晚可能偏凉，注意温差。\n其他提醒：多云天气紫外线较弱但仍存在，长时间户外可备遮阳帽；空气质量与风力等细节本次未查询，如有敏感需求可另行确认。\n说明：以上天气为本地示例数据，仅供参考，实际出行前建议再确认实时天气预报。\n天气\n查询成功\n杭州\n2026-11-03\n18°\n多云\n来源 downstream-v1\n参与协作\n天气查询\n执行过程\n6 条记录\n来自任务实际返回的事件，按发生顺序展示。\n1\n工具\n受控触发：运行策略提示，第1次，工具=spawn_agent\n2\n运行\n多Agent决策：运行策略提示，parallelism=1，estimatedTokens=256，latencySavingMs=0\n3\n工具\n工具结果：query_weather / 查询成功\n4\n运行\n进入天气查询助手\n5\n上下文\n上下文已压缩，第 1 个替换窗口\n6\n上下文\n摘要忠实度：保留率 100%，压缩率 15%\n参与助手表示曾参与；事件不代表完整调用图、推理内容或已执行计划。\n任务与请求详情\n异步 · 297b2c15\n会话编号\nd189f87a-8827-4a69-b449-d279fa7129c4\n请求编号\n4fcee59d-a19e-462f-b8af-d36ab38197ac\n任务编号\n297b2c15-126b-4faa-ab27-33c925d8f6fb\n任务版本\n1\n任务状态\n查询成功\n模型调用\n6 次\n截止时间\n2026/11/2 06:14:28\n调用模式\n异步受理并查询进度\n认证信息\n已隐藏，不记录令牌\n查询最新状态\n幂等与版本验收操作\n只重放当前身份已读取的任务。使用原编号，记录真实响应；不会自动判通过。\n验收动作\n重放原对话请求\n对话同号异参\n重放上一条指令\n指令同号异参\n使用旧版本补充\n原编号\n4fcee59d-a19e-462f-b8af-d36ab38197ac\n原内容\n查询杭州2026-11-03的天气，并给出简要出行建议\n确认发送验收请求\n06:13:28\n202\nPOST /api/supervisor/chat\n26 ms\n06:13:29\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n3 ms\n06:13:30\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n4 ms\n06:13:31\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n12 ms\n06:13:32\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n5 ms\n06:13:33\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n11 ms\n06:13:34\n200\nGET /api/supervisor/runs/297b2c15-126b-4faa-ab27-33c925d8f6fb\n11 ms\n运行详情与配置证据已加载\n刷新证据\n运行编号\n297b2c15-126b-4faa-ab27-33c925d8f6fb\n会话编号\nd189f87a-8827-4a69-b449-d279fa7129c4\n父任务\n无（根运行）\n根运行\n297b2c15-126b-4faa-ab27-33c925d8f6fb\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\n1\n代际 / 版本\n2 / 1\n触发方式\nCONTROLLED · SPAWN_CHILD\n首次事件 / 完成\n2026/11/2 06:13:28 / 2026/11/2 06:13:33\n请求指纹\n14edde4ee704b9528e8db172fdbdb7098592d69183464f55c3a93e07be4cfe22\n预算\n6 / 16 次模型调用\n权限复核\n通过（证据 2 条）\n内容信任\nSYSTEM 6 · USER 1 · TOOL 0 · RETRIEVAL 2 · CHILD 1\n计划 · 未写入\n路由 · SINGLE_AGENT · MEDIUM\n子运行 · 1\n工具调用配对 · 3\n委派回执 · 1\n用量 · provider\nspan · 7\n压缩 · 1 / 召回 · 0\n权限 · 目录 3 / 执行 3 / 证据 2\n指令回执 · 0 / 纠错 · 0\n时间线 · 6\n提示词版本 · 2\n检查点（白名单）\n实际配置（脱敏）",
+  "detail": {
+    "result": {
+      "status": "SUCCESS",
+      "originalQuery": "查询杭州2026-11-03的天气，并给出简要出行建议",
+      "rewrittenQuery": "查询杭州2026-11-03的天气，并给出简要出行建议",
+      "intent": "UNKNOWN",
+      "answer": "杭州 2026-11-03 天气及出行建议：\n\n**天气情况**\n- 天气：多云\n- 气温：18℃\n- 数据来源：天气查询工具，查询成功\n\n**简要出行建议**\n1. **适合出行**：多云天气，无降雨提示，18℃ 属于舒适区间，常规户外活动（步行、游览、通勤）都合适。\n2. **穿衣建议**：建议穿长袖加薄外套或针织衫，方便穿脱；早晚可能偏凉，注意温差。\n3. **其他提醒**：多云天气紫外线较弱但仍存在，长时间户外可备遮阳帽；空气质量与风力等细节本次未查询，如有敏感需求可另行确认。\n\n说明：以上天气为本地示例数据，仅供参考，实际出行前建议再确认实时天气预报。",
+      "agents": [
+        "天气查询"
+      ],
+      "evidence": [
+        {
+          "tool": "query_weather",
+          "status": "SUCCESS",
+          "source": "downstream-v1",
+          "data": {
+            "date": "2026-11-03",
+            "city": "杭州",
+            "weather": {
+              "temperature": 18,
+              "condition": "多云"
+            }
+          }
+        }
+      ],
+      "events": [
+        "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent",
+        "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+        "工具结果：query_weather / SUCCESS",
+        "进入天气查询助手",
+        "上下文已压缩，第 1 个替换窗口",
+        "摘要忠实度：保留率 100%，压缩率 15%"
+      ]
+    },
+    "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+    "requestId": "4fcee59d-a19e-462f-b8af-d36ab38197ac",
+    "sessionId": "d189f87a-8827-4a69-b449-d279fa7129c4",
+    "state": "SUCCESS",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 6,
+    "maxModelCalls": 16,
+    "deadline": 1793571268215,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [
+      {
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "parentRunId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root/acceptance_child",
+        "agentRole": "weather_agent",
+        "agentVersion": "unregistered",
+        "state": "SUCCESS",
+        "agentStatus": "completed",
+        "generation": 2,
+        "revision": 1,
+        "modelCalls": 2,
+        "maxModelCalls": 16,
+        "deadline": 1793571268215,
+        "createdAt": 1793571208261,
+        "accepted": true,
+        "answer": "已查询到杭州 2026-11-03（明天）的天气：\n\n- **天气**：多云\n- **气温**：18℃\n\n**出行建议**：明天天气整体适合出行，以多云为主，气温约 18℃，体感较为舒适。建议穿搭薄外套，并根据早晚温差适当调整；多云天气不影响常规户外活动。\n\n注：以上为示例数据，仅供参考。",
+        "resultStatus": "SUCCESS",
+        "resultDigest": "6589c7e72a632410d8d602367d9db2f06f1dcb73e1cf26ad41b5320fa08c39c8",
+        "evidenceTools": [
+          "query_weather"
+        ],
+        "requiredPermissions": [
+          "query_weather"
+        ],
+        "taskBrief": {
+          "objective": "查询杭州明天的天气并返回结论。用户的原始问题是：查询杭州2026-11-03的天气，并给出简要出行建议",
+          "role": "weather_agent",
+          "planTaskId": "",
+          "dependsOn": [],
+          "batch": 0,
+          "outputFormat": "answer+evidence",
+          "budgetModelCalls": 16,
+          "deadline": 1793571268215,
+          "inheritedMessages": 0,
+          "inheritedBytes": 0,
+          "forkMode": "none",
+          "spawnOperationId": "acceptance-1-b053e6a2-099b-4872-9100-789e24a53613"
+        },
+        "spawnOperationId": "acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "acceptanceReceiptKey": "9a246827-34a4-4e78-8a5e-a9effa21f522:acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "completedAt": 1793571210270,
+        "recovered": false
+      }
+    ],
+    "toolCalls": [
+      {
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "callId": "acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "tool": "spawn_agent",
+        "argumentFingerprint": "6f0129873199262f1f64e44dc3c6cc9e386b2c57db5c51ec9f72ac76a9dc8e1d",
+        "status": "FAILED",
+        "startedAt": 1793571208241,
+        "endedAt": 1793571208265,
+        "durationMs": 24,
+        "resultBytes": 196,
+        "resultSummary": "{\"agentId\":\"71112542-c7d2-4b69-b2e8-1ba42e348a26\",\"agentName\":\"/root/acceptance_child\",\"agentRole\":\"weather_agent\",\"agentStatus\":\"running\",\"lastAnswer\":null,\"result\":null,\"requiredPermissions\":[]}",
+        "operationId": "acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      },
+      {
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "callId": "call_00_KCuCtISxN5B6xE5yfRjg1943",
+        "tool": "wait_agent",
+        "argumentFingerprint": "3a027d123c8e10187e3f65a177c8255cd42b56d9b1e45cd4cd48d9c43a8cb003",
+        "status": "FAILED",
+        "startedAt": 1793571209058,
+        "endedAt": 1793571210279,
+        "durationMs": 1221,
+        "resultBytes": 46,
+        "resultSummary": "{\"message\":\"Wait completed.\",\"timedOut\":false}",
+        "operationId": "call_00_KCuCtISxN5B6xE5yfRjg1943",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      },
+      {
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "agentPath": "/root/acceptance_child",
+        "callId": "call_00_TlkwAOkVGz57JzkcJaEG3593",
+        "tool": "query_weather",
+        "argumentFingerprint": "6d9d94d70361c872bec758452714cde0e13632a5a67f5e655c95fc25c3564efe",
+        "status": "SUCCESS",
+        "startedAt": 1793571209092,
+        "endedAt": 1793571209106,
+        "durationMs": 14,
+        "resultBytes": 163,
+        "resultSummary": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"city\":\"杭州\",\"weather\":{\"temperature\":18,\"condition\":\"多云\"}}}",
+        "operationId": "call_00_TlkwAOkVGz57JzkcJaEG3593",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [
+      {
+        "parentRunId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "parentAgentPath": "/root",
+        "operationId": "acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "receiptKey": "9a246827-34a4-4e78-8a5e-a9effa21f522:acceptance-1-b053e6a2-099b-4872-9100-789e24a53613",
+        "fingerprint": "9525d699cca98878a9e60914f9266c79a09b6f835a67cd03dcb23cb791430472",
+        "childRunId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "childAgentPath": "/root/acceptance_child",
+        "childRole": "weather_agent",
+        "childStatus": "completed:SUCCESS",
+        "requiredPermissions": []
+      }
+    ],
+    "usage": {
+      "promptTokens": 4969,
+      "completionTokens": 314,
+      "cachedTokens": 3328,
+      "totalTokens": 5283,
+      "source": "provider",
+      "agents": [
+        {
+          "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 6,
+          "promptTokens": 2095,
+          "completionTokens": 171,
+          "cachedTokens": 1664,
+          "totalTokens": 2266,
+          "source": "provider",
+          "ownModelCalls": 4,
+          "subtreeModelCalls": 6,
+          "remainingModelCalls": 10,
+          "sharedBudget": true
+        },
+        {
+          "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+          "agentPath": "/root/acceptance_child",
+          "agentRole": "weather_agent",
+          "modelCalls": 2,
+          "promptTokens": 2874,
+          "completionTokens": 143,
+          "cachedTokens": 1664,
+          "totalTokens": 3017,
+          "source": "provider",
+          "ownModelCalls": 2,
+          "subtreeModelCalls": 2,
+          "remainingModelCalls": 10,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "run:297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "SUCCESS",
+        "startedAt": 1793571208215,
+        "endedAt": 1793571213977,
+        "durationMs": 5762,
+        "errorCode": null
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "model:297b2c15-126b-4faa-ab27-33c925d8f6fb:3",
+        "parentSpanId": "run:297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "kind": "MODEL",
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "name": "model:ASSISTANT",
+        "status": "COMPLETED",
+        "startedAt": 1793571213972,
+        "endedAt": 1793571215754,
+        "durationMs": 1782,
+        "errorCode": null
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "run:71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "parentSpanId": "run:297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "kind": "RUN",
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "agentPath": "/root/acceptance_child",
+        "name": "run",
+        "status": "SUCCESS",
+        "startedAt": 1793571208261,
+        "endedAt": 1793571210270,
+        "durationMs": 2009,
+        "errorCode": null
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "model:71112542-c7d2-4b69-b2e8-1ba42e348a26:2",
+        "parentSpanId": "run:71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "kind": "MODEL",
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "agentPath": "/root/acceptance_child",
+        "name": "model:ASSISTANT",
+        "status": "COMPLETED",
+        "startedAt": 1793571209090,
+        "endedAt": 1793571209904,
+        "durationMs": 814,
+        "errorCode": null
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "model:71112542-c7d2-4b69-b2e8-1ba42e348a26:4",
+        "parentSpanId": "run:71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "kind": "MODEL",
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "agentPath": "/root/acceptance_child",
+        "name": "model:ASSISTANT",
+        "status": "COMPLETED",
+        "startedAt": 1793571210261,
+        "endedAt": 1793571211410,
+        "durationMs": 1149,
+        "errorCode": null
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "tool:71112542-c7d2-4b69-b2e8-1ba42e348a26:call_00_TlkwAOkVGz57JzkcJaEG3593",
+        "parentSpanId": "run:71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "kind": "TOOL",
+        "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "agentPath": "/root/acceptance_child",
+        "name": "query_weather",
+        "status": "SUCCESS",
+        "startedAt": 1793571209090,
+        "endedAt": 1793571209107,
+        "durationMs": 17,
+        "errorCode": "SUCCESS"
+      },
+      {
+        "traceId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "spanId": "spawn:71112542-c7d2-4b69-b2e8-1ba42e348a26",
+        "parentSpanId": "run:297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "kind": "DELEGATION",
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "name": "spawn_agent",
+        "status": "SUCCESS",
+        "startedAt": 1793571208261,
+        "endedAt": 1793571210270,
+        "durationMs": 2009,
+        "errorCode": null
+      }
+    ],
+    "compactions": [
+      {
+        "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+        "agentPath": "/root",
+        "generation": 1,
+        "summaryBytes": 1053,
+        "summary": "# 会话交接摘要\n\n## 任务\n用户请求：查询杭州 2026-11-03 的天气，并给出简要出行建议。\n\n## 当前进度\n已完成。已创建子 Agent `/root/acceptance_child`（weather_agent）查询天气，并通过 `wait_agent` 收到结果：\n\n- 城市：杭州\n- 日期：2026-11-03（今天 2026-11-02 的明天）\n- 天气：多云\n- 气温：18℃\n- 来源工具：`query_weather`，状态 SUCCESS，source: downstream-v1\n\n## 关键决策与约束\n- 这份天气数据是示例数据，回答中需要注明“仅供参考、示例数据”。\n- 不要编造工具事实；只使用上述返回值。\n- 子 Agent 已返回结果，不需要重新创建或重复调用。\n- 时区 Asia/Shanghai。\n\n## 剩余步骤\n唯一待办：把天气结果与出行建议用中文整理给用户，并注明数据为示例。\n\n## 建议回答要点\n- 天气：多云，18℃\n- 建议：适合出行，气温舒适；建议穿薄外套，注意早晚温差；多云不影响常规户外活动\n- 结尾注明：以上为示例数据，仅供参考",
+        "events": [
+          "上下文已压缩，第 1 个替换窗口",
+          "摘要忠实度：保留率 100%，压缩率 15%"
+        ]
+      }
+    ],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [
+        "query_weather"
+      ],
+      "filteredTools": [],
+      "evidenceTools": [
+        "query_weather"
+      ],
+      "evidenceCount": 2,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "query_weather",
+        "spawn_agent",
+        "wait_agent"
+      ],
+      "filteredReasons": {
+        "spawn_agent": "执行记录中的工具当前身份不可见",
+        "wait_agent": "执行记录中的工具当前身份不可见"
+      }
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      },
+      {
+        "role": "weather_agent",
+        "promptId": "prompt.travel.weather_agent",
+        "version": "1",
+        "hash": "d2eec5a35619673d1d8cef5b0f1f565cf71cee99c28e5e8be8bdbfe01e79d902",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"ordinal\":1,\"tool\":\"spawn_agent\",\"hint\":\"SPAWN_CHILD\"}",
+      "evidence:v1:latest": "query_weather city=杭州 date=2026-11-03 temperature=18 condition=多云",
+      "loop:v1:agent-edges": "{\"/root\":[\"/root/acceptance_child\"]}",
+      "loop:v1:semantic-goals": "[{\"scope\":\"agent\",\"key\":\"/root/acceptance_child\",\"tokens\":\"查询 询杭 杭州 州明 明天 天的 的天 天气 气并 并返 返回 回结 结论 论用 用户 户的 的原 原始 始问 问题 题是 是查 州2 20 02 26 61 11 10 03 3的 并给 给出 出简 简要 要出 出行 行建 建议\",\"sample\":\"查询杭州明天的天气并返回结论。用户的原始问题是：查询杭州2026-11-03的天气，并给出简要出行建议\",\"warnings\":0},{\"scope\":\"tool\",\"key\":\"query_weather\",\"tokens\":\"ci it ty y杭 杭州 州d da at te e2 20 02 26 61 11 10 03\",\"sample\":\"{\\\"city\\\":\\\"杭州\\\",\\\"date\\\":\\\"2026-11-03\\\"}\",\"warnings\":0}]",
+      "model:2bc1d0667a4495cf1a933038247167aa0ecb46c704af23d50b7832be1e6f56a9": "1",
+      "model:aa10d73886bc426acef92e468a2c37269cf185262ae927d47ee0f7d79d3b4f1d": "1",
+      "model:c4e48dc2b0d3375e1c151813368ef47a8a563c7032525ec8c55551d974839acb": "1",
+      "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查询杭州2026-11-03的天气，并给出简要出行建议\",\"rewrittenQuery\":\"查询杭州2026-11-03的天气，并给出简要出行建议\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"city\":\"杭州\",\"weather\":{\"temperature\":18,\"condition\":\"多云\"}}}],\"events\":[\"受控触发：SPAWN_CHILD，第1次，工具=spawn_agent\",\"多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0\"]}",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "6",
+      "toolcall:v1:acceptance-1-b053e6a2-099b-4872-9100-789e24a53613": "{\"callId\":\"acceptance-1-b053e6a2-099b-4872-9100-789e24a53613\",\"tool\":\"spawn_agent\",\"argumentFingerprint\":\"6f0129873199262f1f64e44dc3c6cc9e386b2c57db5c51ec9f72ac76a9dc8e1d\",\"startedAt\":1793571208241,\"status\":\"FAILED\",\"endedAt\":1793571208265,\"resultBytes\":196,\"resultSummary\":\"{\\\"agentId\\\":\\\"71112542-c7d2-4b69-b2e8-1ba42e348a26\\\",\\\"agentName\\\":\\\"/root/acceptance_child\\\",\\\"agentRole\\\":\\\"weather_agent\\\",\\\"agentStatus\\\":\\\"running\\\",\\\"lastAnswer\\\":null,\\\"result\\\":null,\\\"requiredPermissions\\\":[]}\",\"reus…",
+      "toolcall:v1:call_00_KCuCtISxN5B6xE5yfRjg1943": "{\"callId\":\"call_00_KCuCtISxN5B6xE5yfRjg1943\",\"tool\":\"wait_agent\",\"argumentFingerprint\":\"3a027d123c8e10187e3f65a177c8255cd42b56d9b1e45cd4cd48d9c43a8cb003\",\"startedAt\":1793571209058,\"status\":\"FAILED\",\"endedAt\":1793571210279,\"resultBytes\":46,\"resultSummary\":\"{\\\"message\\\":\\\"Wait completed.\\\",\\\"timedOut\\\":false}\",\"reused\":false}"
+    },
+    "approvals": [],
+    "sideEffects": [],
+    "events": [
+      "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent",
+      "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0",
+      "工具结果：query_weather / SUCCESS",
+      "进入天气查询助手",
+      "上下文已压缩，第 1 个替换窗口",
+      "摘要忠实度：保留率 100%，压缩率 15%"
+    ],
+    "createdAt": 1793571208215,
+    "firstEventAt": 1793571208237,
+    "completedAt": 1793571213977,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "SPAWN_CHILD",
+    "recovered": false,
+    "requestFingerprint": "14edde4ee704b9528e8db172fdbdb7098592d69183464f55c3a93e07be4cfe22",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793571208237,
+        "text": "受控触发：SPAWN_CHILD，第1次，工具=spawn_agent"
+      },
+      {
+        "sequence": 2,
+        "at": 1793571208251,
+        "text": "多Agent决策：PARALLELISM_TOO_LOW，parallelism=1，estimatedTokens=256，latencySavingMs=0"
+      },
+      {
+        "sequence": 3,
+        "at": 1793571210286,
+        "text": "工具结果：query_weather / SUCCESS"
+      },
+      {
+        "sequence": 4,
+        "at": 1793571210287,
+        "text": "进入天气查询助手"
+      },
+      {
+        "sequence": 5,
+        "at": 1793571212183,
+        "text": "上下文已压缩，第 1 个替换窗口"
+      },
+      {
+        "sequence": 6,
+        "at": 1793571212187,
+        "text": "摘要忠实度：保留率 100%，压缩率 15%"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        },
+        {
+          "role": "weather_agent",
+          "catalogTools": [
+            "query_weather"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 6
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 0
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 2
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 1
+      }
+    ]
+  },
+  "consoleErrors": []
+}

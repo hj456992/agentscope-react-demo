@@ -1,0 +1,2859 @@
+{
+  "tiles": "目录项\n24\n可执行\n4\n权限过滤后候选\n24\n被权限过滤\n0\nSchema 字节\n8887 / 6656",
+  "metricsText": "S\nSupervisor\n你的多助手工作空间\n新对话\n⌘\n验收场景\n43\n平台治理\n显式偏好\n最近对话\n1\n新对话\n\n模型由服务端管理。\n刷新后配置令牌可恢复任务。\n\n访问令牌已配置\n仅当前页面有效\nSupervisor\n/\n新对话\n示例数据\n调用模式\n异步模式\n同步模式\n令牌已配置\nSUPERVISOR WORKSPACE\n今天，想解决什么？\n\n说出你的目标，一起查询、规划、核对每一步。\n\n规划一次短途旅行\n让天气、车票和行程助手一起协作\n出发前，看看天气\n查询天气，查看来源与日期\n找到合适的车次\n查看时刻、席别与演示余票\n\n天气与车票均使用本地示例数据，适合体验与验收。\n\n输入问题\n受控触发（验收用，可选）\n天气 · 车票 · 行程\n0 / 2000\n\nEnter 发送 · Shift + Enter 换行 · 天气与车票为示例数据\n\n本地真实注册表、审批与指标\n\n平台治理\n目录\n提示词\n记忆\n指标\n告警 3\n审批 0\n审计\n\n数据来自当前实例的数据库和本地下游；提示词正文、签名密钥与令牌不会出现在本面板。\n\n任务总数\n38\n运行中\n0\n已完成\n38\n失败率\n47.4%\nP95 耗时\n30772 ms\n模型调用\n199\nPrompt tokens\n47,276\nCompletion tokens\n1,790\n工具调用\n94\n失败工具调用\n58\n限流事件\n1\n队列拒绝\n0\n待审批\n0\n已决策审批\n1\n按状态\nTIMEOUT\n1\nFAILED\n7\nCONTEXT_LIMIT\n2\nSUCCESS\n13\nPARTIAL\n2\nBUDGET_EXHAUSTED\n8\nREPLACED\n1\nCANCELLED\n4\n\n采集时间 2026/11/2 05:52:38；数值来自当前数据库，没有样本时保持 0。",
+  "api": {
+    "/config": {
+      "status": 200,
+      "body": {
+        "mode": "live",
+        "timeoutSeconds": 60,
+        "maxModelCalls": 16,
+        "maxOutputTokens": 1024,
+        "maxSteps": 64,
+        "maxConcurrentRequests": 8,
+        "maxConcurrentPerUser": 2,
+        "tasksPerUserMinute": 10,
+        "modelCallsPerMinute": 120,
+        "modelTokensPerMinute": 90000,
+        "maxStoredTasks": 10000,
+        "taskRetentionSeconds": 604800,
+        "conversationRetentionSeconds": 2592000,
+        "preferenceRetentionSeconds": 7776000,
+        "databaseType": "h2",
+        "authIdentities": [
+          "tenant:user:book_ticket,memory:write,query_trains,query_weather,search_knowledge",
+          "tenant:approver:approve_book_ticket",
+          "tenant:limited:query_weather",
+          "other:user:query_weather",
+          "foreign:user:query_weather"
+        ],
+        "businessRulesEnabled": true,
+        "businessRuleCount": 3,
+        "factCheckEnabled": true,
+        "semanticVerifierEnabled": false,
+        "correctionLimitsEnabled": true,
+        "multiAgentMode": "ADVISORY",
+        "multiAgentPlannerEnabled": false,
+        "multiAgentMaxAgents": 4,
+        "multiAgentMaxDepth": 2,
+        "topicSegmentationEnabled": true,
+        "summaryFidelityAlertEnabled": true,
+        "summaryFidelityThreshold": 1,
+        "summaryMissingConditionPolicy": "KEEP_CONDITION_VERBATIM",
+        "contextRecallEnabled": false,
+        "executionLimitsEnabled": true,
+        "loopDetectionEnabled": true,
+        "semanticLoopDetectionEnabled": true,
+        "maxRepeatedToolCalls": 3,
+        "acceptanceHintsEnabled": true,
+        "downstreamEnabled": true,
+        "downstreamTimeoutSeconds": 5,
+        "toolDelayMs": 0
+      }
+    },
+    "/agents": {
+      "status": 200,
+      "body": [
+        {
+          "agentId": "travel.accessibility",
+          "version": "1",
+          "role": "accessibility_agent",
+          "owner": "travel-platform",
+          "oncall": "accessibility-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061072
+        },
+        {
+          "agentId": "travel.attraction",
+          "version": "1",
+          "role": "attraction_agent",
+          "owner": "travel-platform",
+          "oncall": "attraction-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061071
+        },
+        {
+          "agentId": "travel.bus",
+          "version": "1",
+          "role": "bus_agent",
+          "owner": "travel-platform",
+          "oncall": "bus-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061067
+        },
+        {
+          "agentId": "travel.car-rental",
+          "version": "1",
+          "role": "car_rental_agent",
+          "owner": "travel-platform",
+          "oncall": "car-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061068
+        },
+        {
+          "agentId": "travel.carbon",
+          "version": "1",
+          "role": "carbon_agent",
+          "owner": "travel-platform",
+          "oncall": "carbon-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061073
+        },
+        {
+          "agentId": "travel.corporate-policy",
+          "version": "1",
+          "role": "corporate_policy_agent",
+          "owner": "travel-platform",
+          "oncall": "corporate-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061075
+        },
+        {
+          "agentId": "travel.cruise",
+          "version": "1",
+          "role": "cruise_agent",
+          "owner": "travel-platform",
+          "oncall": "cruise-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061066
+        },
+        {
+          "agentId": "travel.dining",
+          "version": "1",
+          "role": "dining_agent",
+          "owner": "travel-platform",
+          "oncall": "dining-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061070
+        },
+        {
+          "agentId": "travel.emergency",
+          "version": "1",
+          "role": "emergency_agent",
+          "owner": "travel-platform",
+          "oncall": "emergency-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "REJECTED",
+          "signatureVerified": false,
+          "allowedTools": [
+            "shell"
+          ],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061075
+        },
+        {
+          "agentId": "travel.expense",
+          "version": "1",
+          "role": "expense_agent",
+          "owner": "travel-platform",
+          "oncall": "expense-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061069
+        },
+        {
+          "agentId": "travel.flight",
+          "version": "1",
+          "role": "flight_agent",
+          "owner": "travel-platform",
+          "oncall": "flight-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061065
+        },
+        {
+          "agentId": "travel.group",
+          "version": "1",
+          "role": "group_travel_agent",
+          "owner": "travel-platform",
+          "oncall": "group-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061074
+        },
+        {
+          "agentId": "travel.hotel",
+          "version": "1",
+          "role": "hotel_agent",
+          "owner": "travel-platform",
+          "oncall": "hotel-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061066
+        },
+        {
+          "agentId": "travel.insurance",
+          "version": "1",
+          "role": "insurance_agent",
+          "owner": "travel-platform",
+          "oncall": "insurance-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061069
+        },
+        {
+          "agentId": "travel.itinerary",
+          "version": "1",
+          "role": "itinerary_agent",
+          "owner": "travel-platform",
+          "oncall": "itinerary-oncall",
+          "sloMs": 3000,
+          "costBudget": 0.08,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-supervisor",
+          "status": "PUBLISHED",
+          "signatureVerified": true,
+          "allowedTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "networkAllowlist": [
+            "127.0.0.1"
+          ],
+          "schemaBytes": 138,
+          "createdAt": 1793568061064
+        },
+        {
+          "agentId": "travel.loyalty",
+          "version": "1",
+          "role": "loyalty_agent",
+          "owner": "travel-platform",
+          "oncall": "loyalty-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061074
+        },
+        {
+          "agentId": "travel.meeting",
+          "version": "1",
+          "role": "meeting_agent",
+          "owner": "travel-platform",
+          "oncall": "meeting-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061070
+        },
+        {
+          "agentId": "travel.metro",
+          "version": "1",
+          "role": "metro_agent",
+          "owner": "travel-platform",
+          "oncall": "metro-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061067
+        },
+        {
+          "agentId": "travel.refund",
+          "version": "1",
+          "role": "refund_agent",
+          "owner": "travel-platform",
+          "oncall": "refund-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061073
+        },
+        {
+          "agentId": "travel.supervisor",
+          "version": "1",
+          "role": "supervisor",
+          "owner": "travel-platform",
+          "oncall": "travel-oncall",
+          "sloMs": 2000,
+          "costBudget": 0.05,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-supervisor",
+          "status": "PUBLISHED",
+          "signatureVerified": true,
+          "allowedTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge",
+            "book_ticket"
+          ],
+          "networkAllowlist": [
+            "127.0.0.1"
+          ],
+          "schemaBytes": 146,
+          "createdAt": 1793568061060
+        },
+        {
+          "agentId": "travel.train",
+          "version": "1",
+          "role": "train_agent",
+          "owner": "travel-platform",
+          "oncall": "train-oncall",
+          "sloMs": 1500,
+          "costBudget": 0.02,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-supervisor",
+          "status": "PUBLISHED",
+          "signatureVerified": true,
+          "allowedTools": [
+            "query_trains"
+          ],
+          "networkAllowlist": [
+            "127.0.0.1"
+          ],
+          "schemaBytes": 99,
+          "createdAt": 1793568061063
+        },
+        {
+          "agentId": "travel.translation",
+          "version": "1",
+          "role": "translation_agent",
+          "owner": "travel-platform",
+          "oncall": "translation-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061072
+        },
+        {
+          "agentId": "travel.visa",
+          "version": "1",
+          "role": "visa_agent",
+          "owner": "travel-platform",
+          "oncall": "visa-oncall",
+          "sloMs": 5000,
+          "costBudget": 0,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-catalog-only",
+          "status": "READONLY_PLACEHOLDER",
+          "signatureVerified": true,
+          "allowedTools": [],
+          "networkAllowlist": [],
+          "schemaBytes": 420,
+          "createdAt": 1793568061068
+        },
+        {
+          "agentId": "travel.weather",
+          "version": "1",
+          "role": "weather_agent",
+          "owner": "travel-platform",
+          "oncall": "weather-oncall",
+          "sloMs": 1500,
+          "costBudget": 0.02,
+          "dataClass": "internal-demo",
+          "deployUnit": "local-supervisor",
+          "status": "PUBLISHED",
+          "signatureVerified": true,
+          "allowedTools": [
+            "query_weather"
+          ],
+          "networkAllowlist": [
+            "127.0.0.1"
+          ],
+          "schemaBytes": 104,
+          "createdAt": 1793568061062
+        }
+      ]
+    },
+    "/agents/catalog": {
+      "status": 200,
+      "body": {
+        "total": 24,
+        "executable": 4,
+        "candidatesAfterPermission": 24,
+        "filteredByPermission": 0,
+        "schemaBytes": 8887,
+        "schemaBudgetBytes": 6656,
+        "overBudget": true,
+        "entries": [
+          {
+            "agentId": "travel.accessibility",
+            "version": "1",
+            "role": "accessibility_agent",
+            "owner": "travel-platform",
+            "oncall": "accessibility-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061072
+          },
+          {
+            "agentId": "travel.attraction",
+            "version": "1",
+            "role": "attraction_agent",
+            "owner": "travel-platform",
+            "oncall": "attraction-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061071
+          },
+          {
+            "agentId": "travel.bus",
+            "version": "1",
+            "role": "bus_agent",
+            "owner": "travel-platform",
+            "oncall": "bus-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061067
+          },
+          {
+            "agentId": "travel.car-rental",
+            "version": "1",
+            "role": "car_rental_agent",
+            "owner": "travel-platform",
+            "oncall": "car-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061068
+          },
+          {
+            "agentId": "travel.carbon",
+            "version": "1",
+            "role": "carbon_agent",
+            "owner": "travel-platform",
+            "oncall": "carbon-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061073
+          },
+          {
+            "agentId": "travel.corporate-policy",
+            "version": "1",
+            "role": "corporate_policy_agent",
+            "owner": "travel-platform",
+            "oncall": "corporate-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061075
+          },
+          {
+            "agentId": "travel.cruise",
+            "version": "1",
+            "role": "cruise_agent",
+            "owner": "travel-platform",
+            "oncall": "cruise-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061066
+          },
+          {
+            "agentId": "travel.dining",
+            "version": "1",
+            "role": "dining_agent",
+            "owner": "travel-platform",
+            "oncall": "dining-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061070
+          },
+          {
+            "agentId": "travel.emergency",
+            "version": "1",
+            "role": "emergency_agent",
+            "owner": "travel-platform",
+            "oncall": "emergency-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "REJECTED",
+            "signatureVerified": false,
+            "allowedTools": [
+              "shell"
+            ],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061075
+          },
+          {
+            "agentId": "travel.expense",
+            "version": "1",
+            "role": "expense_agent",
+            "owner": "travel-platform",
+            "oncall": "expense-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061069
+          },
+          {
+            "agentId": "travel.flight",
+            "version": "1",
+            "role": "flight_agent",
+            "owner": "travel-platform",
+            "oncall": "flight-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061065
+          },
+          {
+            "agentId": "travel.group",
+            "version": "1",
+            "role": "group_travel_agent",
+            "owner": "travel-platform",
+            "oncall": "group-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061074
+          },
+          {
+            "agentId": "travel.hotel",
+            "version": "1",
+            "role": "hotel_agent",
+            "owner": "travel-platform",
+            "oncall": "hotel-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061066
+          },
+          {
+            "agentId": "travel.insurance",
+            "version": "1",
+            "role": "insurance_agent",
+            "owner": "travel-platform",
+            "oncall": "insurance-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061069
+          },
+          {
+            "agentId": "travel.itinerary",
+            "version": "1",
+            "role": "itinerary_agent",
+            "owner": "travel-platform",
+            "oncall": "itinerary-oncall",
+            "sloMs": 3000,
+            "costBudget": 0.08,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-supervisor",
+            "status": "PUBLISHED",
+            "signatureVerified": true,
+            "allowedTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "networkAllowlist": [
+              "127.0.0.1"
+            ],
+            "schemaBytes": 138,
+            "createdAt": 1793568061064
+          },
+          {
+            "agentId": "travel.loyalty",
+            "version": "1",
+            "role": "loyalty_agent",
+            "owner": "travel-platform",
+            "oncall": "loyalty-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061074
+          },
+          {
+            "agentId": "travel.meeting",
+            "version": "1",
+            "role": "meeting_agent",
+            "owner": "travel-platform",
+            "oncall": "meeting-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061070
+          },
+          {
+            "agentId": "travel.metro",
+            "version": "1",
+            "role": "metro_agent",
+            "owner": "travel-platform",
+            "oncall": "metro-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061067
+          },
+          {
+            "agentId": "travel.refund",
+            "version": "1",
+            "role": "refund_agent",
+            "owner": "travel-platform",
+            "oncall": "refund-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061073
+          },
+          {
+            "agentId": "travel.supervisor",
+            "version": "1",
+            "role": "supervisor",
+            "owner": "travel-platform",
+            "oncall": "travel-oncall",
+            "sloMs": 2000,
+            "costBudget": 0.05,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-supervisor",
+            "status": "PUBLISHED",
+            "signatureVerified": true,
+            "allowedTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge",
+              "book_ticket"
+            ],
+            "networkAllowlist": [
+              "127.0.0.1"
+            ],
+            "schemaBytes": 146,
+            "createdAt": 1793568061060
+          },
+          {
+            "agentId": "travel.train",
+            "version": "1",
+            "role": "train_agent",
+            "owner": "travel-platform",
+            "oncall": "train-oncall",
+            "sloMs": 1500,
+            "costBudget": 0.02,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-supervisor",
+            "status": "PUBLISHED",
+            "signatureVerified": true,
+            "allowedTools": [
+              "query_trains"
+            ],
+            "networkAllowlist": [
+              "127.0.0.1"
+            ],
+            "schemaBytes": 99,
+            "createdAt": 1793568061063
+          },
+          {
+            "agentId": "travel.translation",
+            "version": "1",
+            "role": "translation_agent",
+            "owner": "travel-platform",
+            "oncall": "translation-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061072
+          },
+          {
+            "agentId": "travel.visa",
+            "version": "1",
+            "role": "visa_agent",
+            "owner": "travel-platform",
+            "oncall": "visa-oncall",
+            "sloMs": 5000,
+            "costBudget": 0,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-catalog-only",
+            "status": "READONLY_PLACEHOLDER",
+            "signatureVerified": true,
+            "allowedTools": [],
+            "networkAllowlist": [],
+            "schemaBytes": 420,
+            "createdAt": 1793568061068
+          },
+          {
+            "agentId": "travel.weather",
+            "version": "1",
+            "role": "weather_agent",
+            "owner": "travel-platform",
+            "oncall": "weather-oncall",
+            "sloMs": 1500,
+            "costBudget": 0.02,
+            "dataClass": "internal-demo",
+            "deployUnit": "local-supervisor",
+            "status": "PUBLISHED",
+            "signatureVerified": true,
+            "allowedTools": [
+              "query_weather"
+            ],
+            "networkAllowlist": [
+              "127.0.0.1"
+            ],
+            "schemaBytes": 104,
+            "createdAt": 1793568061062
+          }
+        ],
+        "events": [
+          "目录候选 24 项；可执行 4 项；权限过滤 0 项",
+          "Schema 字节 8887；注入预算 6656；实际注入 6584",
+          "SCHEMA_BUDGET_EXCEEDED：超预算停止注入 7 项，目录仍保留只读元数据"
+        ]
+      }
+    },
+    "/prompts": {
+      "status": 200,
+      "body": [
+        {
+          "promptId": "prompt.travel.itinerary_agent",
+          "version": "1",
+          "role": "itinerary_agent",
+          "owner": "travel-platform",
+          "status": "PUBLISHED",
+          "hash": "86ebbed974725745aefaa1da9dbf3495467b6ddef01cacf8cdff8bda4b36d202",
+          "evalRecord": "static-catalog-baseline",
+          "createdBy": "system-seed",
+          "createdAt": 1793568061020
+        },
+        {
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "role": "supervisor",
+          "owner": "travel-platform",
+          "status": "PUBLISHED",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "evalRecord": "static-catalog-baseline",
+          "createdBy": "system-seed",
+          "createdAt": 1793568061012
+        },
+        {
+          "promptId": "prompt.travel.train_agent",
+          "version": "1",
+          "role": "train_agent",
+          "owner": "travel-platform",
+          "status": "PUBLISHED",
+          "hash": "c92613cd8e4e770efa9beb158e87724882aae5153a3f3fcb0941fb192bfd5122",
+          "evalRecord": "static-catalog-baseline",
+          "createdBy": "system-seed",
+          "createdAt": 1793568061019
+        },
+        {
+          "promptId": "prompt.travel.weather_agent",
+          "version": "1",
+          "role": "weather_agent",
+          "owner": "travel-platform",
+          "status": "PUBLISHED",
+          "hash": "d2eec5a35619673d1d8cef5b0f1f565cf71cee99c28e5e8be8bdbfe01e79d902",
+          "evalRecord": "static-catalog-baseline",
+          "createdBy": "system-seed",
+          "createdAt": 1793568061018
+        }
+      ]
+    },
+    "/metrics": {
+      "status": 200,
+      "body": {
+        "collectedAt": 1793569962728,
+        "tasks": 38,
+        "running": 0,
+        "completed": 38,
+        "failureRate": 0.474,
+        "p95DurationMs": 30772,
+        "modelCalls": 199,
+        "promptTokens": 47276,
+        "completionTokens": 1790,
+        "toolCalls": 94,
+        "failedToolCalls": 58,
+        "rateLimitedEvents": 1,
+        "queueRejections": 0,
+        "approvalsPending": 0,
+        "approvalsDecided": 1,
+        "byState": {
+          "TIMEOUT": 1,
+          "FAILED": 7,
+          "CONTEXT_LIMIT": 2,
+          "SUCCESS": 13,
+          "PARTIAL": 2,
+          "BUDGET_EXHAUSTED": 8,
+          "REPLACED": 1,
+          "CANCELLED": 4
+        },
+        "alertsOpen": 3,
+        "alerts": [
+          {
+            "alertId": "p95_duration_ms",
+            "kind": "p95_duration_ms",
+            "severity": "MEDIUM",
+            "message": "任务 P95 耗时超过阈值",
+            "metricValue": 30772,
+            "thresholdValue": 30000,
+            "status": "OPEN",
+            "createdAt": 1793569384959,
+            "updatedAt": 1793569962727
+          },
+          {
+            "alertId": "pending_approvals",
+            "kind": "pending_approvals",
+            "severity": "MEDIUM",
+            "message": "存在待审批写入",
+            "metricValue": 0,
+            "thresholdValue": 0,
+            "status": "RESOLVED",
+            "createdAt": 1793569384964,
+            "updatedAt": 1793569962727
+          },
+          {
+            "alertId": "rate_limited_events",
+            "kind": "rate_limited_events",
+            "severity": "MEDIUM",
+            "message": "出现限流事件",
+            "metricValue": 1,
+            "thresholdValue": 0,
+            "status": "OPEN",
+            "createdAt": 1793569384967,
+            "updatedAt": 1793569962727
+          },
+          {
+            "alertId": "task_failure_rate",
+            "kind": "task_failure_rate",
+            "severity": "HIGH",
+            "message": "任务失败率超过阈值",
+            "metricValue": 0.47368421052631576,
+            "thresholdValue": 0.2,
+            "status": "OPEN",
+            "createdAt": 1793569384951,
+            "updatedAt": 1793569962725
+          }
+        ]
+      }
+    },
+    "/alerts": {
+      "status": 200,
+      "body": [
+        {
+          "alertId": "p95_duration_ms",
+          "kind": "p95_duration_ms",
+          "severity": "MEDIUM",
+          "message": "任务 P95 耗时超过阈值",
+          "metricValue": 30772,
+          "thresholdValue": 30000,
+          "status": "OPEN",
+          "createdAt": 1793569384959,
+          "updatedAt": 1793569962734
+        },
+        {
+          "alertId": "pending_approvals",
+          "kind": "pending_approvals",
+          "severity": "MEDIUM",
+          "message": "存在待审批写入",
+          "metricValue": 0,
+          "thresholdValue": 0,
+          "status": "RESOLVED",
+          "createdAt": 1793569384964,
+          "updatedAt": 1793569962734
+        },
+        {
+          "alertId": "rate_limited_events",
+          "kind": "rate_limited_events",
+          "severity": "MEDIUM",
+          "message": "出现限流事件",
+          "metricValue": 1,
+          "thresholdValue": 0,
+          "status": "OPEN",
+          "createdAt": 1793569384967,
+          "updatedAt": 1793569962735
+        },
+        {
+          "alertId": "task_failure_rate",
+          "kind": "task_failure_rate",
+          "severity": "HIGH",
+          "message": "任务失败率超过阈值",
+          "metricValue": 0.47368421052631576,
+          "thresholdValue": 0.2,
+          "status": "OPEN",
+          "createdAt": 1793569384951,
+          "updatedAt": 1793569962733
+        }
+      ]
+    },
+    "/registry/audit": {
+      "status": 200,
+      "body": [
+        {
+          "auditId": 201,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907665
+        },
+        {
+          "auditId": 200,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907664
+        },
+        {
+          "auditId": 199,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907663
+        },
+        {
+          "auditId": 198,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907663
+        },
+        {
+          "auditId": 197,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907662
+        },
+        {
+          "auditId": 196,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907661
+        },
+        {
+          "auditId": 195,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907660
+        },
+        {
+          "auditId": 194,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907660
+        },
+        {
+          "auditId": 193,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907659
+        },
+        {
+          "auditId": 192,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907658
+        },
+        {
+          "auditId": 191,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907656
+        },
+        {
+          "auditId": 190,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907655
+        },
+        {
+          "auditId": 189,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907654
+        },
+        {
+          "auditId": 188,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907653
+        },
+        {
+          "auditId": 187,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907652
+        },
+        {
+          "auditId": 186,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793569907652
+        },
+        {
+          "auditId": 185,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907651
+        },
+        {
+          "auditId": 184,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907650
+        },
+        {
+          "auditId": 183,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907650
+        },
+        {
+          "auditId": 182,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907649
+        },
+        {
+          "auditId": 181,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907648
+        },
+        {
+          "auditId": 180,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907648
+        },
+        {
+          "auditId": 179,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907647
+        },
+        {
+          "auditId": 178,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793569907641
+        },
+        {
+          "auditId": 169,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909034
+        },
+        {
+          "auditId": 168,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909034
+        },
+        {
+          "auditId": 167,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909033
+        },
+        {
+          "auditId": 166,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909033
+        },
+        {
+          "auditId": 165,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909032
+        },
+        {
+          "auditId": 164,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909032
+        },
+        {
+          "auditId": 163,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909031
+        },
+        {
+          "auditId": 162,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909030
+        },
+        {
+          "auditId": 161,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909030
+        },
+        {
+          "auditId": 160,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909029
+        },
+        {
+          "auditId": 159,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909029
+        },
+        {
+          "auditId": 158,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909028
+        },
+        {
+          "auditId": 157,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909027
+        },
+        {
+          "auditId": 156,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909027
+        },
+        {
+          "auditId": 155,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909026
+        },
+        {
+          "auditId": 154,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568909025
+        },
+        {
+          "auditId": 153,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909025
+        },
+        {
+          "auditId": 152,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909024
+        },
+        {
+          "auditId": 151,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909024
+        },
+        {
+          "auditId": 150,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909023
+        },
+        {
+          "auditId": 149,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909022
+        },
+        {
+          "auditId": 148,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909022
+        },
+        {
+          "auditId": 147,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909021
+        },
+        {
+          "auditId": 146,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568909016
+        },
+        {
+          "auditId": 145,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596315
+        },
+        {
+          "auditId": 144,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596314
+        },
+        {
+          "auditId": 143,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596314
+        },
+        {
+          "auditId": 142,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596313
+        },
+        {
+          "auditId": 141,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596312
+        },
+        {
+          "auditId": 140,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596311
+        },
+        {
+          "auditId": 139,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596310
+        },
+        {
+          "auditId": 138,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596310
+        },
+        {
+          "auditId": 137,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596309
+        },
+        {
+          "auditId": 136,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596308
+        },
+        {
+          "auditId": 135,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596308
+        },
+        {
+          "auditId": 134,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596307
+        },
+        {
+          "auditId": 133,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596307
+        },
+        {
+          "auditId": 132,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596306
+        },
+        {
+          "auditId": 131,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596305
+        },
+        {
+          "auditId": 130,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568596305
+        },
+        {
+          "auditId": 129,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596304
+        },
+        {
+          "auditId": 128,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596304
+        },
+        {
+          "auditId": 127,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596303
+        },
+        {
+          "auditId": 126,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596302
+        },
+        {
+          "auditId": 125,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596302
+        },
+        {
+          "auditId": 124,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596301
+        },
+        {
+          "auditId": 123,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596300
+        },
+        {
+          "auditId": 122,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568596296
+        },
+        {
+          "auditId": 121,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493615
+        },
+        {
+          "auditId": 120,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493615
+        },
+        {
+          "auditId": 119,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493614
+        },
+        {
+          "auditId": 118,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493614
+        },
+        {
+          "auditId": 117,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493613
+        },
+        {
+          "auditId": 116,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493613
+        },
+        {
+          "auditId": 115,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493612
+        },
+        {
+          "auditId": 114,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493611
+        },
+        {
+          "auditId": 113,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493611
+        },
+        {
+          "auditId": 112,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493610
+        },
+        {
+          "auditId": 111,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493609
+        },
+        {
+          "auditId": 110,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493608
+        },
+        {
+          "auditId": 109,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493608
+        },
+        {
+          "auditId": 108,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493607
+        },
+        {
+          "auditId": 107,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493607
+        },
+        {
+          "auditId": 106,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568493606
+        },
+        {
+          "auditId": 105,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493605
+        },
+        {
+          "auditId": 104,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493605
+        },
+        {
+          "auditId": 103,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493604
+        },
+        {
+          "auditId": 102,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493604
+        },
+        {
+          "auditId": 101,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493603
+        },
+        {
+          "auditId": 100,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493602
+        },
+        {
+          "auditId": 99,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493602
+        },
+        {
+          "auditId": 98,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568493597
+        },
+        {
+          "auditId": 97,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449637
+        },
+        {
+          "auditId": 96,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449637
+        },
+        {
+          "auditId": 95,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449636
+        },
+        {
+          "auditId": 94,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449635
+        },
+        {
+          "auditId": 93,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449635
+        },
+        {
+          "auditId": 92,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449634
+        },
+        {
+          "auditId": 91,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449633
+        },
+        {
+          "auditId": 90,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449632
+        },
+        {
+          "auditId": 89,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449631
+        },
+        {
+          "auditId": 88,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449631
+        },
+        {
+          "auditId": 87,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449630
+        },
+        {
+          "auditId": 86,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449629
+        },
+        {
+          "auditId": 85,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449629
+        },
+        {
+          "auditId": 84,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449628
+        },
+        {
+          "auditId": 83,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449628
+        },
+        {
+          "auditId": 82,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568449627
+        },
+        {
+          "auditId": 81,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449626
+        },
+        {
+          "auditId": 80,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449626
+        },
+        {
+          "auditId": 79,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449625
+        },
+        {
+          "auditId": 78,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449625
+        },
+        {
+          "auditId": 77,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449624
+        },
+        {
+          "auditId": 76,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449624
+        },
+        {
+          "auditId": 75,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449623
+        },
+        {
+          "auditId": 74,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568449618
+        },
+        {
+          "auditId": 73,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400854
+        },
+        {
+          "auditId": 72,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400853
+        },
+        {
+          "auditId": 71,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400853
+        },
+        {
+          "auditId": 70,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400852
+        },
+        {
+          "auditId": 69,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400852
+        },
+        {
+          "auditId": 68,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400851
+        },
+        {
+          "auditId": 67,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400850
+        },
+        {
+          "auditId": 66,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400850
+        },
+        {
+          "auditId": 65,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400849
+        },
+        {
+          "auditId": 64,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400848
+        },
+        {
+          "auditId": 63,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400848
+        },
+        {
+          "auditId": 62,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400847
+        },
+        {
+          "auditId": 61,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400846
+        },
+        {
+          "auditId": 60,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400846
+        },
+        {
+          "auditId": 59,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400845
+        },
+        {
+          "auditId": 58,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568400845
+        },
+        {
+          "auditId": 57,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400844
+        },
+        {
+          "auditId": 56,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400843
+        },
+        {
+          "auditId": 55,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400843
+        },
+        {
+          "auditId": 54,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400842
+        },
+        {
+          "auditId": 53,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400842
+        },
+        {
+          "auditId": 52,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400841
+        },
+        {
+          "auditId": 51,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400840
+        },
+        {
+          "auditId": 50,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568400836
+        },
+        {
+          "auditId": 49,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304409
+        },
+        {
+          "auditId": 48,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304409
+        },
+        {
+          "auditId": 47,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304408
+        },
+        {
+          "auditId": 46,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304408
+        },
+        {
+          "auditId": 45,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304407
+        },
+        {
+          "auditId": 44,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304407
+        },
+        {
+          "auditId": 43,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304406
+        },
+        {
+          "auditId": 42,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304406
+        },
+        {
+          "auditId": 41,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304405
+        },
+        {
+          "auditId": 40,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304404
+        },
+        {
+          "auditId": 39,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304404
+        },
+        {
+          "auditId": 38,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304403
+        },
+        {
+          "auditId": 37,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304403
+        },
+        {
+          "auditId": 36,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304402
+        },
+        {
+          "auditId": 35,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304402
+        },
+        {
+          "auditId": 34,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568304401
+        },
+        {
+          "auditId": 33,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304401
+        },
+        {
+          "auditId": 32,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304400
+        },
+        {
+          "auditId": 31,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304400
+        },
+        {
+          "auditId": 30,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304399
+        },
+        {
+          "auditId": 29,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304399
+        },
+        {
+          "auditId": 28,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304398
+        },
+        {
+          "auditId": 27,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304397
+        },
+        {
+          "auditId": 26,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568304393
+        },
+        {
+          "auditId": 25,
+          "action": "VERIFY",
+          "subject": "travel.weather@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061104
+        },
+        {
+          "auditId": 24,
+          "action": "VERIFY",
+          "subject": "travel.visa@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061104
+        },
+        {
+          "auditId": 23,
+          "action": "VERIFY",
+          "subject": "travel.translation@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061103
+        },
+        {
+          "auditId": 22,
+          "action": "VERIFY",
+          "subject": "travel.train@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061103
+        },
+        {
+          "auditId": 21,
+          "action": "VERIFY",
+          "subject": "travel.supervisor@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061102
+        },
+        {
+          "auditId": 20,
+          "action": "VERIFY",
+          "subject": "travel.refund@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061102
+        },
+        {
+          "auditId": 19,
+          "action": "VERIFY",
+          "subject": "travel.metro@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061102
+        },
+        {
+          "auditId": 18,
+          "action": "VERIFY",
+          "subject": "travel.meeting@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061101
+        },
+        {
+          "auditId": 17,
+          "action": "VERIFY",
+          "subject": "travel.loyalty@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061101
+        },
+        {
+          "auditId": 16,
+          "action": "VERIFY",
+          "subject": "travel.itinerary@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061100
+        },
+        {
+          "auditId": 15,
+          "action": "VERIFY",
+          "subject": "travel.insurance@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061100
+        },
+        {
+          "auditId": 14,
+          "action": "VERIFY",
+          "subject": "travel.hotel@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061100
+        },
+        {
+          "auditId": 13,
+          "action": "VERIFY",
+          "subject": "travel.group@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061099
+        },
+        {
+          "auditId": 12,
+          "action": "VERIFY",
+          "subject": "travel.flight@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061099
+        },
+        {
+          "auditId": 11,
+          "action": "VERIFY",
+          "subject": "travel.expense@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061098
+        },
+        {
+          "auditId": 10,
+          "action": "VERIFY",
+          "subject": "travel.emergency@1",
+          "outcome": "FAIL",
+          "detail": "清单签名校验失败",
+          "actor": "system-startup",
+          "createdAt": 1793568061098
+        },
+        {
+          "auditId": 9,
+          "action": "VERIFY",
+          "subject": "travel.dining@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061098
+        },
+        {
+          "auditId": 8,
+          "action": "VERIFY",
+          "subject": "travel.cruise@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061097
+        },
+        {
+          "auditId": 7,
+          "action": "VERIFY",
+          "subject": "travel.corporate-policy@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061097
+        },
+        {
+          "auditId": 6,
+          "action": "VERIFY",
+          "subject": "travel.carbon@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061096
+        },
+        {
+          "auditId": 5,
+          "action": "VERIFY",
+          "subject": "travel.car-rental@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061096
+        },
+        {
+          "auditId": 4,
+          "action": "VERIFY",
+          "subject": "travel.bus@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061095
+        },
+        {
+          "auditId": 3,
+          "action": "VERIFY",
+          "subject": "travel.attraction@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061095
+        },
+        {
+          "auditId": 2,
+          "action": "VERIFY",
+          "subject": "travel.accessibility@1",
+          "outcome": "PASS",
+          "detail": "签名、能力和网络出口均通过",
+          "actor": "system-startup",
+          "createdAt": 1793568061094
+        },
+        {
+          "auditId": 1,
+          "action": "SEED",
+          "subject": "catalog",
+          "outcome": "PASS",
+          "detail": "登记目录项 24 项；密钥来源 local-file",
+          "actor": "system-seed",
+          "createdAt": 1793568061090
+        }
+      ]
+    }
+  },
+  "consoleErrors": []
+}

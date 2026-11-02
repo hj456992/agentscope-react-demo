@@ -1,0 +1,22 @@
+{
+  "downstreamOperationId": "ae323e947a20e06077552f27b774b5601a033c273f3d7f758ea4a0594787abe2",
+  "same": [
+    200,
+    {
+      "operationId": "ae323e947a20e06077552f27b774b5601a033c273f3d7f758ea4a0594787abe2",
+      "status": "CONFIRMED",
+      "orderNumber": "LOCAL-3321cb51",
+      "createdAt": 1793570054603,
+      "parametersHash": "{\"date\":\"2026-11-03\",\"from\":\"杭州\",\"passenger\":\"张三\",\"to\":\"上海\",\"trainNumber\":\"G7501\"}"
+    }
+  ],
+  "different": [
+    409,
+    {
+      "error": {
+        "message": "同一操作号的参数不一致",
+        "code": "operation_parameter_conflict"
+      }
+    }
+  ]
+}

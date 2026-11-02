@@ -81,25 +81,7 @@ final class FailureClassifier {
     }
 
     static FailureClass fromStatus(int status) {
-        if (status == 408) {
-            return FailureClass.TIMEOUT;
-        }
-        if (status == 429) {
-            return FailureClass.RATE_LIMITED;
-        }
-        if (status == 401 || status == 403) {
-            return FailureClass.AUTH;
-        }
-        if (status == 400 || status == 422) {
-            return FailureClass.INPUT_INVALID;
-        }
-        if (status == 404) {
-            return FailureClass.NOT_FOUND;
-        }
-        if (status >= 500 && status < 600) {
-            return FailureClass.RETRYABLE;
-        }
-        return FailureClass.UNKNOWN;
+        return FailureClass.fromStatus(status);
     }
 
     static boolean retryable(Throwable error) {

@@ -3,6 +3,8 @@ package dev.garden.demo.supervisor;
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.support.SemanticLoopGuard;
+import dev.garden.demo.supervisor.support.ToolCallLoopGuard;
 
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
@@ -90,6 +92,10 @@ public class Supervisor {
                                         if (error instanceof RunControl.BudgetExceeded) {
                                             context.event("预算停止：" + error.getMessage());
                                         }
+                                        if (error instanceof RunControl.ContextLimit) {
+                                            context.event(
+                                                    "上下文压缩失败：" + error.getMessage());
+                                        }
                                         return Mono.just(
                                                 context.result(
                                                         context.failureStatus(),
@@ -115,6 +121,7 @@ public class Supervisor {
         return Mono.defer(
                 () -> {
                     context.check();
+                    context.beginStep();
                     List<ToolUseBlock> pending = conversation.pendingCalls();
                     if (conversation.replyStatus == Status.NEEDS_INPUT && !pending.isEmpty()) {
                         List<String> answers = context.control.drainInputs();
@@ -153,14 +160,18 @@ public class Supervisor {
                                                                                     call,
                                                                                     result)),
                                             4)
-                                    .then(
-                                            Mono.defer(
-                                                    () ->
-                                                            step(
-                                                                    context,
-                                                                    conversation,
-                                                                    factory,
-                                                                    model)));
+                                    .collectList()
+                                    .flatMap(
+                                            results -> {
+                                                for (ToolResultBlock result : results) {
+                                                    if (endTurn(result)) {
+                                                        return finishTurn(
+                                                                context, conversation, result);
+                                                    }
+                                                }
+                                                return step(
+                                                        context, conversation, factory, model);
+                                            });
                         }
                         if (first.getName().equals("request_user_input")
                                 && valid(registry.get(first.getName()), first)) {
@@ -172,6 +183,10 @@ public class Supervisor {
                                 .flatMap(
                                         result -> {
                                             appendResult(conversation, first, result);
+                                            if (endTurn(result)) {
+                                                return finishTurn(
+                                                        context, conversation, result);
+                                            }
                                             return step(context, conversation, factory, model);
                                         });
                     }
@@ -253,6 +268,10 @@ public class Supervisor {
             List<ToolSchema> tools) {
         return Mono.defer(
                 () -> {
+                    Msg controlled = context.controlledReply();
+                    if (controlled != null) {
+                        return Mono.just(controlled);
+                    }
                     List<Msg> input =
                             ContextBuilder.modelInput(
                                     prompt,
@@ -280,25 +299,56 @@ public class Supervisor {
                                                                                                 .getFinishReason()))) {
                                             throw new IllegalStateException("模型响应未完整结束");
                                         }
-                                        return Msg.builder()
-                                                .role(MsgRole.ASSISTANT)
-                                                .content(
-                                                        responses.stream()
-                                                                .flatMap(
-                                                                        response ->
-                                                                                response
-                                                                                        .getContent()
-                                                                                        .stream())
-                                                                .filter(
-                                                                        block ->
-                                                                                block
+                                        int inputTokens = 0;
+                                        int outputTokens = 0;
+                                        int cachedTokens = 0;
+                                        double usageTime = 0;
+                                        boolean usageFound = false;
+                                        for (ChatResponse response : responses) {
+                                            ChatUsage usage = response.getUsage();
+                                            if (usage == null) {
+                                                continue;
+                                            }
+                                            usageFound = true;
+                                            inputTokens += usage.getInputTokens();
+                                            outputTokens += usage.getOutputTokens();
+                                            cachedTokens += usage.getCachedTokens();
+                                            usageTime += usage.getTime();
+                                        }
+                                        Msg.Builder reply =
+                                                Msg.builder()
+                                                        .role(MsgRole.ASSISTANT)
+                                                        .content(
+                                                                responses.stream()
+                                                                        .flatMap(
+                                                                                response ->
+                                                                                        response
+                                                                                                .getContent()
+                                                                                                .stream())
+                                                                        .filter(
+                                                                                block ->
+                                                                                        block
                                                                                                 instanceof
                                                                                                 TextBlock
                                                                                         || block
                                                                                                 instanceof
                                                                                                 ToolUseBlock)
-                                                                .toList())
-                                                .build();
+                                                                        .toList())
+                                                        .metadata(
+                                                                Map.of(
+                                                                        "model",
+                                                                        model.getModelName(),
+                                                                        "providerUsage",
+                                                                        usageFound));
+                                        if (usageFound) {
+                                            reply.usage(
+                                                    new ChatUsage(
+                                                            inputTokens,
+                                                            outputTokens,
+                                                            cachedTokens,
+                                                            usageTime));
+                                        }
+                                        return reply.build();
                                     });
                 });
     }
@@ -317,6 +367,28 @@ public class Supervisor {
     }
 
     private Mono<ToolResultBlock> invoke(
+            RunContext context,
+            LoopConversation conversation,
+            Map<String, AgentTool> registry,
+            ToolUseBlock call) {
+        return Mono.defer(
+                () -> {
+                    context.toolCallStarted(call);
+                    return invokeOnce(context, conversation, registry, call)
+                            .doOnNext(result -> context.toolCallFinished(call, result))
+                            .doOnError(error -> context.toolCallAborted(call, abortReason(error)))
+                            .doOnCancel(() -> context.toolCallAborted(call, "调用被取消"));
+                });
+    }
+
+    /** 中止原因只保留异常类型和消息，供页面区分超时、取消和预算耗尽。 */
+    private static String abortReason(Throwable error) {
+        String message = error.getMessage();
+        return error.getClass().getSimpleName()
+                + (message == null || message.isBlank() ? "" : "：" + message);
+    }
+
+    private Mono<ToolResultBlock> invokeOnce(
             RunContext context,
             LoopConversation conversation,
             Map<String, AgentTool> registry,
@@ -359,6 +431,35 @@ public class Supervisor {
                         }
                         return Mono.just(ToolResultBlock.error("INVALID_SCHEMA：请按工具定义修正。"));
                     }
+                    ToolCallLoopGuard.Decision loop =
+                            context.checkToolLoop(call.getName(), call.getInput());
+                    if (loop == ToolCallLoopGuard.Decision.WARN) {
+                        return Mono.just(
+                                ToolResultBlock.error(
+                                        "LOOP_DETECTED：相同工具和参数已重复执行，请改变查询条件或直接回答。"));
+                    }
+                    if (loop == ToolCallLoopGuard.Decision.FAIL) {
+                        throw new CorrectionExhausted(
+                                Status.FAILED, "相同工具和参数重复调用过多，当前轮次已停止。");
+                    }
+                    SemanticLoopGuard.Result semantic =
+                            context.checkSemanticToolLoop(call.getName(), call.getInput());
+                    if (semantic.decision() == SemanticLoopGuard.Decision.WARN) {
+                        return Mono.just(
+                                ToolResultBlock.error(
+                                        "LOOP_DETECTED：该工具目标与近期调用高度相似"
+                                                + "（相似度 "
+                                                + String.format(
+                                                        java.util.Locale.ROOT,
+                                                        "%.2f",
+                                                        semantic.similarity())
+                                                + "），请改变查询条件或直接回答。"));
+                    }
+                    if (semantic.decision() == SemanticLoopGuard.Decision.ASK) {
+                        throw new CorrectionExhausted(
+                                Status.NEEDS_INPUT,
+                                "检测到重复的相似目标，已暂停本轮。请确认是否继续、调整条件或结束当前需求。");
+                    }
                     if (Set.of(
                                     "spawn_agent",
                                     "followup_task",
@@ -387,6 +488,40 @@ public class Supervisor {
                 });
     }
 
+    /** 结束本轮并写入工具声明的终态，避免模型在确定性结论上继续消耗预算。 */
+    private static Mono<ResultDTO> finishTurn(
+            RunContext context, LoopConversation conversation, ToolResultBlock result) {
+        Map<String, Object> metadata = result.getMetadata();
+        String reply = String.valueOf(metadata.getOrDefault("turnReply", "本轮已结束。"));
+        Status status = turnStatus(metadata, Status.SUCCESS);
+        conversation.reply(status, reply);
+        return Mono.just(context.result(status, reply));
+    }
+
+    /** 工具结果携带 turnReply 时将本轮结束，避免审批登记后继续消耗模型调用。 */
+    private static boolean endTurn(ToolResultBlock result) {
+        Map<String, Object> metadata = result.getMetadata();
+        return metadata != null && Boolean.TRUE.equals(metadata.get("endTurn"));
+    }
+
+    /**
+     * 读取结束本轮的工具声明的终态。
+     *
+     * <p>审批登记默认 {@code SUCCESS}；业务规则拒绝会传入按证据计算的终态，
+     * 避免把“规则已正确拒绝”误报为成功查询。缺失或无法识别时保持调用方默认值。
+     */
+    private static Status turnStatus(Map<String, Object> metadata, Status fallback) {
+        Object raw = metadata.get("turnStatus");
+        if (raw instanceof String name) {
+            try {
+                return Status.valueOf(name);
+            } catch (IllegalArgumentException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
     private static boolean valid(AgentTool tool, ToolUseBlock call) {
         return tool != null
                 && ToolValidator.validateInput(json(call.getInput()), tool.getParameters()) == null;
@@ -399,12 +534,26 @@ public class Supervisor {
     private static void appendResult(
             LoopConversation conversation, ToolUseBlock call, ToolResultBlock result) {
         synchronized (conversation) {
+            String trust = childTool(call.getName()) ? "CHILD" : call.getName().equals("search_knowledge") ? "RETRIEVAL" : "TOOL";
             conversation.append(
                     Msg.builder()
                             .role(MsgRole.TOOL)
                             .content(List.of(result.withIdAndName(call.getId(), call.getName())))
+                            .metadata(Map.of("trustLevel", trust))
                             .build());
         }
+    }
+
+    /** 子 Agent 协作工具的结果属于 CHILD 内容，只作为数据，不提供父级授权。 */
+    private static boolean childTool(String name) {
+        return Set.of(
+                        "spawn_agent",
+                        "followup_task",
+                        "send_message",
+                        "interrupt_agent",
+                        "list_agents",
+                        "wait_agent")
+                .contains(name);
     }
 
     /** 本轮只发现一次完整工具表，角色工具、协作工具与询问工具都进入固定快照。 */
@@ -414,6 +563,12 @@ public class Supervisor {
                 new LinkedHashMap<>(factory.tools(context.control.agentRole()));
         result.putAll(new ChildAgentDispatcher(context, conversation).tools());
         result.put("request_user_input", questionTool());
+        if (context.control.policy().multiAgent().plannerEnabled()) {
+            result.put("plan_agents", MultiAgentPlanner.tool(context));
+        }
+        if (context.control.policy().summary().recallEnabled()) {
+            result.put("recall_context", ContextRecall.tool(context));
+        }
         return result;
     }
 
@@ -619,7 +774,10 @@ public class Supervisor {
         }
         AnswerFactChecker.Check check =
                 AnswerFactChecker.check(
-                        conversation.replyText, context.evidence(), policy.highRiskTools());
+                        conversation.replyText,
+                        context.evidence(),
+                        policy.highRiskTools(),
+                        context.today);
         if (check.conflict()) {
             context.event("FACT_CONFLICT：同一条件出现不同结果，改用证据答复");
             return Mono.just(

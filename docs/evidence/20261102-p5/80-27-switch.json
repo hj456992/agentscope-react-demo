@@ -1,0 +1,574 @@
+{
+  "first": {
+    "q": "查询上海2026-11-03的天气",
+    "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+    "text": "查询上海2026-11-03的天气\nS\nSupervisor\n查询成功\n上海 2026-11-03 的天气：晴，气温约 22℃。\n（数据来自本地示例数据，仅供参考。）\n天气\n查询成功\n上海\n2026-11-03\n22°\n晴\n来源 downstream-v1\n执行过程\n1 条记录\n任务与请求详情\n异步 · 6b8763e3",
+    "detail": {
+      "result": {
+        "status": "SUCCESS",
+        "originalQuery": "查询上海2026-11-03的天气",
+        "rewrittenQuery": "查询上海2026-11-03的天气",
+        "intent": "UNKNOWN",
+        "answer": "上海 2026-11-03 的天气：晴，气温约 22℃。\n\n（数据来自本地示例数据，仅供参考。）",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_weather",
+            "status": "SUCCESS",
+            "source": "downstream-v1",
+            "data": {
+              "date": "2026-11-03",
+              "city": "上海",
+              "weather": {
+                "temperature": 22,
+                "condition": "晴"
+              }
+            }
+          }
+        ],
+        "events": [
+          "工具结果：query_weather / SUCCESS"
+        ]
+      },
+      "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+      "requestId": "4f16caf5-c732-4957-99e4-3d2b11ae4c32",
+      "sessionId": "b46eb74d-7724-4e0a-a56c-7ea9e692a221",
+      "state": "SUCCESS",
+      "revision": 1,
+      "generation": 2,
+      "consumedRevision": 1,
+      "modelCalls": 2,
+      "maxModelCalls": 16,
+      "deadline": 1793571195249,
+      "replacedBy": null,
+      "parentRunId": null,
+      "rootRunId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+      "agentPath": "/root",
+      "agentRole": "supervisor",
+      "agentVersion": "1",
+      "accepted": true,
+      "plan": {},
+      "children": [],
+      "toolCalls": [
+        {
+          "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "agentPath": "/root",
+          "callId": "call_00_gU6zLoI6YDA9meEFE33d6687",
+          "tool": "query_weather",
+          "argumentFingerprint": "12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a",
+          "status": "SUCCESS",
+          "startedAt": 1793571136172,
+          "endedAt": 1793571136277,
+          "durationMs": 105,
+          "resultBytes": 160,
+          "resultSummary": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"city\":\"上海\",\"weather\":{\"temperature\":22,\"condition\":\"晴\"}}}",
+          "operationId": "call_00_gU6zLoI6YDA9meEFE33d6687",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        }
+      ],
+      "delegations": [],
+      "usage": {
+        "promptTokens": 3646,
+        "completionTokens": 88,
+        "cachedTokens": 3200,
+        "totalTokens": 3734,
+        "source": "provider",
+        "agents": [
+          {
+            "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+            "agentPath": "/root",
+            "agentRole": "supervisor",
+            "modelCalls": 2,
+            "promptTokens": 3646,
+            "completionTokens": 88,
+            "cachedTokens": 3200,
+            "totalTokens": 3734,
+            "source": "provider",
+            "ownModelCalls": 2,
+            "subtreeModelCalls": 2,
+            "remainingModelCalls": 14,
+            "sharedBudget": true
+          }
+        ]
+      },
+      "spans": [
+        {
+          "traceId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "spanId": "run:6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "parentSpanId": null,
+          "kind": "RUN",
+          "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "agentPath": "/root",
+          "name": "run",
+          "status": "SUCCESS",
+          "startedAt": 1793571135249,
+          "endedAt": 1793571137098,
+          "durationMs": 1849,
+          "errorCode": null
+        },
+        {
+          "traceId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "spanId": "model:6b8763e3-b4f3-4774-be34-2866a7c8a154:2",
+          "parentSpanId": "run:6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "kind": "MODEL",
+          "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793571136161,
+          "endedAt": 1793571136969,
+          "durationMs": 808,
+          "errorCode": null
+        },
+        {
+          "traceId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "spanId": "model:6b8763e3-b4f3-4774-be34-2866a7c8a154:4",
+          "parentSpanId": "run:6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "kind": "MODEL",
+          "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793571137087,
+          "endedAt": 1793571137885,
+          "durationMs": 798,
+          "errorCode": null
+        },
+        {
+          "traceId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "spanId": "tool:6b8763e3-b4f3-4774-be34-2866a7c8a154:call_00_gU6zLoI6YDA9meEFE33d6687",
+          "parentSpanId": "run:6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "kind": "TOOL",
+          "runId": "6b8763e3-b4f3-4774-be34-2866a7c8a154",
+          "agentPath": "/root",
+          "name": "query_weather",
+          "status": "SUCCESS",
+          "startedAt": 1793571136161,
+          "endedAt": 1793571136278,
+          "durationMs": 117,
+          "errorCode": "SUCCESS"
+        }
+      ],
+      "compactions": [],
+      "recalls": [],
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_weather"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_weather"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_weather"
+        ],
+        "filteredReasons": {}
+      },
+      "promptVersions": [
+        {
+          "role": "supervisor",
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "source": "registry"
+        }
+      ],
+      "checkpoints": {
+        "attempt:read:query_weather:e5edc330dfcf5cf5565819c06fc444ced8a5eb35d9c0e3308fa8c6d05d0ed08e": "1",
+        "correction:v1:streak:query_weather": "0",
+        "evidence:v1:latest": "query_weather city=上海 date=2026-11-03 temperature=22 condition=晴",
+        "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_weather\",\"tokens\":\"ci it ty y上 上海 海d da at te e2 20 02 26 61 11 10 03\",\"sample\":\"{\\\"city\\\":\\\"上海\\\",\\\"date\\\":\\\"2026-11-03\\\"}\",\"warnings\":0}]",
+        "loop:v1:tool-calls": "{\"query_weather:12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a\":1}",
+        "model:19d9d7e299d44232bb641425d18fc9e8015fb263342d190725ff47e47eda3a14": "1",
+        "model:4427d84c5fd12220367504102c8baeebd1e5faa9393aeee9912e379983fba014": "1",
+        "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查询上海2026-11-03的天气\",\"rewrittenQuery\":\"查询上海2026-11-03的天气\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"city\":\"上海\",\"weather\":{\"temperature\":22,\"condition\":\"晴\"}}}],\"events\":[]}",
+        "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+        "protocol": "3.3",
+        "read:query_weather:e5edc330dfcf5cf5565819c06fc444ced8a5eb35d9c0e3308fa8c6d05d0ed08e": "{\"tool\":\"query_weather\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"city\":\"上海\",\"weather\":{\"temperature\":22,\"condition\":\"晴\"}}}",
+        "step:v1:1": "4",
+        "toolcall:v1:call_00_gU6zLoI6YDA9meEFE33d6687": "{\"callId\":\"call_00_gU6zLoI6YDA9meEFE33d6687\",\"tool\":\"query_weather\",\"argumentFingerprint\":\"12652acea5747cffc28cf42a3cc2843b83e37bcf676d71f86a62c71d549aab2a\",\"startedAt\":1793571136172,\"status\":\"SUCCESS\",\"endedAt\":1793571136277,\"resultBytes\":160,\"resultSummary\":\"{\\\"tool\\\":\\\"query_weather\\\",\\\"status\\\":\\\"SUCCESS\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"date\\\":\\\"2026-11-03\\\",\\\"city\\\":\\\"上海\\\",\\\"weather\\\":{\\\"temperature\\\":22,\\\"condition\\\":\\\"晴\\\"}}}\",\"reused\":false}"
+      },
+      "approvals": [],
+      "sideEffects": [],
+      "events": [
+        "工具结果：query_weather / SUCCESS"
+      ],
+      "createdAt": 1793571135249,
+      "firstEventAt": 1793571136274,
+      "completedAt": 1793571137098,
+      "triggerMode": "NORMAL",
+      "acceptanceHint": null,
+      "recovered": false,
+      "requestFingerprint": "2ef04ca973a298d1a8ab55c4c55e266d6b92d5eabe1132826e94a8d5fb2c411c",
+      "instructions": [],
+      "timeline": [
+        {
+          "sequence": 1,
+          "at": 1793571136274,
+          "text": "工具结果：query_weather / SUCCESS"
+        }
+      ],
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "corrections": [],
+      "contentTrust": [
+        {
+          "level": "SYSTEM",
+          "source": "系统提示与固定参考上下文",
+          "handling": "平台指令；不能由用户或工具内容改写",
+          "count": 2
+        },
+        {
+          "level": "USER",
+          "source": "当前用户输入及用户确认的偏好",
+          "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+          "count": 1
+        },
+        {
+          "level": "TOOL",
+          "source": "工具结果消息",
+          "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+          "count": 1
+        },
+        {
+          "level": "RETRIEVAL",
+          "source": "历史、压缩摘要、检索资料与客户端补充历史",
+          "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+          "count": 2
+        },
+        {
+          "level": "CHILD",
+          "source": "子 Agent 通知与协作工具结果",
+          "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+          "count": 0
+        }
+      ]
+    }
+  },
+  "topicSwitch": {
+    "q": "查询2026-11-03杭州到上海的火车票",
+    "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+    "text": "查询2026-11-03杭州到上海的火车票\nS\nSupervisor\n查询成功\n2026-11-03 杭州 → 上海 的查询结果如下（示例数据，非真实时刻与余票）：\n车次\t出发\t到达\t历时\t座位\t票价\t余票\nG-DEMO-001\t08:00\t09:00\t60 分钟\t二等座\t¥80\t10 张\n注：该车次为演示用的虚构数据，不代表实际时刻或余票情况。\n需要我帮你预订这张票吗？如需预订，请告诉我乘客姓名；预订会提交人工审批。另外，之前你问的上海 2026-11-03 天气需要我一起查一下吗？\n火车票\n查询成功\n杭州\n→\n上海\n2026-11-03\n08:00\n60 分钟\n09:00\nG-DEMO-001 · 二等座\n¥80\n余 10 张\n虚构车次，不代表实际时刻或余票\n来源 downstream-v1\n执行过程\n1 条记录\n任务与请求详情\n异步 · 37057f5e",
+    "detail": {
+      "result": {
+        "status": "SUCCESS",
+        "originalQuery": "查询2026-11-03杭州到上海的火车票",
+        "rewrittenQuery": "查询2026-11-03杭州到上海的火车票",
+        "intent": "UNKNOWN",
+        "answer": "2026-11-03 杭州 → 上海 的查询结果如下（示例数据，非真实时刻与余票）：\n\n| 车次 | 出发 | 到达 | 历时 | 座位 | 票价 | 余票 |\n|---|---|---|---|---|---|---|\n| G-DEMO-001 | 08:00 | 09:00 | 60 分钟 | 二等座 | ¥80 | 10 张 |\n\n注：该车次为演示用的虚构数据，不代表实际时刻或余票情况。\n\n需要我帮你预订这张票吗？如需预订，请告诉我乘客姓名；预订会提交人工审批。另外，之前你问的上海 2026-11-03 天气需要我一起查一下吗？",
+        "agents": [],
+        "evidence": [
+          {
+            "tool": "query_trains",
+            "status": "SUCCESS",
+            "source": "downstream-v1",
+            "data": {
+              "date": "2026-11-03",
+              "from": "杭州",
+              "to": "上海",
+              "trains": [
+                {
+                  "number": "G-DEMO-001",
+                  "departure": "08:00",
+                  "arrival": "09:00",
+                  "durationMinutes": 60,
+                  "seat": "二等座",
+                  "price": 80,
+                  "availableSeats": 10,
+                  "note": "虚构车次，不代表实际时刻或余票"
+                }
+              ]
+            }
+          }
+        ],
+        "events": [
+          "工具结果：query_trains / SUCCESS"
+        ]
+      },
+      "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+      "requestId": "28f6b0f7-b96a-4aa4-bb7c-d5242c193afd",
+      "sessionId": "b46eb74d-7724-4e0a-a56c-7ea9e692a221",
+      "state": "SUCCESS",
+      "revision": 1,
+      "generation": 2,
+      "consumedRevision": 1,
+      "modelCalls": 2,
+      "maxModelCalls": 16,
+      "deadline": 1793571198060,
+      "replacedBy": null,
+      "parentRunId": null,
+      "rootRunId": "37057f5e-f786-460b-9157-79c82ca431e6",
+      "agentPath": "/root",
+      "agentRole": "supervisor",
+      "agentVersion": "1",
+      "accepted": true,
+      "plan": {},
+      "children": [],
+      "toolCalls": [
+        {
+          "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "agentPath": "/root",
+          "callId": "call_00_mgkKN4UnHBwQbJZFCwmt1135",
+          "tool": "query_trains",
+          "argumentFingerprint": "257734c3cc9cdcb9cc803e929fcc6601a264b5390c1c7bdf9dff17631c750476",
+          "status": "SUCCESS",
+          "startedAt": 1793571138908,
+          "endedAt": 1793571138923,
+          "durationMs": 15,
+          "resultBytes": 325,
+          "resultSummary": "{\"tool\":\"query_trains\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"from\":\"杭州\",\"to\":\"上海\",\"trains\":[{\"number\":\"G-DEMO-001\",\"departure\":\"08:00\",\"arrival\":\"09:00\",\"durationMinutes\":60,\"seat\":\"二等座\",\"price\":80,\"availableSeats\":10,\"note\":\"虚构车次，不代表实际时刻或余票\"}]}}",
+          "operationId": "call_00_mgkKN4UnHBwQbJZFCwmt1135",
+          "paired": true,
+          "reused": false,
+          "failureClass": null,
+          "providerCode": null,
+          "retryAfterMs": null
+        }
+      ],
+      "delegations": [],
+      "usage": {
+        "promptTokens": 3851,
+        "completionTokens": 230,
+        "cachedTokens": 3456,
+        "totalTokens": 4081,
+        "source": "provider",
+        "agents": [
+          {
+            "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+            "agentPath": "/root",
+            "agentRole": "supervisor",
+            "modelCalls": 2,
+            "promptTokens": 3851,
+            "completionTokens": 230,
+            "cachedTokens": 3456,
+            "totalTokens": 4081,
+            "source": "provider",
+            "ownModelCalls": 2,
+            "subtreeModelCalls": 2,
+            "remainingModelCalls": 14,
+            "sharedBudget": true
+          }
+        ]
+      },
+      "spans": [
+        {
+          "traceId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "spanId": "run:37057f5e-f786-460b-9157-79c82ca431e6",
+          "parentSpanId": null,
+          "kind": "RUN",
+          "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "agentPath": "/root",
+          "name": "run",
+          "status": "SUCCESS",
+          "startedAt": 1793571138060,
+          "endedAt": 1793571140028,
+          "durationMs": 1968,
+          "errorCode": null
+        },
+        {
+          "traceId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "spanId": "model:37057f5e-f786-460b-9157-79c82ca431e6:3",
+          "parentSpanId": "run:37057f5e-f786-460b-9157-79c82ca431e6",
+          "kind": "MODEL",
+          "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793571138903,
+          "endedAt": 1793571139729,
+          "durationMs": 826,
+          "errorCode": null
+        },
+        {
+          "traceId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "spanId": "model:37057f5e-f786-460b-9157-79c82ca431e6:5",
+          "parentSpanId": "run:37057f5e-f786-460b-9157-79c82ca431e6",
+          "kind": "MODEL",
+          "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "agentPath": "/root",
+          "name": "model:ASSISTANT",
+          "status": "COMPLETED",
+          "startedAt": 1793571140011,
+          "endedAt": 1793571141085,
+          "durationMs": 1074,
+          "errorCode": null
+        },
+        {
+          "traceId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "spanId": "tool:37057f5e-f786-460b-9157-79c82ca431e6:call_00_mgkKN4UnHBwQbJZFCwmt1135",
+          "parentSpanId": "run:37057f5e-f786-460b-9157-79c82ca431e6",
+          "kind": "TOOL",
+          "runId": "37057f5e-f786-460b-9157-79c82ca431e6",
+          "agentPath": "/root",
+          "name": "query_trains",
+          "status": "SUCCESS",
+          "startedAt": 1793571138903,
+          "endedAt": 1793571138924,
+          "durationMs": 21,
+          "errorCode": "SUCCESS"
+        }
+      ],
+      "compactions": [],
+      "recalls": [],
+      "permissions": {
+        "allowedTools": [
+          "book_ticket",
+          "memory:write",
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "requiredTools": [
+          "query_trains"
+        ],
+        "filteredTools": [],
+        "evidenceTools": [
+          "query_trains"
+        ],
+        "evidenceCount": 1,
+        "evidenceRecheckPassed": true,
+        "directoryTools": [
+          "query_trains",
+          "query_weather",
+          "search_knowledge"
+        ],
+        "executionTools": [
+          "query_trains"
+        ],
+        "filteredReasons": {}
+      },
+      "promptVersions": [
+        {
+          "role": "supervisor",
+          "promptId": "prompt.travel.supervisor",
+          "version": "1",
+          "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+          "source": "registry"
+        }
+      ],
+      "checkpoints": {
+        "attempt:read:query_trains:fa99843b32dbba049e0f13d0bf4be4e8b986a42afea4170a0244778cee8d9a60": "1",
+        "correction:v1:streak:query_trains": "0",
+        "evidence:v1:latest": "query_trains from=杭州 to=上海 date=2026-11-03 count=1 number=G-DEMO-001 departure=08:00 arrival=09:00 price=80 av",
+        "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"query_trains\",\"tokens\":\"da at te e2 20 02 26 61 11 10 03 3f fr ro om m杭 杭州 州t to o上 上海\",\"sample\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"to\\\":\\\"上海\\\"}\",\"warnings\":0}]",
+        "loop:v1:tool-calls": "{\"query_trains:257734c3cc9cdcb9cc803e929fcc6601a264b5390c1c7bdf9dff17631c750476\":1}",
+        "model:40d2bab170e20b700aa9b3f5a4931114e87fa11fa05f67531aca0611b9a9d95b": "1",
+        "model:b65d4e94925718fec8b48b746839ad4086a20ff1f5eddfa821abea548a7cf915": "1",
+        "progress": "{\"status\":\"RUNNING\",\"originalQuery\":\"查询2026-11-03杭州到上海的火车票\",\"rewrittenQuery\":\"查询2026-11-03杭州到上海的火车票\",\"intent\":\"UNKNOWN\",\"answer\":\"任务执行中\",\"agents\":[],\"evidence\":[{\"tool\":\"query_trains\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"from\":\"杭州\",\"to\":\"上海\",\"trains\":[{\"number\":\"G-DEMO-001\",\"departure\":\"08:00\",\"arrival\":\"09:00\",\"durationMinutes\":60,\"seat\":\"二等座\",\"price\":80,\"availableSeats\":10,\"note\":\"虚构车次，不代表实际时刻或余票\"}]}}],\"events\":[]}",
+        "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+        "protocol": "3.3",
+        "read:query_trains:fa99843b32dbba049e0f13d0bf4be4e8b986a42afea4170a0244778cee8d9a60": "{\"tool\":\"query_trains\",\"status\":\"SUCCESS\",\"source\":\"downstream-v1\",\"data\":{\"date\":\"2026-11-03\",\"from\":\"杭州\",\"to\":\"上海\",\"trains\":[{\"number\":\"G-DEMO-001\",\"departure\":\"08:00\",\"arrival\":\"09:00\",\"durationMinutes\":60,\"seat\":\"二等座\",\"price\":80,\"availableSeats\":10,\"note\":\"虚构车次，不代表实际时刻或余票\"}]}}",
+        "step:v1:1": "4",
+        "toolcall:v1:call_00_mgkKN4UnHBwQbJZFCwmt1135": "{\"callId\":\"call_00_mgkKN4UnHBwQbJZFCwmt1135\",\"tool\":\"query_trains\",\"argumentFingerprint\":\"257734c3cc9cdcb9cc803e929fcc6601a264b5390c1c7bdf9dff17631c750476\",\"startedAt\":1793571138908,\"status\":\"SUCCESS\",\"endedAt\":1793571138923,\"resultBytes\":325,\"resultSummary\":\"{\\\"tool\\\":\\\"query_trains\\\",\\\"status\\\":\\\"SUCCESS\\\",\\\"source\\\":\\\"downstream-v1\\\",\\\"data\\\":{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"to\\\":\\\"上海\\\",\\\"trains\\\":[{\\\"number\\\":\\\"G-DEMO-001\\\",\\\"departure\\\":\\\"08:00\\\",\\\"arrival\\\":\\\"09:00\\\",\\\"durationMi…"
+      },
+      "approvals": [],
+      "sideEffects": [],
+      "events": [
+        "工具结果：query_trains / SUCCESS"
+      ],
+      "createdAt": 1793571138060,
+      "firstEventAt": 1793571138921,
+      "completedAt": 1793571140028,
+      "triggerMode": "NORMAL",
+      "acceptanceHint": null,
+      "recovered": false,
+      "requestFingerprint": "bd4a7db84bdf647aaabf046560dec603f337e170398bbaf032800ca5cfdcc8b0",
+      "instructions": [],
+      "timeline": [
+        {
+          "sequence": 1,
+          "at": 1793571138921,
+          "text": "工具结果：query_trains / SUCCESS"
+        }
+      ],
+      "routing": {
+        "decision": "SINGLE_AGENT",
+        "reason": "未写入多Agent计划",
+        "confidence": "MEDIUM",
+        "candidates": [
+          {
+            "role": "supervisor",
+            "catalogTools": [
+              "query_weather",
+              "query_trains",
+              "search_knowledge"
+            ],
+            "permitted": true,
+            "selected": true,
+            "reason": "本运行实际使用该角色",
+            "confidence": "HIGH"
+          }
+        ]
+      },
+      "corrections": [],
+      "contentTrust": [
+        {
+          "level": "SYSTEM",
+          "source": "系统提示与固定参考上下文",
+          "handling": "平台指令；不能由用户或工具内容改写",
+          "count": 2
+        },
+        {
+          "level": "USER",
+          "source": "当前用户输入及用户确认的偏好",
+          "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+          "count": 1
+        },
+        {
+          "level": "TOOL",
+          "source": "工具结果消息",
+          "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+          "count": 1
+        },
+        {
+          "level": "RETRIEVAL",
+          "source": "历史、压缩摘要、检索资料与客户端补充历史",
+          "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+          "count": 3
+        },
+        {
+          "level": "CHILD",
+          "source": "子 Agent 通知与协作工具结果",
+          "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+          "count": 0
+        }
+      ]
+    }
+  },
+  "consoleErrors": []
+}

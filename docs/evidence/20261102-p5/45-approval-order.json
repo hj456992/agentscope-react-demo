@@ -1,0 +1,293 @@
+{
+  "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+  "approvalId": "133c17b6-6045-47b2-9855-f9612fc95cbd",
+  "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+  "detail": {
+    "result": {
+      "status": "SUCCESS",
+      "originalQuery": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。",
+      "rewrittenQuery": "帮我预订2026-11-03杭州到上海G7501的车票，乘客张三。",
+      "intent": "UNKNOWN",
+      "answer": "订单已提交并登记人工审批，当前状态为 PENDING_APPROVAL。审批编号：133c17b6-6045-47b2-9855-f9612fc95cbd。请在“平台治理 → 审批”中批准或拒绝；批准后才会通过本地独立下游创建示例订单。",
+      "agents": [],
+      "evidence": [],
+      "events": [
+        "受控触发：BOOK_TICKET，第1次，工具=book_ticket",
+        "写入工具审批状态：PENDING_APPROVAL"
+      ]
+    },
+    "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+    "requestId": "4be52648-80c1-408b-8208-4f7ea96ed142",
+    "sessionId": "0754bb04-fa7e-48ff-b53f-0064b3ab6433",
+    "state": "SUCCESS",
+    "revision": 1,
+    "generation": 2,
+    "consumedRevision": 1,
+    "modelCalls": 1,
+    "maxModelCalls": 16,
+    "deadline": 1793569429135,
+    "replacedBy": null,
+    "parentRunId": null,
+    "rootRunId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+    "agentPath": "/root",
+    "agentRole": "supervisor",
+    "agentVersion": "1",
+    "accepted": true,
+    "plan": {},
+    "children": [],
+    "toolCalls": [
+      {
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "callId": "acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "tool": "book_ticket",
+        "argumentFingerprint": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+        "status": "PENDING_APPROVAL",
+        "startedAt": 1793569369163,
+        "endedAt": 1793569369170,
+        "durationMs": 7,
+        "resultBytes": 218,
+        "resultSummary": "{\"status\":\"PENDING_APPROVAL\",\"approvalId\":\"133c17b6-6045-47b2-9855-f9612fc95cbd\",\"operationId\":\"book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c\",\"response\":null,\"message\":\"需要人工审批后才能下单\"}",
+        "operationId": "acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "paired": true,
+        "reused": false,
+        "failureClass": null,
+        "providerCode": null,
+        "retryAfterMs": null
+      }
+    ],
+    "delegations": [],
+    "usage": {
+      "promptTokens": 0,
+      "completionTokens": 0,
+      "cachedTokens": 0,
+      "totalTokens": 0,
+      "source": "missing",
+      "agents": [
+        {
+          "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 1,
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "cachedTokens": 0,
+          "totalTokens": 0,
+          "source": "missing",
+          "ownModelCalls": 1,
+          "subtreeModelCalls": 1,
+          "remainingModelCalls": 15,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "spans": [
+      {
+        "traceId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "spanId": "run:a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "parentSpanId": null,
+        "kind": "RUN",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "name": "run",
+        "status": "SUCCESS",
+        "startedAt": 1793569369135,
+        "endedAt": 1793569369173,
+        "durationMs": 38,
+        "errorCode": null
+      },
+      {
+        "traceId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "spanId": "tool:a50221b6-1aaf-4891-9c3a-4b5247a774b8:acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e",
+        "parentSpanId": "run:a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "kind": "TOOL",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "agentPath": "/root",
+        "name": "book_ticket",
+        "status": "PENDING_APPROVAL",
+        "startedAt": 1793569369157,
+        "endedAt": 1793569369171,
+        "durationMs": 14,
+        "errorCode": "PENDING_APPROVAL"
+      }
+    ],
+    "compactions": [],
+    "recalls": [],
+    "permissions": {
+      "allowedTools": [
+        "book_ticket",
+        "memory:write",
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "requiredTools": [],
+      "filteredTools": [],
+      "evidenceTools": [],
+      "evidenceCount": 0,
+      "evidenceRecheckPassed": true,
+      "directoryTools": [
+        "query_trains",
+        "query_weather",
+        "search_knowledge"
+      ],
+      "executionTools": [
+        "book_ticket"
+      ],
+      "filteredReasons": {}
+    },
+    "promptVersions": [
+      {
+        "role": "supervisor",
+        "promptId": "prompt.travel.supervisor",
+        "version": "1",
+        "hash": "7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374",
+        "source": "registry"
+      }
+    ],
+    "checkpoints": {
+      "acceptance:v1:trigger": "{\"ordinal\":1,\"tool\":\"book_ticket\",\"hint\":\"BOOK_TICKET\"}",
+      "loop:v1:semantic-goals": "[{\"scope\":\"tool\",\"key\":\"book_ticket\",\"tokens\":\"da at te e2 20 02 26 61 11 10 03 3f fr ro om m杭 杭州 州p pa as ss se en ng ge er r张 张三 三t to o上 上海 海t tr ra ai in nn nu um mb be rg g7 75 50 01\",\"sample\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\",\"warnings\":0}]",
+      "loop:v1:tool-calls": "{\"book_ticket:58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109\":1}",
+      "prompt:v1:supervisor": "1|7aa78bafb24e0fce11ca3b12c8d63dd945a37794cec9c5fde4e714fecb329374|prompt.travel.supervisor|registry",
+      "protocol": "3.3",
+      "step:v1:1": "2",
+      "toolcall:v1:acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e": "{\"callId\":\"acceptance-1-e2b855ac-c017-460b-8f71-23ad488d6c3e\",\"tool\":\"book_ticket\",\"argumentFingerprint\":\"58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109\",\"startedAt\":1793569369163,\"status\":\"PENDING_APPROVAL\",\"endedAt\":1793569369170,\"resultBytes\":218,\"resultSummary\":\"{\\\"status\\\":\\\"PENDING_APPROVAL\\\",\\\"approvalId\\\":\\\"133c17b6-6045-47b2-9855-f9612fc95cbd\\\",\\\"operationId\\\":\\\"book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c\\\",\\\"response\\\":null,\\\"message\\\":\\\"需要人工审批后才能下单\\\"}\"…"
+    },
+    "approvals": [
+      {
+        "approvalId": "133c17b6-6045-47b2-9855-f9612fc95cbd",
+        "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+        "toolName": "book_ticket",
+        "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+        "requestHash": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+        "status": "APPROVED",
+        "requestedBy": "user",
+        "requiredPermission": "approve_book_ticket",
+        "requestedAt": 1793569369167,
+        "expiresAt": 1793569969167,
+        "decidedBy": "approver",
+        "decidedAt": 1793569386300,
+        "reason": "验收：核对车次与乘客后批准",
+        "operationStatus": "SUCCESS",
+        "operationResponse": "{\"operationId\":\"929516c34d66d3a7800276d19576e30548c8376aefc7bc396a039828828afccc\",\"status\":\"CONFIRMED\",\"orderNumber\":\"LOCAL-d6b61c2a\",\"createdAt\":1793569386342,\"parametersHash\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\"}"
+      }
+    ],
+    "sideEffects": [
+      {
+        "tool": "book_ticket",
+        "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+        "status": "SUCCESS",
+        "parameterHash": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+        "updatedAt": 0,
+        "attempts": 1,
+        "submitAttempts": 1,
+        "lookupAttempts": 0,
+        "lastError": "{\"operationId\":\"929516c34d66d3a7800276d19576e30548c8376aefc7bc396a039828828afccc\",\"status\":\"CONFIRMED\",\"orderNumber\":\"LOCAL-d6b61c2a\",\"createdAt\":1793569386342,\"parametersHash\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\"}"
+      }
+    ],
+    "events": [
+      "受控触发：BOOK_TICKET，第1次，工具=book_ticket",
+      "写入工具审批状态：PENDING_APPROVAL"
+    ],
+    "createdAt": 1793569369135,
+    "firstEventAt": 1793569369157,
+    "completedAt": 1793569369173,
+    "triggerMode": "CONTROLLED",
+    "acceptanceHint": "BOOK_TICKET",
+    "recovered": false,
+    "requestFingerprint": "6079d81c7bafaf3f8d74aa542c2b0cbf74095b2badc6b3dbdd7a7dc65063765e",
+    "instructions": [],
+    "timeline": [
+      {
+        "sequence": 1,
+        "at": 1793569369157,
+        "text": "受控触发：BOOK_TICKET，第1次，工具=book_ticket"
+      },
+      {
+        "sequence": 2,
+        "at": 1793569369168,
+        "text": "写入工具审批状态：PENDING_APPROVAL"
+      }
+    ],
+    "routing": {
+      "decision": "SINGLE_AGENT",
+      "reason": "未写入多Agent计划",
+      "confidence": "MEDIUM",
+      "candidates": [
+        {
+          "role": "supervisor",
+          "catalogTools": [
+            "query_weather",
+            "query_trains",
+            "search_knowledge"
+          ],
+          "permitted": true,
+          "selected": true,
+          "reason": "本运行实际使用该角色",
+          "confidence": "HIGH"
+        }
+      ]
+    },
+    "corrections": [],
+    "contentTrust": [
+      {
+        "level": "SYSTEM",
+        "source": "系统提示与固定参考上下文",
+        "handling": "平台指令；不能由用户或工具内容改写",
+        "count": 1
+      },
+      {
+        "level": "USER",
+        "source": "当前用户输入及用户确认的偏好",
+        "handling": "用户输入；可表达目标，但不直接授予工具或数据权限",
+        "count": 1
+      },
+      {
+        "level": "TOOL",
+        "source": "工具结果消息",
+        "handling": "工具结果；只作为数据，不提供身份、权限或审批",
+        "count": 1
+      },
+      {
+        "level": "RETRIEVAL",
+        "source": "历史、压缩摘要、检索资料与客户端补充历史",
+        "handling": "检索与历史资料；只作为参考，不覆盖当前用户确认",
+        "count": 1
+      },
+      {
+        "level": "CHILD",
+        "source": "子 Agent 通知与协作工具结果",
+        "handling": "子 Agent 输出；不继承父级授权，不替代人工审批",
+        "count": 0
+      }
+    ]
+  },
+  "approval": {
+    "approvalId": "133c17b6-6045-47b2-9855-f9612fc95cbd",
+    "runId": "a50221b6-1aaf-4891-9c3a-4b5247a774b8",
+    "toolName": "book_ticket",
+    "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+    "requestHash": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+    "status": "APPROVED",
+    "requestedBy": "user",
+    "requiredPermission": "approve_book_ticket",
+    "requestedAt": 1793569369167,
+    "expiresAt": 1793569969167,
+    "decidedBy": "approver",
+    "decidedAt": 1793569386300,
+    "reason": "验收：核对车次与乘客后批准",
+    "operationStatus": "SUCCESS",
+    "operationResponse": "{\"operationId\":\"929516c34d66d3a7800276d19576e30548c8376aefc7bc396a039828828afccc\",\"status\":\"CONFIRMED\",\"orderNumber\":\"LOCAL-d6b61c2a\",\"createdAt\":1793569386342,\"parametersHash\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\"}"
+  },
+  "operation": {
+    "tool": "book_ticket",
+    "operationId": "book:a50221b6-1aaf-4891-9c3a-4b5247a774b8:58bb2ebf8cc9d15c",
+    "status": "SUCCESS",
+    "parameterHash": "58bb2ebf8cc9d15ca32c5831953ed43529f8fc24d02984c0c90042b36b801109",
+    "updatedAt": 0,
+    "submitAttempts": 1,
+    "lookupAttempts": 0,
+    "response": "{\"operationId\":\"929516c34d66d3a7800276d19576e30548c8376aefc7bc396a039828828afccc\",\"status\":\"CONFIRMED\",\"orderNumber\":\"LOCAL-d6b61c2a\",\"createdAt\":1793569386342,\"parametersHash\":\"{\\\"date\\\":\\\"2026-11-03\\\",\\\"from\\\":\\\"杭州\\\",\\\"passenger\\\":\\\"张三\\\",\\\"to\\\":\\\"上海\\\",\\\"trainNumber\\\":\\\"G7501\\\"}\"}"
+  }
+}

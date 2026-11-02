@@ -1,0 +1,93 @@
+{
+  "target": "查询杭州2026-11-03的天气，并给出简要出行建议",
+  "note": "同一目标，单 Agent 为自然路径；多 Agent 为受控触发 SPAWN_CHILD，仅替换一次模型边界工具请求，工具、预算、证据链路真实。",
+  "single": {
+    "runId": "c1d4182d-b8b2-4ae4-9efb-165e6e5788ad",
+    "triggerMode": "NORMAL",
+    "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+    "elapsedSeconds": 6,
+    "state": "SUCCESS",
+    "modelCalls": 2,
+    "childRunCount": 0,
+    "usage": {
+      "promptTokens": 3658,
+      "completionTokens": 181,
+      "cachedTokens": 3200,
+      "totalTokens": 3839,
+      "source": "provider",
+      "agents": [
+        {
+          "runId": "c1d4182d-b8b2-4ae4-9efb-165e6e5788ad",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 2,
+          "promptTokens": 3658,
+          "completionTokens": 181,
+          "cachedTokens": 3200,
+          "totalTokens": 3839,
+          "source": "provider",
+          "ownModelCalls": 2,
+          "subtreeModelCalls": 2,
+          "remainingModelCalls": 14,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "answer": "杭州 2026-11-03 的天气情况（示例数据）：\n\n- **天气**：多云\n- **气温**：18℃\n\n**出行建议**：\n- 气温适中，穿长袖或者薄外套即可，早晚可以再带一件薄款针织衫或夹克。\n- 多云无雨，适合户外活动和步行出行，注意一下紫外线防护就行。\n- 如果可以的话，带上折叠伞备用；目前预报没有降雨，但多云天气也比较容易有变化。\n\n如果你需要，我还可以帮你查当天杭州的车次，或者把行程安排整理一下。"
+  },
+  "multi": {
+    "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+    "triggerMode": "CONTROLLED",
+    "question": "查询杭州2026-11-03的天气，并给出简要出行建议",
+    "elapsedSeconds": 10,
+    "state": "SUCCESS",
+    "modelCalls": 6,
+    "childRunCount": 1,
+    "usage": {
+      "promptTokens": 4969,
+      "completionTokens": 314,
+      "cachedTokens": 3328,
+      "totalTokens": 5283,
+      "source": "provider",
+      "agents": [
+        {
+          "runId": "297b2c15-126b-4faa-ab27-33c925d8f6fb",
+          "agentPath": "/root",
+          "agentRole": "supervisor",
+          "modelCalls": 6,
+          "promptTokens": 2095,
+          "completionTokens": 171,
+          "cachedTokens": 1664,
+          "totalTokens": 2266,
+          "source": "provider",
+          "ownModelCalls": 4,
+          "subtreeModelCalls": 6,
+          "remainingModelCalls": 10,
+          "sharedBudget": true
+        },
+        {
+          "runId": "71112542-c7d2-4b69-b2e8-1ba42e348a26",
+          "agentPath": "/root/acceptance_child",
+          "agentRole": "weather_agent",
+          "modelCalls": 2,
+          "promptTokens": 2874,
+          "completionTokens": 143,
+          "cachedTokens": 1664,
+          "totalTokens": 3017,
+          "source": "provider",
+          "ownModelCalls": 2,
+          "subtreeModelCalls": 2,
+          "remainingModelCalls": 10,
+          "sharedBudget": true
+        }
+      ]
+    },
+    "answer": "杭州 2026-11-03 天气及出行建议：\n\n**天气情况**\n- 天气：多云\n- 气温：18℃\n- 数据来源：天气查询工具，查询成功\n\n**简要出行建议**\n1. **适合出行**：多云天气，无降雨提示，18℃ 属于舒适区间，常规户外活动（步行、游览、通勤）都合适。\n2. **穿衣建议**：建议穿长袖加薄外套或针织衫，方便穿脱；早晚可能偏凉，注意温差。\n3. **其他提醒**：多云天气紫外线较弱但仍存在，长时间户外可备遮阳帽；空气质量与风力等细节本次未查询，如有敏感需求可另行确认。\n\n说明：以上天气为本地示例数据，仅供参考，实际出行前建议再确认实时天气预报。"
+  },
+  "comparison": {
+    "modelCallsDelta": 4,
+    "tokenDelta": 1444,
+    "elapsedDeltaSeconds": 4,
+    "costNote": "未提供供应商单价，不估算货币成本；仅比较实际 token 与调用数。"
+  }
+}

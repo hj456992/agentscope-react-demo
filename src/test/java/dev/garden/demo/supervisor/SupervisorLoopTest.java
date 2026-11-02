@@ -589,7 +589,9 @@ class SupervisorLoopTest {
                                                                             messages,
                                                                             "tools",
                                                                             tools))
-                                                            <= ContextBuilder.INPUT_LIMIT);
+                                                            <= SupervisorPolicy.defaults()
+                                                                            .execution()
+                                                                            .contextInputLimit());
                                             return text("可查询天气和车票。");
                                         }),
                         CLOCK,

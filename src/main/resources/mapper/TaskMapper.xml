@@ -3,6 +3,8 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="dev.garden.demo.supervisor.repo.mapper.TaskMapper">
 
+    <!-- 带 databaseId="postgres" 的语句只在 PostgreSQL 上生效；不带 databaseId 的是 H2 版本。 -->
+
     <update id="createTasksTable">
         CREATE TABLE IF NOT EXISTS supervisor_tasks (run_id VARCHAR(64) PRIMARY KEY,
           tenant_id VARCHAR(128), user_id VARCHAR(128), session_id VARCHAR(200),
@@ -10,9 +12,22 @@
           UNIQUE(tenant_id,user_id,request_id))
     </update>
 
+    <update id="createTasksTable" databaseId="postgres">
+        CREATE TABLE IF NOT EXISTS supervisor_tasks (run_id VARCHAR(64) PRIMARY KEY,
+          tenant_id VARCHAR(128), user_id VARCHAR(128), session_id VARCHAR(200),
+          request_id VARCHAR(200), created_at BIGINT, payload TEXT,
+          UNIQUE(tenant_id,user_id,request_id))
+    </update>
+
     <update id="createInstructionsTable">
         CREATE TABLE IF NOT EXISTS supervisor_instructions (run_id VARCHAR(64),
           instruction_id VARCHAR(200), fingerprint VARCHAR(64), response CLOB,
+          PRIMARY KEY(run_id,instruction_id))
+    </update>
+
+    <update id="createInstructionsTable" databaseId="postgres">
+        CREATE TABLE IF NOT EXISTS supervisor_instructions (run_id VARCHAR(64),
+          instruction_id VARCHAR(200), fingerprint VARCHAR(64), response TEXT,
           PRIMARY KEY(run_id,instruction_id))
     </update>
 
@@ -41,6 +56,17 @@
           KEY(run_id) VALUES(#{runId},#{tenantId},#{userId},#{sessionId},#{requestId},#{createdAt},#{payload})
     </update>
 
+    <update id="upsertTask" databaseId="postgres"
+            parameterType="dev.garden.demo.supervisor.pojo.dataobject.TaskRowDO">
+        INSERT INTO supervisor_tasks
+          (run_id,tenant_id,user_id,session_id,request_id,created_at,payload)
+        VALUES(#{runId},#{tenantId},#{userId},#{sessionId},#{requestId},#{createdAt},#{payload})
+        ON CONFLICT (run_id) DO UPDATE SET
+          tenant_id=EXCLUDED.tenant_id, user_id=EXCLUDED.user_id,
+          session_id=EXCLUDED.session_id, request_id=EXCLUDED.request_id,
+          created_at=EXCLUDED.created_at, payload=EXCLUDED.payload
+    </update>
+
     <select id="selectInstruction"
             resultType="dev.garden.demo.supervisor.pojo.dataobject.InstructionDO">
         SELECT fingerprint,response FROM supervisor_instructions
@@ -59,6 +85,14 @@
         MERGE INTO supervisor_windows KEY(window_key) VALUES(#{windowKey},#{startedAt},#{calls},#{tokens})
     </update>
 
+    <update id="upsertWindow" databaseId="postgres"
+            parameterType="dev.garden.demo.supervisor.pojo.dataobject.QuotaWindowDO">
+        INSERT INTO supervisor_windows (window_key,started_at,calls,tokens)
+        VALUES(#{windowKey},#{startedAt},#{calls},#{tokens})
+        ON CONFLICT (window_key) DO UPDATE SET
+          started_at=EXCLUDED.started_at, calls=EXCLUDED.calls, tokens=EXCLUDED.tokens
+    </update>
+
     <select id="selectCurrentSession" resultType="java.lang.String">
         SELECT current_run_id FROM supervisor_sessions
         WHERE tenant_id=#{tenantId} AND user_id=#{userId} AND session_id=#{sessionId}
@@ -67,6 +101,14 @@
     <update id="upsertSession" parameterType="dev.garden.demo.supervisor.pojo.dataobject.SessionDO">
         MERGE INTO supervisor_sessions KEY(tenant_id,user_id,session_id)
         VALUES(#{tenantId},#{userId},#{sessionId},#{currentRunId})
+    </update>
+
+    <update id="upsertSession" databaseId="postgres"
+            parameterType="dev.garden.demo.supervisor.pojo.dataobject.SessionDO">
+        INSERT INTO supervisor_sessions (tenant_id,user_id,session_id,current_run_id)
+        VALUES(#{tenantId},#{userId},#{sessionId},#{currentRunId})
+        ON CONFLICT (tenant_id,user_id,session_id) DO UPDATE SET
+          current_run_id=EXCLUDED.current_run_id
     </update>
 
     <delete id="deleteInstructions">

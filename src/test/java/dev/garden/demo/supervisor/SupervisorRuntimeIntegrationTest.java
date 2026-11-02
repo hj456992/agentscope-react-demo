@@ -44,7 +44,14 @@ class SupervisorRuntimeIntegrationTest {
                 Duration.ofDays(30),
                 Duration.ofDays(90),
                 url,
-                "test=local:cli:query_weather,query_trains,search_knowledge,memory:write");
+                "sa",
+                "",
+                16,
+                "test=local:cli:query_weather,query_trains,search_knowledge,memory:write",
+                false,
+                "",
+                Duration.ofSeconds(5),
+                0);
     }
 
     static RunRes done(TaskService service, String id) throws Exception {
@@ -108,7 +115,7 @@ class SupervisorRuntimeIntegrationTest {
                     tasks.instruct(
                                     IdentityDTO.local(),
                                     new InstructionParam(
-                                            started.runId(), "change", 1, Action.REVISE, "上海后天的天气"))
+                                            started.runId(), "change", 1, Action.MESSAGE, "上海后天的天气"))
                             .block();
             assertEquals(started.runId(), instruction.runId());
             release.tryEmitValue(true);

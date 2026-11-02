@@ -84,4 +84,6 @@
 - 接口、运行方式和默认配置见 `docs/Supervisor使用说明.md`。
 - 源码依据与适配差异见 `docs/源码参考与适配边界.md`。
 - 修改接口或事务边界时，同步更新上述文档与此文件。
+- 修改 `docs/项目问题及解法.md` 后，必须运行 `docs/tools/md2pdf/build.sh` 重新生成同名 PDF，保证 Markdown 与 PDF 一起更新；PDF 与 Markdown 放在同一目录。
+- 修改 `docs/集群环境部署改造方案.md` 后，必须运行 `docs/tools/md2pdf/build.sh docs/集群环境部署改造方案.md docs/集群环境部署改造方案.pdf` 重新生成同名 PDF，保证 Markdown 与 PDF 一起更新；PDF 与 Markdown 放在同一目录。
 - 用户要求解释类、方法或构造器时，除对话说明外，必须把对应说明写成中文代码注释（通常是 Javadoc），说明用途、约定和关键副作用，并与现有代码风格一致。

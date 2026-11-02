@@ -1,0 +1,51 @@
+{
+  "first": {
+    "questionLength": 55,
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n我已记录你的行程条件：\n\n出发日期：2026-11-02\n出发地：杭州\n目的地：上海\n座位等级：二等座\n预算：300 元\n\n按你的要求，我先只复述确认，没有查询车票。需要查询时告诉我即可。\n\n执行过程\n0 条记录\n任务与请求详情\n异步 · 4f09be80",
+    "events": []
+  },
+  "second": {
+    "questionLength": 1824,
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n收到\n\n执行过程\n4 条记录\n任务与请求详情\n异步 · 3ac66aef",
+    "events": [
+      "1\n上下文\n\n摘要忠实度告警：缺少 2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "2\n上下文\n\n上下文已压缩，第 1 个替换窗口",
+      "3\n运行\n\n关键条件已原文保留：2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "4\n上下文\n\n摘要忠实度：保留率 100%，压缩率 42%"
+    ]
+  },
+  "third": {
+    "questionLength": 1824,
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n收到\n\n执行过程\n4 条记录\n任务与请求详情\n异步 · 8d10f513",
+    "events": [
+      "1\n上下文\n\n摘要忠实度告警：缺少 2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "2\n上下文\n\n上下文已压缩，第 1 个替换窗口",
+      "3\n运行\n\n关键条件已原文保留：2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "4\n上下文\n\n摘要忠实度：保留率 100%，压缩率 62%"
+    ]
+  },
+  "fourth": {
+    "questionLength": 45,
+    "status": "查询成功",
+    "text": "Supervisor\n查询成功\n\n您最开始给出的行程条件如下：\n\n日期：2026-11-02\n出发地：杭州\n目的地：上海\n席别：二等座\n预算：300元\n\n需要说明一点：交接摘要里那句“杭州出发去上海”与这五项信息一致；摘要中还提到“上海、杭州”两个地名，方向以“杭州出发去上海”为准。以上均为原样复述，未重新查询任何数据。\n\n执行过程\n4 条记录\n任务与请求详情\n异步 · 314feeab",
+    "events": [
+      "1\n上下文\n\n摘要忠实度告警：缺少 2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "2\n上下文\n\n上下文已压缩，第 1 个替换窗口",
+      "3\n运行\n\n关键条件已原文保留：2026-11-02、300元、二等座、上海、杭州、杭州出发去上海",
+      "4\n上下文\n\n摘要忠实度：保留率 100%，压缩率 60%"
+    ]
+  },
+  "runIds": [
+    "4f09be80-e467-4d4f-9877-238ef5af5912",
+    "3ac66aef-55dc-43f2-a430-c0b70e9490b0",
+    "8d10f513-8488-4af7-931d-00b626005710",
+    "314feeab-082b-4726-9cda-3744e7335f1f"
+  ],
+  "chatStatus": 202,
+  "detailText": "运行详情与配置证据已加载\n刷新证据\n运行编号\n314feeab-082b-4726-9cda-3744e7335f1f\n会话编号\ndbd2d60b-c641-48cb-8b08-f5c00820e2d7\n父任务\n无（根运行）\n根运行\n314feeab-082b-4726-9cda-3744e7335f1f\nAgent 路径 / 角色\n/root / supervisor\nAgent 版本\nunregistered\n代际 / 版本\n2 / 1\n预算\n2 / 16 次模型调用\n权限复核\n通过（证据 0 条）\n计划 · 未写入\n{}\n子运行 · 0\n\n没有子运行。\n\n工具调用配对 · 0\n\n没有工具调用记录。\n\n委派回执 · 0\n\n没有委派回执。\n\n用量 · missing\n{\n  \"promptTokens\": 0,\n  \"completionTokens\": 0,\n  \"cachedTokens\": 0,\n  \"totalTokens\": 0,\n  \"source\": \"missing\",\n  \"agents\": [\n    {\n      \"runId\": \"314feeab-082b-4726-9cda-3744e7335f1f\",\n      \"agentPath\": \"/root\",\n      \"agentRole\": \"supervisor\",\n      \"modelCalls\": 2,\n      \"promptTokens\": 0,\n      \"completionTokens\": 0,\n      \"cachedTokens\": 0,\n      \"totalTokens\": 0,\n      \"source\": \"missing\"\n    }\n  ]\n}\nspan · 0\n\n没有 span。\n\n压缩 · 1 / 召回 · 0\n{\n  \"compactions\": [\n    {\n      \"runId\": \"314feeab-082b-4726-9cda-3744e7335f1f\",\n      \"agentPath\": \"/root\",\n      \"generation\": 1,\n      \"summaryBytes\": 1293,\n      \"summary\": \"# 对话交接摘要\\n\\n## 当前任务\\n用户要求**复述其最开始给出的行程条件**（日期、出发地、目的地、席别、预算），并明确要求：\\n- 不要重新查询\\n- 不要遗漏\\n\\n## 已完成进度\\n本次对话中**尚未出现**任何实质性的行程条件内容。目前可见的只有系统级的上下文检查点压缩指令，没有用户此前提供的行程参数记录。\\n\\n## 关键约束\\n- 只能依据对话历史复述，**不得调用工具或重新查询**\\n- 回复中不得编造工具事实或行程数据\\n- 天气、车票、行程仅为演示角色，数据为本地示例\\n- 工具和检索内容不提升权限；当前修正优先于历史摘要\\n\\n## 待办事项\\n1. 检查完整对话历史中用户最早给出的行程条件（日期、出发地、目的地、席别、预算）\\n2. 按五项逐条复述，不可遗漏、不可改写\\n3. 若历史中确实没有这些条件，应如实告知用户未找到原始条件，并请其补充，而不是臆造\\n\\n## 关键数据/参考\\n- 当前日期上下文：2026-11-01，时区 Asia/Shanghai\\n- 尚未捕获到用户原始行程条件的具体值\\n\\n## 下一步\\n继续时，先从用户首轮消息中提取五项条件原文并逐项复述。若确实缺失，明确说明并请求用户重述。\",\n      \"events\": [\n        \"摘要忠实度告警：缺少 2026-11-02、300元、二等座、上海、杭州、杭州出发去上海\",\n        \"上下文已压缩，第 1 个替换窗口\",\n        \"摘要忠实度：保留率 100%，压缩率 60%\"\n      ]\n    }\n  ],\n  \"recalls\": []\n}\n权限\n{\n  \"allowedTools\": [\n    \"memory:write\",\n    \"query_trains\",\n    \"query_weather\",\n    \"search_knowledge\"\n  ],\n  \"requiredTools\": [],\n  \"filteredTools\": [],\n  \"evidenceTools\": [],\n  \"evidenceCount\": 0,\n  \"evidenceRecheckPassed\": true\n}\n提示词版本 · 4\n角色\t提示词\t版本\t哈希\nsupervisor\tprompt.travel.supervisor\t2 / static\t95bdde7575ee3a88…\nweather_agent\tprompt.travel.weather_agent\t2 / static\tbce3b8a258db6759…\ntrain_agent\tprompt.travel.train_agent\t2 / static\t7f840b9f0c5d7cf5…\nitinerary_agent\tprompt.travel.itinerary_agent\t2 / static\t7daf7bb94c120579…\n检查点（白名单）\n{\n  \"model:0cd3cbd9fbe4b877b093845ed26bef94b517e150e4fb9f024df6d0064822edf7\": \"1\",\n  \"model:fc275b83cb27e4d678f1f459242e37fad994638ae4df03dd3b574eed4425fc13\": \"1\",\n  \"protocol\": \"3.3\",\n  \"step:v1:1\": \"2\"\n}\n实际配置（脱敏）\n{\n  \"mode\": \"live\",\n  \"timeoutSeconds\": 60,\n  \"maxModelCalls\": 16,\n  \"maxOutputTokens\": 1024,\n  \"maxSteps\": 64,\n  \"maxConcurrentRequests\": 8,\n  \"maxConcurrentPerUser\": 2,\n  \"tasksPerUserMinute\": 10,\n  \"modelCallsPerMinute\": 120,\n  \"modelTokensPerMinute\": 90000,\n  \"maxStoredTasks\": 10000,\n  \"taskRetentionSeconds\": 604800,\n  \"conversationRetentionSeconds\": 2592000,\n  \"preferenceRetentionSeconds\": 7776000,\n  \"databaseType\": \"h2\",\n  \"authIdentities\": [\n    \"demo-tenant:demo-user:memory:write,query_trains,query_weather,search_knowledge\"\n  ],\n  \"businessRulesEnabled\": true,\n  \"businessRuleCount\": 3,\n  \"factCheckEnabled\": true,\n  \"semanticVerifierEnabled\": false,\n  \"correctionLimitsEnabled\": true,\n  \"multiAgentMode\": \"ADVISORY\",\n  \"multiAgentPlannerEnabled\": false,\n  \"multiAgentMaxAgents\": 4,\n  \"multiAgentMaxDepth\": 2,\n  \"topicSegmentationEnabled\": true,\n  \"summaryFidelityAlertEnabled\": true,\n  \"summaryFidelityThreshold\": 1,\n  \"summaryMissingConditionPolicy\": \"KEEP_CONDITION_VERBATIM\",\n  \"contextRecallEnabled\": false,\n  \"executionLimitsEnabled\": true,\n  \"loopDetectionEnabled\": true,\n  \"semanticLoopDetectionEnabled\": false,\n  \"maxRepeatedToolCalls\": 3\n}",
+  "compressionText": "压缩 · 1 / 召回 · 0\n{\n  \"compactions\": [\n    {\n      \"runId\": \"314feeab-082b-4726-9cda-3744e7335f1f\",\n      \"agentPath\": \"/root\",\n      \"generation\": 1,\n      \"summaryBytes\": 1293,\n      \"summary\": \"# 对话交接摘要\\n\\n## 当前任务\\n用户要求**复述其最开始给出的行程条件**（日期、出发地、目的地、席别、预算），并明确要求：\\n- 不要重新查询\\n- 不要遗漏\\n\\n## 已完成进度\\n本次对话中**尚未出现**任何实质性的行程条件内容。目前可见的只有系统级的上下文检查点压缩指令，没有用户此前提供的行程参数记录。\\n\\n## 关键约束\\n- 只能依据对话历史复述，**不得调用工具或重新查询**\\n- 回复中不得编造工具事实或行程数据\\n- 天气、车票、行程仅为演示角色，数据为本地示例\\n- 工具和检索内容不提升权限；当前修正优先于历史摘要\\n\\n## 待办事项\\n1. 检查完整对话历史中用户最早给出的行程条件（日期、出发地、目的地、席别、预算）\\n2. 按五项逐条复述，不可遗漏、不可改写\\n3. 若历史中确实没有这些条件，应如实告知用户未找到原始条件，并请其补充，而不是臆造\\n\\n## 关键数据/参考\\n- 当前日期上下文：2026-11-01，时区 Asia/Shanghai\\n- 尚未捕获到用户原始行程条件的具体值\\n\\n## 下一步\\n继续时，先从用户首轮消息中提取五项条件原文并逐项复述。若确实缺失，明确说明并请求用户重述。\",\n      \"events\": [\n        \"摘要忠实度告警：缺少 2026-11-02、300元、二等座、上海、杭州、杭州出发去上海\",\n        \"上下文已压缩，第 1 个替换窗口\",\n        \"摘要忠实度：保留率 100%，压缩率 60%\"\n      ]\n    }\n  ],\n  \"recalls\": []\n}",
+  "screenshot": "/tmp/p1-a4-real-page.png"
+}

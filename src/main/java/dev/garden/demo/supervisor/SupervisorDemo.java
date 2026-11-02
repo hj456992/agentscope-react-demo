@@ -3,19 +3,27 @@ package dev.garden.demo.supervisor;
 import static dev.garden.demo.supervisor.support.Contracts.*;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.support.LiveModelFactory;
 
-import io.agentscope.core.model.Model;
 import io.agentscope.core.model.transport.HttpTransportFactory;
-import io.agentscope.extensions.model.openai.OpenAIChatModel;
 
 import java.time.Clock;
 import java.util.*;
 
-/** 命令行入口。默认离线，只有明确传入 --live 才请求真实模型。 */
+/** 命令行入口。默认真实模型；仅显式 --offline 或 SUPERVISOR_MODE=offline 使用离线脚本。 */
 public final class SupervisorDemo {
     public static void main(String[] args) {
-        boolean live = args.length > 0 && args[0].equals("--live");
-        int start = args.length > 0 && (live || args[0].equals("--offline")) ? 1 : 0;
+        boolean explicitMode =
+                args.length > 0 && (args[0].equals("--live") || args[0].equals("--offline"));
+        String mode = explicitMode ? args[0].substring(2) : System.getenv("SUPERVISOR_MODE");
+        if (mode == null || mode.isBlank()) {
+            mode = "live";
+        }
+        if (!mode.equals("live") && !mode.equals("offline")) {
+            throw new IllegalArgumentException("SUPERVISOR_MODE 只能是 live 或 offline");
+        }
+        boolean live = mode.equals("live");
+        int start = explicitMode ? 1 : 0;
         String question =
                 args.length > start
                         ? String.join(" ", Arrays.copyOfRange(args, start, args.length))
@@ -26,7 +34,7 @@ public final class SupervisorDemo {
             Supervisor supervisor =
                     live
                             ? new Supervisor(
-                                    role -> liveModel(transport),
+                                    LiveModelFactory.create(System::getenv, transport),
                                     Clock.systemUTC(),
                                     LimitsDTO.defaults(),
                                     TravelTools.demoData())
@@ -45,23 +53,5 @@ public final class SupervisorDemo {
             // 共享服务不要在单次请求结束时关闭全局传输；这里只处理命令行进程退出。
             HttpTransportFactory.shutdown();
         }
-    }
-
-    private static Model liveModel(ModelHttpTransport transport) {
-        return OpenAIChatModel.builder()
-                .apiKey(env("DEMO_API_KEY"))
-                .baseUrl(env("DEMO_BASE_URL"))
-                .modelName(env("DEMO_MODEL"))
-                .httpTransport(transport)
-                .stream(false)
-                .build();
-    }
-
-    private static String env(String name) {
-        String value = System.getenv(name);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("请配置环境变量 " + name);
-        }
-        return value;
     }
 }

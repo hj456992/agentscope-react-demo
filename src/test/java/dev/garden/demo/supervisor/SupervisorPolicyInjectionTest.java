@@ -15,15 +15,17 @@ class SupervisorPolicyInjectionTest {
         assertFalse(policy.factCheck().enabled());
         assertFalse(policy.correction().enabled());
         assertEquals(SupervisorPolicy.MultiAgentPolicy.Mode.OFF, policy.multiAgent().mode());
+        assertFalse(policy.multiAgent().plannerEnabled());
         assertFalse(policy.topic().enabled());
         assertFalse(policy.summary().alertEnabled());
+        assertFalse(policy.loop().semanticEnabled());
     }
 
     @Test
     void explicitPolicyIsVisibleThroughEveryLocalChildControl() {
         SupervisorPolicy policy =
                 SupervisorPolicy.defaults()
-                        .withBusiness(new SupervisorPolicy.BusinessPolicy(true, 10))
+                        .withBusiness(SupervisorPolicy.BusinessPolicy.enabled(10))
                         .withCorrection(
                                 new SupervisorPolicy.CorrectionPolicy(true, 1, 1, 1, 1));
         RunControl control = RunControl.local(LimitsDTO.defaults(), policy);
@@ -48,13 +50,26 @@ class SupervisorPolicyInjectionTest {
                         "--supervisor.policy.multi-agent-min-parallelism=3",
                         "--supervisor.policy.multi-agent-max-agents=5",
                         "--supervisor.policy.multi-agent-max-depth=4",
+                        "--supervisor.policy.multi-agent-planner-enabled=true",
+                        "--supervisor.policy.multi-agent-max-plan-tasks=6",
                         "--supervisor.policy.topic-segmentation-enabled=true",
                         "--supervisor.policy.topic-recent-turns=8",
                         "--supervisor.policy.topic-min-confidence=0.75",
                         "--supervisor.policy.retry-max-attempts=2",
                         "--supervisor.policy.retry-backoff-cap-ms=1000",
                         "--supervisor.policy.summary-fidelity-alert-enabled=true",
-                        "--supervisor.policy.summary-fidelity-threshold=0.8")) {
+                        "--supervisor.policy.summary-fidelity-threshold=0.8",
+                        "--supervisor.policy.execution-limits-enabled=true",
+                        "--supervisor.policy.max-steps=12",
+                        "--supervisor.policy.context-input-limit=7000",
+                        "--supervisor.policy.loop-detection-enabled=true",
+                        "--supervisor.policy.max-repeated-tool-calls=4",
+                        "--supervisor.policy.agent-cycle-detection-enabled=false",
+                        "--supervisor.policy.semantic-loop-detection-enabled=true",
+                        "--supervisor.policy.semantic-loop-window=9",
+                        "--supervisor.policy.semantic-loop-threshold=0.9",
+                        "--supervisor.policy.semantic-loop-max-warnings=3",
+                        "--supervisor.policy.context-recall-enabled=true")) {
             SupervisorPolicy policy = web.context.getBean(SupervisorPolicy.class);
             assertTrue(policy.business().enabled());
             assertEquals(7, policy.business().maxFutureDays());
@@ -70,6 +85,8 @@ class SupervisorPolicyInjectionTest {
             assertEquals(3, policy.multiAgent().minParallelism());
             assertEquals(5, policy.multiAgent().maxAgents());
             assertEquals(4, policy.multiAgent().maxDepth());
+            assertTrue(policy.multiAgent().plannerEnabled());
+            assertEquals(6, policy.multiAgent().maxPlanTasks());
             assertTrue(policy.topic().enabled());
             assertEquals(8, policy.topic().recentTurns());
             assertEquals(0.75, policy.topic().minConfidence(), 0.0001);
@@ -77,6 +94,19 @@ class SupervisorPolicyInjectionTest {
             assertEquals(1000, policy.failure().backoffCapMs());
             assertTrue(policy.summary().alertEnabled());
             assertEquals(0.8, policy.summary().fidelityThreshold(), 0.0001);
+            assertTrue(policy.summary().recallEnabled());
+            assertTrue(policy.execution().enabled());
+            assertEquals(12, policy.execution().maxSteps());
+            assertEquals(7000, policy.execution().contextInputLimit());
+            assertTrue(policy.loop().enabled());
+            assertEquals(4, policy.loop().maxRepeatedToolCalls());
+            assertFalse(policy.loop().agentCycleDetectionEnabled());
+            assertTrue(policy.loop().semanticEnabled());
+            assertEquals(9, policy.loop().semanticWindow());
+            assertEquals(0.9, policy.loop().semanticThreshold(), 0.0001);
+            assertEquals(3, policy.loop().semanticMaxWarnings());
+            assertEquals(3, policy.business().rules().size());
+            assertEquals("DATE_IN_PAST", policy.business().rules().get(0).id());
         }
     }
 }

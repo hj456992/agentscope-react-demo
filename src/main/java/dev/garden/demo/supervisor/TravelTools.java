@@ -91,7 +91,7 @@ public final class TravelTools {
                     return new EvidenceDTO(
                             "query_weather",
                             value.isEmpty() ? Status.NO_DATA : Status.SUCCESS,
-                            "demo-v1",
+                            data.version(),
                             result);
                 });
     }
@@ -112,7 +112,7 @@ public final class TravelTools {
                     return new EvidenceDTO(
                             "query_trains",
                             value.isEmpty() ? Status.NO_DATA : Status.SUCCESS,
-                            "demo-v1",
+                            data.version(),
                             result);
                 });
     }
@@ -161,13 +161,30 @@ public final class TravelTools {
                                             Status.FAILED,
                                             "业务参数多次不成立，当前轮次已停止，请补充需求后重试。");
                                 }
-                                return reactor.core.publisher.Mono.just(
+                                String message = rule.reason() + "。" + rule.suggestion();
+                                ToolResultBlock rejected =
                                         failure(
                                                 tool,
                                                 params,
                                                 Status.INVALID_INPUT,
-                                                rule.reason() + "。" + rule.suggestion(),
-                                                rule.details()));
+                                                message,
+                                                rule.details());
+                                // 同城路线属于无法通过改写参数完成的确定性拒绝；
+                                // 直接结束本轮并给出规则说明，避免模型在无解输入上耗尽预算。
+                                // 过去日期等规则仍返回给模型，允许改成合法日期后重试。
+                                if (!"SAME_CITY".equals(rule.ruleId())) {
+                                    return reactor.core.publisher.Mono.just(rejected);
+                                }
+                                return reactor.core.publisher.Mono.just(
+                                        ToolResultBlock.of(
+                                                rejected.getOutput(),
+                                                Map.of(
+                                                        "endTurn",
+                                                        true,
+                                                        "turnStatus",
+                                                        context.outcome().name(),
+                                                        "turnReply",
+                                                        message)));
                             }
                             return new ToolExecutor(context)
                                     .read(
@@ -194,13 +211,41 @@ public final class TravelTools {
                                 return reactor.core.publisher.Mono.error(ex);
                             }
                             return reactor.core.publisher.Mono.just(
-                                    failure(tool, params, Status.FAILED, "查询失败；其他成功结果继续保留。"));
+                                    failure(
+                                            tool,
+                                            params,
+                                            Status.FAILED,
+                                            "查询失败；其他成功结果继续保留。",
+                                            failureDetails(ex)));
                         });
     }
 
     private ToolResultBlock failure(
             String tool, Map<String, Object> params, Status status, String message) {
         return failure(tool, params, status, message, Map.of());
+    }
+
+    /**
+     * 提取失败分类、供应商错误码和重试间隔，写入工具结果证据。
+     *
+     * <p>只保留分类名称和错误码，不记录响应正文；重试间隔来自下游的 Retry-After 或
+     * 传输异常携带的时间，页面据此区分可重试限流和不可重试的输入错误。
+     */
+    private static Map<String, Object> failureDetails(Throwable error) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("failureClass", FailureClassifier.classify(error).name());
+        String code = FailureClassifier.providerCode(error);
+        if (!code.isBlank()) {
+            details.put("providerCode", code);
+        }
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ToolExecutor.TemporaryFailure temporary
+                    && temporary.retryAfter != null) {
+                details.put("retryAfterMs", temporary.retryAfter.toMillis());
+                break;
+            }
+        }
+        return details;
     }
 
     private ToolResultBlock failure(
@@ -212,7 +257,7 @@ public final class TravelTools {
         Map<String, Object> details = new LinkedHashMap<>(params);
         details.put("message", message);
         details.putAll(extra);
-        EvidenceDTO evidence = new EvidenceDTO(tool, status, "demo-v1", details);
+        EvidenceDTO evidence = new EvidenceDTO(tool, status, data.version(), details);
         context.add(evidence);
         return ToolResultBlock.error(json(evidence));
     }

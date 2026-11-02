@@ -1,0 +1,67 @@
+{
+  "results": [
+    {
+      "i": 0,
+      "status": 429,
+      "headers": {
+        "Content-Length": "73",
+        "Content-Type": "application/json",
+        "Retry-After": "1"
+      },
+      "body": {
+        "code": "BUSY",
+        "message": "当前处理任务较多，请稍后重试。"
+      }
+    },
+    {
+      "i": 1,
+      "status": 202,
+      "headers": {
+        "Content-Length": "374",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "RUNNING",
+        "originalQuery": "查询2026-11-03杭州的天气（RetryAfter并发1）",
+        "rewrittenQuery": "",
+        "intent": "UNKNOWN",
+        "answer": "任务执行中",
+        "agents": [],
+        "evidence": [],
+        "events": [],
+        "runId": "c2e35cb7-9a1a-41c2-9e6a-3fa0cdf39834",
+        "revision": 1,
+        "requestId": "p5-retryafter-1-1793570831",
+        "state": "RUNNING",
+        "modelCalls": 0,
+        "deadline": 1793570891316,
+        "replacedBy": null
+      }
+    },
+    {
+      "i": 2,
+      "status": 202,
+      "headers": {
+        "Content-Length": "374",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": "RUNNING",
+        "originalQuery": "查询2026-11-03杭州的天气（RetryAfter并发2）",
+        "rewrittenQuery": "",
+        "intent": "UNKNOWN",
+        "answer": "任务执行中",
+        "agents": [],
+        "evidence": [],
+        "events": [],
+        "runId": "8df276ba-d767-41d5-8f7c-c04dd85661cb",
+        "revision": 1,
+        "requestId": "p5-retryafter-2-1793570831",
+        "state": "RUNNING",
+        "modelCalls": 0,
+        "deadline": 1793570891327,
+        "replacedBy": null
+      }
+    }
+  ]
+}

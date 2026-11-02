@@ -9,15 +9,45 @@ spring:
   codec:
     max-in-memory-size: 64KB
 supervisor:
-  mode: ${SUPERVISOR_MODE:offline}
+  mode: ${SUPERVISOR_MODE:live}
+  # 运行库使用共享 PostgreSQL；地址、账号、密码和连接池全部由环境变量覆盖。
+  # 本地回归测试直接用 H2 内存库，不读取这些配置。
+  database-url: ${SUPERVISOR_DATABASE_URL:jdbc:postgresql://127.0.0.1:5432/supervisor}
+  database-username: ${SUPERVISOR_DATABASE_USERNAME:supervisor}
+  database-password: ${SUPERVISOR_DATABASE_PASSWORD:}
+  database-pool-size: ${SUPERVISOR_DATABASE_POOL_SIZE:16}
   timeout: 60s
   max-model-calls: 16
   max-output-tokens: 1024
   max-concurrent-requests: 8
+  # 受控验收提示默认关闭；只有显式开启并携带白名单提示时才注入工具请求。
+  acceptance-hints-enabled: ${SUPERVISOR_ACCEPTANCE_HINTS:false}
+  # 留空时使用进程内示例数据；填写后所有只读查询走真实 HTTP 本地独立下游。
+  downstream-url: ${SUPERVISOR_DOWNSTREAM_URL:}
+  downstream-timeout: 5s
+  tool-delay-ms: 0
   policy:
     # 安全开启值：确定性校验与本地纠错开启；语义校验和强制多 Agent 上限保持关闭。
     business-rules-enabled: true
     business-max-future-days: 30
+    # 规则按声明顺序执行；未声明列表时使用内置默认规则。
+    business-rules:
+      - id: DATE_IN_PAST
+        tools: query_weather,query_trains
+        type: DATE_NOT_BEFORE_TODAY
+        field: date
+        suggestion: 请改为今天或之后的日期。
+      - id: DATE_TOO_FAR
+        tools: query_weather,query_trains
+        type: DATE_NOT_AFTER_DAYS
+        field: date
+        suggestion: 请改到允许的未来窗口内。
+      - id: SAME_CITY
+        tools: query_trains
+        type: FIELD_NOT_EQUAL
+        field: from
+        other-field: to
+        suggestion: 请改为不同的出发城市和到达城市。
     fact-check-enabled: true
     semantic-verifier-enabled: false
     fact-high-risk-tools: query_weather,query_trains
@@ -33,6 +63,9 @@ supervisor:
     multi-agent-max-depth: 2
     multi-agent-max-token-multiplier: 2.0
     multi-agent-min-latency-saving-ms: 500
+    # 规划器只输出经校验的计划，不自动创建子会话；默认关闭，避免额外工具定义占用预算。
+    multi-agent-planner-enabled: false
+    multi-agent-max-plan-tasks: 8
     topic-segmentation-enabled: true
     topic-recent-turns: 6
     topic-min-confidence: 0.6
@@ -40,6 +73,22 @@ supervisor:
     retry-backoff-cap-ms: 2000
     summary-fidelity-alert-enabled: true
     summary-fidelity-threshold: 1.0
+    # 摘要遗漏关键条件时的处理；KEEP_CONDITION_VERBATIM 会把用户原文条件块注入替换历史。
+    summary-missing-condition-policy: KEEP_CONDITION_VERBATIM
+    execution-limits-enabled: true
+    max-steps: 64
+    # 模型输入按 JSON UTF-8 字节估算；部署方按实际模型窗口调整，不在代码里写死。
+    context-input-limit: 8192
+    loop-detection-enabled: true
+    max-repeated-tool-calls: 3
+    agent-cycle-detection-enabled: true
+    # 轻量语义指纹检测不调用模型；默认关闭，开启后只提醒或要求确认，不直接判失败。
+    semantic-loop-detection-enabled: false
+    semantic-loop-window: 12
+    semantic-loop-threshold: 0.85
+    semantic-loop-max-warnings: 2
+    # 召回工具会占用初始工具表预算；需要精确回读压缩原文时再开启。
+    context-recall-enabled: false
 logging:
   level:
     # SDK 异常可能包含供应商原始响应，演示服务只通过统一错误返回暴露必要信息。

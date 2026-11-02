@@ -1,0 +1,6 @@
+触发方式：CONTROLLED · SPAWN_CHILD
+内容信任：SYSTEM 13 · USER 1 · TOOL 0 · RETRIEVAL 2 · CHILD 0
+回答：【示例数据，非实时天气或车票信息】
+杭州 2026-11-03：多云，18℃。
+杭州 2026-11-03：多云，18℃。
+控制台错误：[]
