@@ -335,9 +335,9 @@ export const acceptanceCases: AcceptanceCase[] = [
     "id": "E6",
     "title": "数据、记忆与合规",
     "operation": "按P8保存、更新、短期过期并删除本次验收偏好；检查无权限和跨身份读取。",
-    "expected": "会话与长期偏好分开，版本冲突可读，删除后不使用旧偏好，模型不能擅自写入。",
+    "expected": "会话与长期偏好分开，版本冲突可读，删除后不使用旧偏好；对话工具只能按用户原话写入白名单低风险偏好，其他内容不能擅自写入。",
     "evidence": "偏好版本、来源、有效期、真实HTTP与后续新会话回答。",
-    "prerequisites": "仅两个显式偏好键；无向量、候选审核、跨副本删除与数据驻留机制，相关目标分别记录缺口。",
+    "prerequisites": "仅三个显式偏好键；演示向量索引不是独立向量数据库；候选审核、跨副本删除与数据驻留按实际能力记录缺口。",
     "category": "E",
     "question": "",
     "procedures": [
@@ -420,7 +420,7 @@ export const acceptanceCases: AcceptanceCase[] = [
     "id": "2.7",
     "title": "多轮对话和长期记忆的管理方式，历史对话的处理策略",
     "operation": "按P4同会话追问后天、修正城市、明确换题；另开会话对照，再按P8检查偏好。",
-    "expected": "日期城市承接与切换正确；新会话与显式偏好边界清楚；只读聊天不自动生成长期偏好。",
+    "expected": "日期城市承接与切换正确；新会话与显式偏好边界清楚；普通聊天不写长期偏好，用户明确表达且引用原话时才写白名单偏好。",
     "evidence": "sessionId、问题、回答、证据和偏好读写记录。",
     "prerequisites": "当前话题是确定性信号，不把几个成功样本当向量语义话题识别。",
     "category": "专项",
@@ -591,7 +591,7 @@ export const acceptanceProcedures = [
   {
     "id": "P8",
     "title": "显式偏好生命周期",
-    "content": "使用专用验收身份，先GET /memories记录基线和版本；通过结构化表单PUT preferredDepartureCity=杭州、preferredSeat=二等座，设置未来有效期，expectedVersion取实际值。新会话核对偏好，再用旧版本PUT或DELETE验证409；到有效期后重新读取，检查不再装配；当前版本DELETE后确认204和后续查询不包含该值。只清理本次创建的数据，版本不一致先重新读取，不覆盖用户并发更改。当前只支持两个键，第一页固定20条通常没有nextCursor；未产生下一页时不能标真实分页已验，非法游标400单独记录。"
+    "content": "使用专用验收身份，先GET /memories记录基线和版本；通过结构化表单PUT preferredDepartureCity=杭州、preferredSeat=二等座、replyLanguage=中文，设置未来有效期，expectedVersion取实际值。新会话核对偏好，再用旧版本PUT或DELETE验证409；到有效期后重新读取，检查不再装配；当前版本DELETE后确认204和后续查询不包含该值。另发一条“以后回复用中文”的普通对话，核对模型调用 remember_preference 后写入 replyLanguage，来源为 conversation-agent:<runId>；再让工具引用不在用户当前消息中的文字，核对不写入。只清理本次创建的数据，版本不一致先重新读取，不覆盖用户并发更改。当前支持三个键，第一页固定20条通常没有nextCursor；未产生下一页时不能标真实分页已验，非法游标400单独记录。"
   },
   {
     "id": "P9",

@@ -50,7 +50,8 @@ public class ConversationService {
         }
     }
 
-    private static final Set<String> KEYS = Set.of("preferredDepartureCity", "preferredSeat");
+    private static final Set<String> KEYS =
+            Set.of("preferredDepartureCity", "preferredSeat", "replyLanguage");
     // 本地演示可验证的城市名称，不把任意指令文本当作城市。
     private static final Set<String> CITIES =
             Set.of(
@@ -60,6 +61,7 @@ public class ConversationService {
                     "澳门", "台北");
     private static final Set<String> SEATS =
             Set.of("二等座", "一等座", "商务座", "硬座", "软座", "硬卧", "软卧", "无座");
+    private static final Set<String> LANGUAGES = Set.of("中文", "英文", "中英双语");
     private final ConversationRepository repository;
     private final Duration conversationRetention;
     private final Duration preferenceRetention;
@@ -265,6 +267,39 @@ public class ConversationService {
     }
 
     /**
+     * 写入模型在对话中提议的长期偏好。
+     *
+     * <p>只接受白名单内的低风险偏好键，来源固定标记为对话提议，便于审计和撤销。
+     * 同值重复提议直接返回已有记录，不反复抬高版本；值发生变化时按当前版本覆盖。
+     * 调用方必须在工具入口校验引用文本确实来自本轮用户消息，防止工具结果或检索资料
+     * 诱导模型写入记忆。
+     */
+    @Transactional
+    public MemoryRes rememberFromConversation(
+            IdentityDTO identity, String key, String value, String source) {
+        requireWrite(identity);
+        validateKey(key);
+        String normalized = validateMemoryValue(key, value);
+        if (source == null || source.isBlank() || source.length() > 200) {
+            throw badRequest("记忆来源无效");
+        }
+        Instant now = Instant.now();
+        StoredMemory stored = readMemory(identity, key);
+        if (stored != null && stored.active(now) && stored.memory().value().equals(normalized)) {
+            return stored.memory();
+        }
+        int expected = stored != null && stored.active(now) ? stored.memory().version() : 0;
+        return confirmMemory(
+                identity,
+                key,
+                normalized,
+                expected,
+                now.plus(preferenceRetention),
+                source.strip(),
+                now);
+    }
+
+    /**
      * 写入或更新一条已确认偏好，并同步本地向量索引。
      *
      * <p>版本按墓碑递增，删除后重建不会复用旧版本；向量只保存本地哈希嵌入，不保存
@@ -331,8 +366,9 @@ public class ConversationService {
     /**
      * 提交记忆候选。
      *
-     * <p>聊天不会自动创建候选；本入口只接受用户主动提交的键值，并记录来源、期望版本和
-     * 有效期。候选在批准前不进入长期偏好装配，也不写入向量索引。
+     * <p>本入口用于需要人工审核的记忆候选，记录来源、期望版本和有效期。低风险偏好
+     * 可以由对话工具直接写入；需要审核的事实仍走候选，批准前不进入长期偏好装配，
+     * 也不写入向量索引。
      */
     @Transactional
     public MemoryCandidateDTO propose(IdentityDTO identity, MemoryCandidateParam input) {
@@ -650,6 +686,9 @@ public class ConversationService {
         }
         if (key.equals("preferredSeat") && !SEATS.contains(value)) {
             throw badRequest("座席名称无效");
+        }
+        if (key.equals("replyLanguage") && !LANGUAGES.contains(value)) {
+            throw badRequest("回复语言无效");
         }
         return value;
     }

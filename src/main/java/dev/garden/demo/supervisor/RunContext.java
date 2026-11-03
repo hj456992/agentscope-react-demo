@@ -53,7 +53,8 @@ final class RunContext {
                     "wait_agent",
                     "request_user_input",
                     "recall_context",
-                    "plan_agents");
+                    "plan_agents",
+                    "remember_preference");
 
     private final List<String> events = new ArrayList<>();
     private final Set<String> agents = new LinkedHashSet<>();

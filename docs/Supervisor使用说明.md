@@ -175,8 +175,10 @@ curl 'http://127.0.0.1:8080/api/supervisor/chat'   -H 'Authorization: Bearer dem
 | POST `/api/supervisor/instructions` | 唯一参数 `InstructionParam`：`{runId,instructionId,expectedRevision,action,message}`；动作 MESSAGE、SWITCH、CANCEL，省略即 MESSAGE；CANCEL 不需要 `expectedRevision` |
 | GET `/api/supervisor/memories` | 获取当前用户有效偏好第一页，固定 20 条；返回下一游标 |
 | GET `/api/supervisor/memories/{cursor}` | 按游标获取下一页 |
-| PUT `/api/supervisor/memories/{key}` | `{value,expectedVersion,expiresAt}`；首次版本 0；键为 preferredDepartureCity 或 preferredSeat |
+| PUT `/api/supervisor/memories/{key}` | `{value,expectedVersion,expiresAt}`；首次版本 0；键为 preferredDepartureCity、preferredSeat 或 replyLanguage（值限中文、英文、中英双语） |
 | DELETE `/api/supervisor/memories/{key}/{expectedVersion}` | 按路径中的版本删除偏好 |
+
+对话中的低风险偏好由主 Agent 调用 `remember_preference` 写入，工具要求引用当前用户消息中的原话；管理接口仍表示用户显式确认。任意事实的自动提炼和候选审核边界不变。
 
 运行详情接口只返回白名单字段：不返回 `loop:v3.3` 原始消息树、召回原文、令牌或工具完整参数；工具参数仅以 SHA-256 指纹展示。子运行回答与证据在当前身份权限不足时会整体脱敏。页面的任务详情抽屉和 43 项验收面板都按需调用这两个接口，验收快照可关联任意当前身份可见的 `runId`。
 

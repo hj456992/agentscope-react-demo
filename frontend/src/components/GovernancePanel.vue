@@ -752,6 +752,7 @@ onBeforeUnmount(() => {
                   <select v-model="memoryCandidateForm.key" aria-label="候选偏好键">
                     <option value="preferredDepartureCity">preferredDepartureCity</option>
                     <option value="preferredSeat">preferredSeat</option>
+                    <option value="replyLanguage">replyLanguage</option>
                   </select>
                 </label>
                 <label>候选值

@@ -2,7 +2,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Icon from "./Icon.vue";
 import { authenticated, credentialEpoch } from "../store";
-import { departureCities, formatMemoryTime, memoryKeys, memoryLabels, seatOptions, useMemoryPanel } from "../memory";
+import { formatMemoryTime, memoryKeys, memoryLabels, memoryOptions, useMemoryPanel } from "../memory";
 import type { MemoryItem } from "../memory";
 
 const emit = defineEmits<{ close: [] }>();
@@ -17,6 +17,15 @@ const { activeItems, nextCursor, loading, loaded, busyKey, pending, error, notic
 
 function close() {
   emit("close");
+}
+function sourceLabel(source: string | undefined) {
+  if (source === "explicit-user-confirmation") {
+    return "用户显式确认";
+  }
+  if (source?.startsWith("conversation-agent:")) {
+    return "对话中记录";
+  }
+  return source ?? "";
 }
 function keyboard(event: KeyboardEvent) {
   if (event.key === "Escape") {
@@ -104,7 +113,7 @@ onBeforeUnmount(() => {
           <button ref="closeButton" type="button" class="memory-icon-button" aria-label="关闭偏好面板" @click="close"><Icon name="close" /></button>
         </header>
         <div class="memory-body" :inert="Boolean(pendingDelete)">
-          <p id="memory-description" class="memory-description">保存常用的出发城市和席别。只有你主动保存的内容才会成为长期偏好，聊天内容不会自动写入。</p>
+          <p id="memory-description" class="memory-description">保存常用的出发城市、席别和回复语言。你也可以在对话中明确表达长期偏好；只有用户明确表达且能引用原话的内容才会写入。</p>
           <section v-if="!authenticated" class="memory-empty" aria-live="polite">
             <span class="memory-empty-icon"><Icon name="key" :size="26" /></span>
             <h3>先连接你的身份</h3><p>请关闭面板并配置访问令牌，再读取属于当前身份的偏好。</p>
@@ -119,24 +128,24 @@ onBeforeUnmount(() => {
             <div v-if="loading && !loaded" class="memory-empty" role="status"><span class="memory-loading"></span><h3>正在读取偏好</h3><p>以服务端当前有效值为准。</p></div>
             <div v-else-if="!loaded" class="memory-empty"><Icon name="book" :size="28" /><h3>等待读取偏好</h3><p>读取成功后即可查看和编辑。</p><button type="button" class="memory-button memory-primary" :disabled="pending" @click="read()">读取偏好</button></div>
             <template v-else>
-              <p v-if="!activeItems.length" class="memory-empty-hint"><Icon name="info" :size="17" />{{ nextCursor ? '当前页没有有效偏好，请继续读取下一页。' : '还没有有效偏好。选择常用城市或席别后，主动保存即可。' }}</p>
+              <p v-if="!activeItems.length" class="memory-empty-hint"><Icon name="info" :size="17" />{{ nextCursor ? '当前页没有有效偏好，请继续读取下一页。' : '还没有有效偏好。选择常用城市、席别或回复语言后，主动保存即可。' }}</p>
               <article v-for="key in memoryKeys" :key="key" class="memory-card" :aria-labelledby="`memory-heading-${key}`" :aria-busy="busyKey === key">
                 <div class="memory-card-heading">
-                  <h3 :id="`memory-heading-${key}`"><Icon :name="key === 'preferredDepartureCity' ? 'compass' : 'train'" :size="19" />{{ memoryLabels[key] }}</h3>
+                  <h3 :id="`memory-heading-${key}`"><Icon :name="key === 'preferredDepartureCity' ? 'compass' : key === 'preferredSeat' ? 'train' : 'chat'" :size="19" />{{ memoryLabels[key] }}</h3>
                   <span class="memory-badge" :class="{ 'memory-badge-active': currentItem(key) }">{{ currentItem(key) ? '已保存' : hasExpired(key) ? '已过期' : '未设置' }}</span>
                 </div>
                 <div v-if="currentItem(key)" class="memory-current">
                   <p class="memory-current-label">当前有效值</p><strong>{{ currentItem(key)?.value }}</strong>
                   <dl><div><dt>版本</dt><dd>{{ currentItem(key)?.version }}</dd></div>
-                    <div><dt>来源</dt><dd>{{ currentItem(key)?.source === 'explicit-user-confirmation' ? '用户显式确认' : currentItem(key)?.source }}</dd></div>
+                    <div><dt>来源</dt><dd>{{ sourceLabel(currentItem(key)?.source) }}</dd></div>
                     <div class="memory-expiry"><dt>有效期至</dt><dd>{{ formatMemoryTime(currentItem(key)!.expiresAt) }}</dd></div></dl>
                 </div>
                 <p v-else class="memory-no-value">{{ hasExpired(key) ? '上次读取的偏好已经过期，请重新读取后再编辑。' : known(key) ? '当前没有有效值。' : '请读取剩余页，以确认是否已有保存的偏好。' }}</p>
                 <form class="memory-form" @submit.prevent="save(key)">
                   <label :for="`memory-value-${key}`">{{ currentItem(key) ? '修改为' : '设置为' }}</label>
                   <select :id="`memory-value-${key}`" v-model="drafts[key].value" :disabled="pending || !known(key) || hasExpired(key)" :aria-describedby="drafts[key].error ? `memory-error-${key}` : undefined" @change="touch(key)">
-                    <option value="" disabled>{{ key === 'preferredDepartureCity' ? '选择出发城市' : '选择席别' }}</option>
-                    <option v-for="value in key === 'preferredDepartureCity' ? departureCities : seatOptions" :key="value" :value="value">{{ value }}</option>
+                    <option value="" disabled>{{ key === 'preferredDepartureCity' ? '选择出发城市' : key === 'preferredSeat' ? '选择席别' : '选择回复语言' }}</option>
+                    <option v-for="value in memoryOptions(key)" :key="value" :value="value">{{ value }}</option>
                   </select>
                   <label :for="`memory-expiry-${key}`">有效期 <span>可选 · 当前设备本地时间</span></label>
                   <input :id="`memory-expiry-${key}`" v-model="drafts[key].expiresLocal" type="datetime-local" step="1" :disabled="pending || !known(key) || hasExpired(key)" :aria-describedby="`memory-expiry-help-${key}`" @input="touch(key)" />

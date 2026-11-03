@@ -1,6 +1,7 @@
 package dev.garden.demo.supervisor;
 
 import dev.garden.demo.supervisor.pojo.dto.*;
+import dev.garden.demo.supervisor.pojo.res.MemoryRes;
 import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
 import java.time.*;
@@ -29,6 +30,16 @@ public interface RunControl {
      */
     default BookingOutcomeDTO book(String operationId, Map<String, Object> parameters) {
         throw new UnsupportedOperationException("审批与外部写入不可用");
+    }
+
+    /**
+     * 记录模型在对话中提议的低风险长期偏好。
+     *
+     * <p>旧控制实现默认拒绝，避免没有持久化记忆的运行路径静默写入；持久任务由服务层
+     * 校验身份、任务代际和运行状态后写入。
+     */
+    default MemoryRes rememberPreference(String key, String value) {
+        throw new UnsupportedOperationException("长期偏好写入不可用");
     }
 
     /** 每次运行共享同一份策略；旧控制实现默认关闭新增能力。 */

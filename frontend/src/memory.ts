@@ -2,7 +2,7 @@ import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { ApiError } from "./api";
 import { apiCall, authenticated, credentialEpoch } from "./store";
 
-export const memoryKeys = ["preferredDepartureCity", "preferredSeat"] as const;
+export const memoryKeys = ["preferredDepartureCity", "preferredSeat", "replyLanguage"] as const;
 export type MemoryKey = (typeof memoryKeys)[number];
 export interface MemoryItem {
   key: MemoryKey;
@@ -18,6 +18,7 @@ export interface MemoryPageRes {
 export const memoryLabels: Record<MemoryKey, string> = {
   preferredDepartureCity: "出发城市",
   preferredSeat: "席别",
+  replyLanguage: "回复语言",
 };
 export const departureCities = [
   "北京", "上海", "杭州", "南京", "苏州", "宁波", "广州", "深圳", "天津", "重庆", "成都", "武汉", "西安",
@@ -25,6 +26,18 @@ export const departureCities = [
   "大连", "长春", "哈尔滨", "石家庄", "太原", "兰州", "西宁", "银川", "呼和浩特", "乌鲁木齐", "拉萨", "香港", "澳门", "台北",
 ];
 export const seatOptions = ["二等座", "一等座", "商务座", "硬座", "软座", "硬卧", "软卧", "无座"];
+export const languageOptions = ["中文", "英文", "中英双语"];
+
+/** 每个偏好键只接受服务端白名单中的结构化值，前端不提供自由文本。 */
+export function memoryOptions(key: MemoryKey): readonly string[] {
+  if (key === "preferredDepartureCity") {
+    return departureCities;
+  }
+  if (key === "preferredSeat") {
+    return seatOptions;
+  }
+  return languageOptions;
+}
 
 interface MemoryDraft {
   value: string;
@@ -58,7 +71,7 @@ function localTime(value: string) {
 function readableError(error: unknown, writing = false) {
   if (error instanceof ApiError) {
     if (error.status === 400) {
-      return writing ? "偏好未通过校验，请检查城市、席别和未来有效期。输入已保留。" : "读取请求未通过校验，分页游标可能已失效，请重新读取第一页。";
+      return writing ? "偏好未通过校验，请检查城市、席别、回复语言和未来有效期。输入已保留。" : "读取请求未通过校验，分页游标可能已失效，请重新读取第一页。";
     }
     if (error.status === 401) {
       return "认证已失效，请重新配置访问令牌后读取偏好。";
@@ -87,7 +100,7 @@ export function useMemoryPanel() {
   const error = ref("");
   const notice = ref("");
   const now = ref(Date.now());
-  const drafts = reactive<Record<MemoryKey, MemoryDraft>>({ preferredDepartureCity: emptyDraft(), preferredSeat: emptyDraft() });
+  const drafts = reactive<Record<MemoryKey, MemoryDraft>>({ preferredDepartureCity: emptyDraft(), preferredSeat: emptyDraft(), replyLanguage: emptyDraft() });
   let generation = 0;
   let disposed = false;
   const clock = window.setInterval(() => { now.value = Date.now(); }, 1000);
@@ -164,8 +177,10 @@ export function useMemoryPanel() {
       return;
     }
     const value = draft.value.trim();
-    if (!(key === "preferredDepartureCity" ? departureCities : seatOptions).includes(value)) {
-      draft.error = key === "preferredDepartureCity" ? "请选择演示支持的城市名称。" : "请选择有效的席别。";
+    if (!memoryOptions(key).includes(value)) {
+      draft.error = key === "preferredDepartureCity"
+        ? "请选择演示支持的城市名称。"
+        : key === "preferredSeat" ? "请选择有效的席别。" : "请选择有效的回复语言。";
       return;
     }
     let expiresAt: string | null = null;

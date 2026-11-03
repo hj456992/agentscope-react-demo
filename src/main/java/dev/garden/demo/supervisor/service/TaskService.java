@@ -13,6 +13,7 @@ import dev.garden.demo.supervisor.pojo.dto.RequestDTO;
 import dev.garden.demo.supervisor.pojo.dto.ResultDTO;
 import dev.garden.demo.supervisor.pojo.param.InstructionParam;
 import dev.garden.demo.supervisor.pojo.res.InstructionRes;
+import dev.garden.demo.supervisor.pojo.res.MemoryRes;
 import dev.garden.demo.supervisor.pojo.res.RunRes;
 import dev.garden.demo.supervisor.support.SemanticLoopGuard;
 
@@ -511,6 +512,13 @@ public final class TaskService implements AutoCloseable {
                 throw new UnsupportedOperationException("审批与外部写入不可用");
             }
             return approvals.booking(id, identity, operationId, parameters);
+        }
+
+        public MemoryRes rememberPreference(String key, String value) {
+            synchronized (TaskService.this) {
+                checkActive();
+                return store.rememberPreference(id, generation, identity, key, value);
+            }
         }
 
         public SupervisorPolicy policy() {

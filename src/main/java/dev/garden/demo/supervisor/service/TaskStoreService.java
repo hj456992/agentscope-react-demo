@@ -20,6 +20,7 @@ import dev.garden.demo.supervisor.pojo.dto.Status;
 import dev.garden.demo.supervisor.pojo.dto.TurnDTO;
 import dev.garden.demo.supervisor.pojo.param.InstructionParam;
 import dev.garden.demo.supervisor.pojo.res.InstructionRes;
+import dev.garden.demo.supervisor.pojo.res.MemoryRes;
 import dev.garden.demo.supervisor.pojo.res.RunRes;
 import dev.garden.demo.supervisor.repo.TaskRepository;
 import dev.garden.demo.supervisor.support.AgentCallGraph;
@@ -502,6 +503,23 @@ public class TaskStoreService {
             throw new RunControl.DeadlineExceeded();
         }
         return task;
+    }
+
+    /**
+     * 把对话中提议的低风险偏好写入长期记忆。
+     *
+     * <p>只允许任务仍然运行时写入；身份取任务的受理快照，避免请求头变化或子任务伪造
+     * 其他用户的记忆。偏好键和值仍由会话服务按白名单校验。
+     */
+    @Transactional
+    public synchronized MemoryRes rememberPreference(
+            String id, int generation, IdentityDTO identity, String key, String value) {
+        TaskDO task = active(id, generation);
+        if (!sameIdentity(task, identity)) {
+            throw new SecurityException("任务身份不一致");
+        }
+        return conversations.rememberFromConversation(
+                identity, key, value, "conversation-agent:" + id);
     }
 
     @Transactional
